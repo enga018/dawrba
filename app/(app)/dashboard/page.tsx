@@ -16,7 +16,6 @@ interface Customer {
 
 export default function Dashboard() {
   const [customers, setCustomers] = useState<Customer[]>([])
-  const [shopName, setShopName] = useState('DawrBa')
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortValue, setSortValue] = useState('name-asc')
@@ -32,17 +31,6 @@ export default function Dashboard() {
       if (!user) {
         router.push('/login')
         return
-      }
-
-      // Load profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('shop_name')
-        .eq('id', user.id)
-        .single()
-
-      if (profileData?.shop_name) {
-        setShopName(profileData.shop_name)
       }
 
       // Load customers
@@ -113,11 +101,6 @@ export default function Dashboard() {
   return (
     <>
       <style>{`
-        .dashboard-title {
-          font-size: 1.1rem;
-          font-weight: 700;
-          margin: 0;
-        }
         .add-btn {
           position: fixed;
           bottom: 20px;

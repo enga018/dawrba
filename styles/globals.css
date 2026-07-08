@@ -87,6 +87,25 @@ input, select, button, textarea {
   background: rgba(255, 255, 255, 0.25);
 }
 
+.header-shop-name {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-shop-name:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 /* Content area */
 .content {
   padding: 16px 20px 24px;
@@ -365,13 +384,13 @@ input, select, button, textarea {
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
-  color: white;
+  color: var(--text);
 }
 
 .back-btn {
   background: none;
   border: none;
-  color: white;
+  color: var(--muted);
   font-size: 1.1rem;
   cursor: pointer;
   padding: 4px;

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { formatDate, formatCurrency } from '@/lib/utils'
@@ -24,6 +24,7 @@ interface Transaction {
 export default function CustomerDetail() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const customerId = params.id as string
 
   const [customer, setCustomer] = useState<Customer | null>(null)
@@ -38,6 +39,10 @@ export default function CustomerDetail() {
 
   useEffect(() => {
     loadData()
+    if (searchParams.get('addCredit') === '1') {
+      setModalMode('credit')
+      setShowModal(true)
+    }
   }, [])
 
   const loadData = async () => {
@@ -212,7 +217,7 @@ export default function CustomerDetail() {
       <div className={`modal-backdrop ${showModal ? 'active' : ''}`} onClick={() => setShowModal(false)}>
         <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
-            <h3>{modalMode === 'credit' ? 'Add Credit' : 'Make Payment'}</h3>
+            <h3>{modalMode === 'credit' ? 'Add Credit' : 'Collect Payment'}</h3>
             <button
               className="modal-close"
               onClick={() => setShowModal(false)}

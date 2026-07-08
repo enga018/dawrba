@@ -11,6 +11,7 @@ export default function AppLayout({
   children: React.ReactNode
 }) {
   const [user, setUser] = useState<User | null>(null)
+  const [shopName, setShopName] = useState('')
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -27,6 +28,16 @@ export default function AppLayout({
 
       setUser(session.user)
       setLoading(false)
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('shop_name')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profileData?.shop_name) {
+        setShopName(profileData.shop_name)
+      }
     }
 
     checkAuth()
@@ -62,6 +73,15 @@ export default function AppLayout({
       <div className="header">
         <h1>DawrBa<span className="dot"></span></h1>
         <div className="header-actions">
+          {shopName && (
+            <button
+              className="header-shop-name"
+              title="Edit shop name"
+              onClick={() => router.push('/setup')}
+            >
+              {shopName}
+            </button>
+          )}
           <button
             className="header-btn"
             title="Logout"

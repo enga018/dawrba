@@ -1,9 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { getInitials } from '@/lib/utils'
+
+interface ExistingCustomer {
+  id: string
+  name: string
+  phone?: string
+}
 
 export default function AddCustomer() {
   const [formData, setFormData] = useState({
@@ -15,7 +22,30 @@ export default function AddCustomer() {
   const [showExtra, setShowExtra] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [existingCustomers, setExistingCustomers] = useState<ExistingCustomer[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
+
+  useEffect(() => {
+    const loadExisting = async () => {
+      const user = (await supabase.auth.getUser()).data.user
+      if (!user) return
+      const { data } = await supabase
+        .from('customers')
+        .select('id, name, phone')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true })
+      setExistingCustomers(data || [])
+    }
+    loadExisting()
+  }, [])
+
+  const searchResults =
+    searchQuery.trim().length === 0
+      ? []
+      : existingCustomers.filter((c) =>
+          c.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+        )
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -70,6 +100,52 @@ export default function AddCustomer() {
           <h2>Add Customer</h2>
         </div>
       </Link>
+
+      <div className="field">
+        <label htmlFor="existingSearch">Add credit to an existing customer</label>
+        <input
+          type="text"
+          id="existingSearch"
+          placeholder="Search by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+      {searchQuery.trim().length > 0 && (
+        <div style={{ marginBottom: '18px' }}>
+          {searchResults.length === 0 ? (
+            <div style={{ fontSize: '0.85rem', color: 'var(--meta)', padding: '4px 2px' }}>
+              No matching customer — add as new below.
+            </div>
+          ) : (
+            <div className="customer-list">
+              {searchResults.map((c) => (
+                <div
+                  key={c.id}
+                  className="customer-card"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => router.push(`/customers/${c.id}?addCredit=1`)}
+                >
+                  <div className="cc-left">
+                    <div className="avatar">{getInitials(c.name)}</div>
+                    <div>
+                      <div className="cc-name">{c.name}</div>
+                      <div className="cc-meta">{c.phone || ''}</div>
+                    </div>
+                  </div>
+                  <i className="fa-solid fa-chevron-right" style={{ color: 'var(--meta)' }}></i>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '18px 0', color: 'var(--meta)', fontSize: '0.8rem', fontWeight: 600 }}>
+        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
+        OR ADD A NEW CUSTOMER
+        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
+      </div>
 
       <form onSubmit={handleSubmit}>
         <div className="field">
