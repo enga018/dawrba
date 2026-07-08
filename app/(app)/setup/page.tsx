@@ -22,7 +22,6 @@ export default function Setup() {
       const { error: dbError } = await supabase.from('profiles').upsert({
         id: user.id,
         shop_name: shopName,
-        updated_at: new Date().toISOString(),
       })
 
       if (dbError) throw dbError
