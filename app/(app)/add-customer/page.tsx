@@ -52,7 +52,7 @@ export default function AddCustomer() {
         if (txError) throw txError
       }
 
-      router.push('/(app)/dashboard')
+      router.push('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add customer')
     } finally {
@@ -62,7 +62,7 @@ export default function AddCustomer() {
 
   return (
     <>
-      <Link href="/(app)/dashboard">
+      <Link href="/dashboard">
         <div className="back-row">
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>

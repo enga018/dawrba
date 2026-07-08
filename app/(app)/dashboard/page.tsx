@@ -179,7 +179,7 @@ export default function Dashboard() {
           {filteredList.map((customer) => (
             <Link
               key={customer.id}
-              href={`/(app)/customers/${customer.id}`}
+              href={`/customers/${customer.id}`}
               style={{ textDecoration: 'none' }}
             >
               <div className="customer-card">
@@ -201,7 +201,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <Link href="/(app)/add-customer">
+      <Link href="/add-customer">
         <button className="add-btn" title="Add customer">
           <i className="fa-solid fa-plus"></i>
         </button>

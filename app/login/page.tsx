@@ -37,7 +37,7 @@ export default function Login() {
       }
 
       console.log('Login successful, redirecting...')
-      router.push('/(app)/dashboard')
+      router.push('/dashboard')
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Login failed'
       console.error('Login error:', errorMsg)

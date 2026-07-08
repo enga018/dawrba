@@ -40,7 +40,7 @@ export default function Signup() {
       }
 
       console.log('Signup successful, redirecting to setup...')
-      router.push('/(app)/setup')
+      router.push('/setup')
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Signup failed'
       console.error('Signup error:', errorMsg)

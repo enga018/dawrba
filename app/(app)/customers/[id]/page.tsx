@@ -136,7 +136,7 @@ export default function CustomerDetail() {
         }
       `}</style>
 
-      <Link href="/(app)/dashboard">
+      <Link href="/dashboard">
         <div className="back-row">
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>
