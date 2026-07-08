@@ -386,6 +386,11 @@
       transition: opacity 0.25s ease, visibility 0.25s ease;
     }
 
+    @media (min-width: 768px) {
+      .modal-backdrop { align-items: center; padding: 20px; }
+      .modal-sheet { border-radius: 20px; }
+    }
+
     .modal-backdrop.active {
       opacity: 1;
       visibility: visible;
@@ -690,7 +695,7 @@
     <div class="cta-box">
       <h3>Try it now</h3>
       <p>No signup required</p>
-      <button class="btn btn-primary toast-trigger"><i class="fa-solid fa-arrow-right"></i> Try It Now</button>
+      <button class="btn btn-primary" id="openAuthBtn2"><i class="fa-solid fa-arrow-right"></i> Try It Now</button>
     </div>
 
     <div class="footer">© 2026 DawrBa · Built for local businesses</div>
@@ -846,6 +851,7 @@
     }
 
     openAuthBtn.addEventListener('click', openAuthModal);
+    document.getElementById('openAuthBtn2').addEventListener('click', openAuthModal);
     closeAuthBtn.addEventListener('click', closeAuthModal);
     authToggleBtn.addEventListener('click', toggleAuthMode);
 
