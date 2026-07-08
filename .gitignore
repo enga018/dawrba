@@ -1,13 +1,13 @@
 .qodo/
 node_modules/
 .env
+.env.local
 .DS_Store
 .vscode/
 .idea/
 *.swp
 
 .vercel
-.env*
 .next/
 /out/
 /build/
