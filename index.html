@@ -294,6 +294,10 @@
       gap: 10px;
     }
 
+    .customer-item.paid .customer-amount { color: var(--green); text-decoration: line-through; }
+    .customer-item.paid .customer-amount .preview-paid-btn { color: var(--green); pointer-events: none; }
+    .preview-paid-btn:hover { color: var(--green) !important; }
+
     .avatar {
       width: 40px;
       height: 40px;
@@ -519,9 +523,6 @@
       .trust-bar { margin: -30px 40px 24px; }
       .cta-box { margin: 8px 40px 32px; }
       .footer { padding: 0 40px 32px; }
-      .preview-card .customer-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-      .preview-card .customer-item { border-bottom: none; padding: 0; flex-direction: column; align-items: flex-start; gap: 4px; }
-      .customer-left { margin-bottom: 4px; }
     }
 
     @media (min-width: 1024px) {
@@ -608,47 +609,61 @@
     <section>
       <div class="section-title">
         <h2>Live preview</h2>
-        <span>Real feel</span>
+        <span>Interactive demo</span>
       </div>
-      <div class="card preview-card">
-        <div class="preview-head">
-          <strong>Pending accounts</strong>
-          <span class="preview-pill">Today</span>
-        </div>
-        <div class="summary">
-          <div style="color: var(--meta); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em;">Total Pending</div>
-          <div class="amount">₹47,500</div>
-        </div>
-        <div class="customer-list">
-          <div class="customer-item">
-            <div class="customer-left">
-              <div class="avatar">AK</div>
-              <div class="customer-meta">
-                <strong>Asha K.</strong>
-                <span>2 days ago</span>
-              </div>
-            </div>
-            <div class="customer-amount">₹12,000</div>
+      <div class="card preview-card" style="padding:0;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:white;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+          <strong style="font-size:0.95rem;">DawrBa — My Shop</strong>
+          <div style="display:flex;gap:8px;">
+            <span style="background:rgba(255,255,255,0.15);width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:0.8rem;"><i class="fa-solid fa-plus"></i></span>
+            <span style="background:rgba(255,255,255,0.15);width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:0.8rem;"><i class="fa-solid fa-right-from-bracket"></i></span>
           </div>
-          <div class="customer-item">
-            <div class="customer-left">
-              <div class="avatar">RM</div>
-              <div class="customer-meta">
-                <strong>Rafi M.</strong>
-                <span>1 week ago</span>
-              </div>
+        </div>
+        <div style="padding:12px 14px;">
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <div style="flex:1;position:relative;">
+              <i class="fa-solid fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--meta);font-size:0.8rem;"></i>
+              <input type="text" value="" placeholder="Search customers..." style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border);border-radius:10px;font-size:0.82rem;outline:none;background:var(--surface);" />
             </div>
-            <div class="customer-amount">₹8,400</div>
+            <select style="padding:8px 10px;border:1px solid var(--border);border-radius:10px;font-size:0.78rem;outline:none;background:var(--surface);">
+              <option>Name (A-Z)</option>
+            </select>
           </div>
-          <div class="customer-item">
-            <div class="customer-left">
-              <div class="avatar">SN</div>
-              <div class="customer-meta">
-                <strong>Sara N.</strong>
-                <span>3 days ago</span>
+          <div id="previewCustomerList">
+            <div class="customer-item preview-customer" data-amount="12000">
+              <div class="customer-left">
+                <div class="avatar" style="width:36px;height:36px;font-size:0.75rem;">AK</div>
+                <div class="customer-meta">
+                  <strong style="font-size:0.88rem;">Asha K.</strong>
+                  <span>2 days ago</span>
+                </div>
               </div>
+              <div class="customer-amount" style="font-size:0.9rem;">₹12,000 <button class="preview-paid-btn" style="background:none;border:none;cursor:pointer;color:var(--meta);font-size:0.85rem;padding:2px;vertical-align:middle;" title="Mark paid"><i class="fa-solid fa-check-circle"></i></button></div>
             </div>
-            <div class="customer-amount">₹27,100</div>
+            <div class="customer-item preview-customer" data-amount="8400">
+              <div class="customer-left">
+                <div class="avatar" style="width:36px;height:36px;font-size:0.75rem;">RM</div>
+                <div class="customer-meta">
+                  <strong style="font-size:0.88rem;">Rafi M.</strong>
+                  <span>1 week ago</span>
+                </div>
+              </div>
+              <div class="customer-amount" style="font-size:0.9rem;">₹8,400 <button class="preview-paid-btn" style="background:none;border:none;cursor:pointer;color:var(--meta);font-size:0.85rem;padding:2px;vertical-align:middle;" title="Mark paid"><i class="fa-solid fa-check-circle"></i></button></div>
+            </div>
+            <div class="customer-item preview-customer" data-amount="27100">
+              <div class="customer-left">
+                <div class="avatar" style="width:36px;height:36px;font-size:0.75rem;">SN</div>
+                <div class="customer-meta">
+                  <strong style="font-size:0.88rem;">Sara N.</strong>
+                  <span>3 days ago</span>
+                </div>
+              </div>
+              <div class="customer-amount" style="font-size:0.9rem;">₹27,100 <button class="preview-paid-btn" style="background:none;border:none;cursor:pointer;color:var(--meta);font-size:0.85rem;padding:2px;vertical-align:middle;" title="Mark paid"><i class="fa-solid fa-check-circle"></i></button></div>
+            </div>
+          </div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.8rem;color:var(--meta);font-weight:600;">Total pending</span>
+            <span id="previewTotal" style="font-size:1.1rem;font-weight:800;color:var(--red);">₹47,500</span>
           </div>
         </div>
       </div>
@@ -842,6 +857,21 @@
     }
 
     document.querySelectorAll('.mark-paid-btn').forEach(attachMarkPaid);
+
+    /* Preview mark paid */
+    const previewTotalEl = document.getElementById('previewTotal');
+
+    document.querySelectorAll('.preview-paid-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const row = this.closest('.customer-item');
+        if (row.classList.contains('paid')) return;
+        row.classList.add('paid');
+        const amt = parseInt(row.dataset.amount) || 0;
+        const currentText = previewTotalEl.textContent;
+        const currentTotal = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
+        previewTotalEl.textContent = '₹' + (currentTotal - amt).toLocaleString('en-IN');
+      });
+    });
 
     demoCreditForm.addEventListener('submit', (event) => {
       event.preventDefault();
