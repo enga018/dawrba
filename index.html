@@ -671,7 +671,7 @@
     <div class="cta-box">
       <h3>Try it now</h3>
       <p>No signup required</p>
-      <a href="/app/" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Try It Now</a>
+      <button class="btn btn-primary" id="openModalBtn2"><i class="fa-solid fa-arrow-right"></i> Try It Now</button>
     </div>
 
     <div class="footer">© 2026 DawrBa · Built for local businesses</div>
@@ -756,6 +756,7 @@
     }
 
     openModalBtn.addEventListener('click', openModal);
+    document.getElementById('openModalBtn2').addEventListener('click', openModal);
     closeModalBtn.addEventListener('click', closeModal);
 
     modal.addEventListener('click', (event) => {
