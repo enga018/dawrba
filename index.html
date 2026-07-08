@@ -521,6 +521,14 @@
       .app-shell { max-width: 960px; }
       .hero h1 { font-size: 2.8rem; max-width: 640px; }
     }
+
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .field input {
+      width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px;
+      font-size: 0.95rem; font-family: inherit; background: #f8fafc; outline: none;
+    }
+    .field input:focus { border-color: var(--blue); background: #fff; }
   </style>
 </head>
 <body>
@@ -691,7 +699,7 @@
 
       <div class="card" style="padding: 12px 14px;">
         <div class="modal-actions">
-          <button class="btn btn-primary toast-trigger"><i class="fa-solid fa-plus"></i> Add Credit</button>
+          <button class="btn btn-primary" id="demoAddCreditBtn"><i class="fa-solid fa-plus"></i> Add Credit</button>
           <button class="btn btn-secondary toast-trigger"><i class="fa-solid fa-paper-plane"></i> Remind</button>
         </div>
 
@@ -723,6 +731,26 @@
       <div class="modal-actions">
         <button class="btn btn-primary toast-trigger" style="flex: 1;"><i class="fa-solid fa-unlock"></i> Get Full Access</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="demoCreditModal" aria-hidden="true">
+    <div class="modal-sheet" role="dialog" aria-modal="true" aria-label="Add demo credit" style="max-width:400px;">
+      <div class="modal-head">
+        <h3>Add demo credit</h3>
+        <button class="modal-close" id="closeDemoCreditBtn" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="demoCreditForm">
+        <div class="field">
+          <label for="demoName">Customer name</label>
+          <input type="text" id="demoName" placeholder="e.g. Priya" required />
+        </div>
+        <div class="field">
+          <label for="demoAmount">Amount (₹)</label>
+          <input type="number" id="demoAmount" placeholder="0" required min="1" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Add to demo</button>
+      </form>
     </div>
   </div>
 
@@ -764,7 +792,66 @@
     });
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && modal.classList.contains('active')) closeModal();
+      if (event.key === 'Escape') {
+        if (modal.classList.contains('active')) closeModal();
+        if (demoCreditModal.classList.contains('active')) closeDemoCreditModal();
+      }
+    });
+
+    /* Demo credit modal */
+    const demoCreditModal = document.getElementById('demoCreditModal');
+    const demoCreditBtn = document.getElementById('demoAddCreditBtn');
+    const closeDemoCreditBtn = document.getElementById('closeDemoCreditBtn');
+    const demoCreditForm = document.getElementById('demoCreditForm');
+    const demoCustomerList = document.querySelector('#demoModal .customer-list');
+    const demoTotalEl = document.querySelector('#demoModal .modal-summary .amount');
+
+    function openDemoCreditModal() {
+      demoCreditForm.reset();
+      demoCreditModal.classList.add('active');
+    }
+
+    function closeDemoCreditModal() {
+      demoCreditModal.classList.remove('active');
+    }
+
+    demoCreditBtn.addEventListener('click', openDemoCreditModal);
+    closeDemoCreditBtn.addEventListener('click', closeDemoCreditModal);
+    demoCreditModal.addEventListener('click', (event) => {
+      if (event.target === demoCreditModal) closeDemoCreditModal();
+    });
+
+    demoCreditForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = document.getElementById('demoName').value.trim();
+      const amount = parseInt(document.getElementById('demoAmount').value);
+
+      const initial = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+      const row = document.createElement('div');
+      row.className = 'modal-row';
+      row.innerHTML = `
+        <div>
+          <strong>${name}</strong><br />
+          <span>Just now</span>
+        </div>
+        <div class="amt">₹${amount.toLocaleString('en-IN')}</div>`;
+
+      const lastRow = demoCustomerList.lastElementChild;
+      if (lastRow) {
+        demoCustomerList.insertBefore(row, lastRow.nextSibling);
+      } else {
+        demoCustomerList.appendChild(row);
+      }
+
+      // Update total
+      const currentText = demoTotalEl.textContent;
+      const currentTotal = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
+      const newTotal = currentTotal + amount;
+      demoTotalEl.textContent = '₹' + newTotal.toLocaleString('en-IN');
+
+      closeDemoCreditModal();
+      showToast(`${name} added with ₹${amount.toLocaleString('en-IN')}`);
     });
 
     triggerButtons.forEach((button) => {
