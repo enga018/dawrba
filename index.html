@@ -470,7 +470,14 @@
 
     .modal-row strong { font-size: 0.92rem; }
     .modal-row span { color: var(--muted); font-size: 0.84rem; }
-    .modal-row .amt { color: var(--red); font-weight: 700; }
+    .modal-row .amt { color: var(--red); font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .mark-paid-btn {
+      background: none; border: none; cursor: pointer; color: var(--meta); font-size: 1rem;
+      padding: 2px; display: inline-flex; transition: color 0.15s;
+    }
+    .mark-paid-btn:hover { color: var(--green); }
+    .modal-row.paid .amt { color: var(--green); text-decoration: line-through; }
+    .modal-row.paid .mark-paid-btn { color: var(--green); pointer-events: none; }
 
     .modal-actions {
       display: flex;
@@ -704,26 +711,26 @@
         </div>
 
         <div class="customer-list" style="margin-top: 10px;">
-          <div class="modal-row">
+          <div class="modal-row" data-amount="4200">
             <div>
               <strong>Shahid</strong><br />
               <span>Since 3 months</span>
             </div>
-            <div class="amt">₹4,200</div>
+            <div class="amt">₹4,200 <button class="mark-paid-btn" title="Mark paid"><i class="fa-solid fa-check-circle"></i></button></div>
           </div>
-          <div class="modal-row">
+          <div class="modal-row" data-amount="3100">
             <div>
               <strong>Mehreen</strong><br />
               <span>Sister's neighbor</span>
             </div>
-            <div class="amt">₹3,100</div>
+            <div class="amt">₹3,100 <button class="mark-paid-btn" title="Mark paid"><i class="fa-solid fa-check-circle"></i></button></div>
           </div>
-          <div class="modal-row">
+          <div class="modal-row" data-amount="11450">
             <div>
               <strong>Ravi</strong><br />
               <span>Regular — pays monthly</span>
             </div>
-            <div class="amt">₹11,450</div>
+            <div class="amt">₹11,450 <button class="mark-paid-btn" title="Mark paid"><i class="fa-solid fa-check-circle"></i></button></div>
           </div>
         </div>
       </div>
@@ -821,21 +828,35 @@
       if (event.target === demoCreditModal) closeDemoCreditModal();
     });
 
+    function attachMarkPaid(btn) {
+      btn.addEventListener('click', function () {
+        const row = this.closest('.modal-row');
+        if (row.classList.contains('paid')) return;
+        row.classList.add('paid');
+        const amt = parseInt(row.dataset.amount) || 0;
+        const currentText = demoTotalEl.textContent;
+        const currentTotal = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
+        demoTotalEl.textContent = '₹' + (currentTotal - amt).toLocaleString('en-IN');
+        showToast('Marked as paid');
+      });
+    }
+
+    document.querySelectorAll('.mark-paid-btn').forEach(attachMarkPaid);
+
     demoCreditForm.addEventListener('submit', (event) => {
       event.preventDefault();
       const name = document.getElementById('demoName').value.trim();
       const amount = parseInt(document.getElementById('demoAmount').value);
 
-      const initial = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-
       const row = document.createElement('div');
       row.className = 'modal-row';
+      row.dataset.amount = amount;
       row.innerHTML = `
         <div>
           <strong>${name}</strong><br />
           <span>Just now</span>
         </div>
-        <div class="amt">₹${amount.toLocaleString('en-IN')}</div>`;
+        <div class="amt">₹${amount.toLocaleString('en-IN')} <button class="mark-paid-btn" title="Mark paid"><i class="fa-solid fa-check-circle"></i></button></div>`;
 
       const lastRow = demoCustomerList.lastElementChild;
       if (lastRow) {
@@ -844,11 +865,11 @@
         demoCustomerList.appendChild(row);
       }
 
-      // Update total
+      attachMarkPaid(row.querySelector('.mark-paid-btn'));
+
       const currentText = demoTotalEl.textContent;
       const currentTotal = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
-      const newTotal = currentTotal + amount;
-      demoTotalEl.textContent = '₹' + newTotal.toLocaleString('en-IN');
+      demoTotalEl.textContent = '₹' + (currentTotal + amount).toLocaleString('en-IN');
 
       closeDemoCreditModal();
       showToast(`${name} added with ₹${amount.toLocaleString('en-IN')}`);
