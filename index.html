@@ -117,6 +117,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    a.btn { text-decoration: none; }
     .btn:active { transform: scale(0.97); }
     .btn-primary {
       background: white;
@@ -498,32 +499,6 @@
 
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    .field {
-      margin-bottom: 14px;
-    }
-    .field label {
-      display: block;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 6px;
-    }
-    .field input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      font-size: 0.95rem;
-      font-family: inherit;
-      background: #f8fafc;
-      outline: none;
-      transition: border-color 0.18s ease;
-    }
-    .field input:focus {
-      border-color: var(--blue);
-      background: #fff;
-    }
-
     @media (min-width: 768px) {
       body { align-items: center; justify-content: center; }
       .app-shell { max-width: 720px; }
@@ -559,7 +534,7 @@
       <p>Built for small shop owners who want calm, clear records and friendly payment reminders.</p>
       <div class="hero-actions">
         <button class="btn btn-primary" id="openModalBtn"><i class="fa-solid fa-play"></i> Try Demo</button>
-        <button class="btn btn-secondary" id="openAuthBtn"><i class="fa-solid fa-user"></i> Login / Register</button>
+        <a href="/app/" class="btn btn-secondary"><i class="fa-solid fa-user"></i> Login / Register</a>
       </div>
     </section>
 
@@ -696,7 +671,7 @@
     <div class="cta-box">
       <h3>Try it now</h3>
       <p>No signup required</p>
-      <button class="btn btn-primary" id="openAuthBtn2"><i class="fa-solid fa-arrow-right"></i> Try It Now</button>
+      <a href="/app/" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Try It Now</a>
     </div>
 
     <div class="footer">© 2026 DawrBa · Built for local businesses</div>
@@ -751,32 +726,6 @@
     </div>
   </div>
 
-  <div class="modal-backdrop" id="authModal" aria-hidden="true">
-    <div class="modal-sheet" role="dialog" aria-modal="true" aria-label="Login or Register">
-      <div class="modal-head">
-        <h3 id="authTitle">Login</h3>
-        <button class="modal-close" id="closeAuthBtn" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <form id="authForm">
-        <div class="field">
-          <label for="authEmail">Email</label>
-          <input type="email" id="authEmail" placeholder="you@example.com" required />
-        </div>
-        <div class="field">
-          <label for="authPassword">Password</label>
-          <input type="password" id="authPassword" placeholder="••••••••" required minlength="6" />
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:4px;" id="authSubmitBtn">Login</button>
-      </form>
-
-      <p style="text-align:center;margin:14px 0 0;font-size:0.85rem;color:var(--meta);">
-        <span id="authToggleLabel">Don't have an account?</span>
-        <button type="button" id="authToggleBtn" style="background:none;border:none;color:var(--blue);font-weight:600;cursor:pointer;padding:0;font-size:0.85rem;">Register</button>
-      </p>
-    </div>
-  </div>
-
   <div class="toast" id="toast"></div>
 
   <script>
@@ -814,59 +763,7 @@
     });
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        if (modal.classList.contains('active')) closeModal();
-        if (authModal.classList.contains('active')) closeAuthModal();
-      }
-    });
-
-    /* Auth modal */
-    const authModal = document.getElementById('authModal');
-    const openAuthBtn = document.getElementById('openAuthBtn');
-    const closeAuthBtn = document.getElementById('closeAuthBtn');
-    const authTitle = document.getElementById('authTitle');
-    const authSubmitBtn = document.getElementById('authSubmitBtn');
-    const authToggleBtn = document.getElementById('authToggleBtn');
-    const authToggleLabel = document.getElementById('authToggleLabel');
-    const authForm = document.getElementById('authForm');
-    let isLogin = true;
-
-    function openAuthModal() {
-      authModal.classList.add('active');
-      authModal.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeAuthModal() {
-      authModal.classList.remove('active');
-      authModal.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-    }
-
-    function toggleAuthMode() {
-      isLogin = !isLogin;
-      authTitle.textContent = isLogin ? 'Login' : 'Register';
-      authSubmitBtn.textContent = isLogin ? 'Login' : 'Register';
-      authToggleLabel.textContent = isLogin ? "Don't have an account?" : 'Already have an account?';
-      authToggleBtn.textContent = isLogin ? 'Register' : 'Login';
-    }
-
-    openAuthBtn.addEventListener('click', openAuthModal);
-    document.getElementById('openAuthBtn2').addEventListener('click', openAuthModal);
-    closeAuthBtn.addEventListener('click', closeAuthModal);
-    authToggleBtn.addEventListener('click', toggleAuthMode);
-
-    authModal.addEventListener('click', (event) => {
-      if (event.target === authModal) closeAuthModal();
-    });
-
-    authForm.addEventListener('submit', (event) => {
-      event.preventDefault();
-      const email = document.getElementById('authEmail').value;
-      closeAuthModal();
-      showToast(isLogin ? `Logged in as ${email}` : `Account created for ${email}`);
-      authForm.reset();
-      if (!isLogin) toggleAuthMode();
+      if (event.key === 'Escape' && modal.classList.contains('active')) closeModal();
     });
 
     triggerButtons.forEach((button) => {
