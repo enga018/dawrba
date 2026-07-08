@@ -60,7 +60,7 @@ export default function AppLayout({
   return (
     <>
       <div className="header">
-        <h1>DawrBa</h1>
+        <h1>DawrBa<span className="dot"></span></h1>
         <div className="header-actions">
           <button
             className="header-btn"
