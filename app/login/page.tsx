@@ -18,14 +18,30 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      if (!email || !password) {
+        throw new Error('Email and password are required')
+      }
+
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      if (authError) throw authError
+
+      if (authError) {
+        console.error('Login error:', authError)
+        throw authError
+      }
+
+      if (!data.user) {
+        throw new Error('Login failed - no user returned')
+      }
+
+      console.log('Login successful, redirecting...')
       router.push('/(app)/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      const errorMsg = err instanceof Error ? err.message : 'Login failed'
+      console.error('Login error:', errorMsg)
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }

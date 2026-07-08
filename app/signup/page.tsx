@@ -18,14 +18,33 @@ export default function Signup() {
     setLoading(true)
 
     try {
-      const { error: authError } = await supabase.auth.signUp({
+      if (!email || !password) {
+        throw new Error('Email and password are required')
+      }
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters')
+      }
+
+      const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
       })
-      if (authError) throw authError
+
+      if (authError) {
+        console.error('Signup error:', authError)
+        throw authError
+      }
+
+      if (!data.user) {
+        throw new Error('Signup failed - no user created')
+      }
+
+      console.log('Signup successful, redirecting to setup...')
       router.push('/(app)/setup')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Signup failed')
+      const errorMsg = err instanceof Error ? err.message : 'Signup failed'
+      console.error('Signup error:', errorMsg)
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }
