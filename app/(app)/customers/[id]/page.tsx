@@ -156,7 +156,7 @@ export default function CustomerDetail() {
         </div>
         <div className="detail-actions">
           <button
-            className="btn btn-green btn-sm"
+            className="btn btn-red btn-sm"
             onClick={() => {
               setModalMode('credit')
               setShowModal(true)
@@ -165,13 +165,13 @@ export default function CustomerDetail() {
             <i className="fa-solid fa-plus"></i> Add Credit
           </button>
           <button
-            className="btn btn-red btn-sm"
+            className="btn btn-green btn-sm"
             onClick={() => {
               setModalMode('pay')
               setShowModal(true)
             }}
           >
-            <i className="fa-solid fa-arrow-right"></i> Pay
+            <i className="fa-solid fa-arrow-right"></i> Collect
           </button>
           <button className="btn btn-secondary btn-sm" onClick={handleWhatsApp}>
             <i className="fa-brands fa-whatsapp"></i> Remind

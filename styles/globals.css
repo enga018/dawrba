@@ -455,13 +455,13 @@ input, select, button, textarea {
 }
 
 .tx-icon.credit {
-  background: #ecfdf5;
-  color: var(--green);
+  background: #fef2f2;
+  color: var(--red);
 }
 
 .tx-icon.pay {
-  background: #fef2f2;
-  color: var(--red);
+  background: #ecfdf5;
+  color: var(--green);
 }
 
 .tx-amount {
@@ -470,11 +470,11 @@ input, select, button, textarea {
 }
 
 .tx-amount.credit {
-  color: var(--green);
+  color: var(--red);
 }
 
 .tx-amount.pay {
-  color: var(--red);
+  color: var(--green);
 }
 
 .tx-date {
