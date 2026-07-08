@@ -122,7 +122,7 @@ export default function LandingClient() {
             <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setModalOpen(true)}>
               <i className="fa-solid fa-play"></i> Try Demo
             </button>
-            <Link href="/login" className={`${styles.btn} ${styles.btnSecondary}`}>
+            <Link href="/dashboard" className={`${styles.btn} ${styles.btnSecondary}`}>
               <i className="fa-solid fa-user"></i> Login / Register
             </Link>
           </div>
