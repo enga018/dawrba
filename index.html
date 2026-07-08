@@ -31,24 +31,19 @@
       color: var(--text);
       min-height: 100vh;
       display: flex;
-      justify-content: center;
-      padding: 18px;
     }
 
     .app-shell {
       width: 100%;
-      max-width: 480px;
       background: var(--bg);
-      border-radius: 28px;
       overflow: hidden;
       position: relative;
-      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
     }
 
     .hero {
       background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
       color: white;
-      padding: 28px 20px 72px;
+      padding: 28px 24px 72px;
       position: relative;
     }
 
@@ -97,7 +92,7 @@
       font-size: 0.98rem;
       line-height: 1.6;
       color: rgba(255,255,255,0.92);
-      max-width: 360px;
+      max-width: 400px;
     }
 
     .hero-actions {
@@ -137,7 +132,7 @@
     }
 
     .trust-bar {
-      margin: -30px 16px 18px;
+      margin: -30px 24px 18px;
       background: var(--surface);
       border-radius: 20px;
       box-shadow: var(--shadow);
@@ -170,7 +165,7 @@
     }
 
     section {
-      padding: 0 18px 24px;
+      padding: 0 24px 24px;
     }
 
     .section-title {
@@ -350,7 +345,7 @@
     }
 
     .cta-box {
-      margin: 8px 18px 24px;
+      margin: 8px 24px 24px;
       background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
       border: 1px solid #bfdbfe;
       border-radius: 20px;
@@ -371,7 +366,7 @@
 
     .footer {
       text-align: center;
-      padding: 0 18px 24px;
+      padding: 0 24px 24px;
       color: var(--meta);
       font-size: 0.8rem;
     }
@@ -398,10 +393,10 @@
     }
 
     .modal-sheet {
-      width: min(100%, 480px);
+      width: min(100%, 520px);
       background: white;
       border-radius: 24px 24px 16px 16px;
-      padding: 16px 16px 18px;
+      padding: 16px 20px 18px;
       box-shadow: 0 20px 45px rgba(2, 6, 23, 0.2);
       transform: translateY(20px);
       opacity: 0;
@@ -525,8 +520,25 @@
     }
 
     @media (min-width: 768px) {
-      body { padding: 24px; }
-      .app-shell { border-radius: 32px; }
+      body { align-items: center; justify-content: center; }
+      .app-shell { max-width: 720px; }
+      .features-grid { grid-template-columns: repeat(4, 1fr); }
+      .steps-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero { padding: 48px 40px 80px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+      .hero h1 { font-size: 2.4rem; max-width: 560px; }
+      .hero p { max-width: 480px; }
+      section { padding: 0 40px 32px; }
+      .trust-bar { margin: -30px 40px 24px; }
+      .cta-box { margin: 8px 40px 32px; }
+      .footer { padding: 0 40px 32px; }
+      .preview-card .customer-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .preview-card .customer-item { border-bottom: none; padding: 0; flex-direction: column; align-items: flex-start; gap: 4px; }
+      .customer-left { margin-bottom: 4px; }
+    }
+
+    @media (min-width: 1024px) {
+      .app-shell { max-width: 960px; }
+      .hero h1 { font-size: 2.8rem; max-width: 640px; }
     }
   </style>
 </head>
