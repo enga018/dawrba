@@ -690,6 +690,41 @@ input, select, button, textarea {
   font-weight: 800;
 }
 
+/* Customer list */
+.customer-list {
+  margin-top: 10px;
+}
+
+/* Add button (floating) */
+.add-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: white;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  z-index: 15;
+}
+
+.add-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+
+.add-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
 @media (min-width: 768px) {
   .content {
     padding: 24px 40px;
