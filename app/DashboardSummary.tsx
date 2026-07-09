@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import SummaryCard from './SummaryCard'
 
 interface SummaryData {
@@ -10,8 +11,11 @@ interface SummaryData {
   overdueCount: number
   todayCreditTrend?: number
   todayCollectedTrend?: number
-  outstandingTrend?: number
-  overdueTrend?: number
+}
+
+function percentTrend(today: number, yesterday: number): number | undefined {
+  if (yesterday === 0) return undefined
+  return Math.round(((today - yesterday) / yesterday) * 100)
 }
 
 export default function DashboardSummary() {
@@ -24,22 +28,75 @@ export default function DashboardSummary() {
 
   const fetchSummary = async () => {
     try {
-      const response = await fetch('/api/dashboard-summary')
-      const data = await response.json()
-      setSummary(data)
+      const user = (await supabase.auth.getUser()).data.user
+      if (!user) {
+        setSummary(null)
+        return
+      }
+
+      const { data: customers, error: customersError } = await supabase
+        .from('customers')
+        .select('id, opening_balance')
+        .eq('user_id', user.id)
+
+      if (customersError) throw customersError
+
+      const ids = (customers || []).map((c) => c.id)
+
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+      const yesterdayStart = new Date(todayStart)
+      yesterdayStart.setDate(yesterdayStart.getDate() - 1)
+
+      let balances: Record<string, number> = {}
+      let todayCredit = 0
+      let todayCollected = 0
+      let yesterdayCredit = 0
+      let yesterdayCollected = 0
+
+      if (ids.length > 0) {
+        const { data: txData, error: txError } = await supabase
+          .from('transactions')
+          .select('customer_id, amount, created_at')
+          .in('customer_id', ids)
+
+        if (txError) throw txError
+
+        for (const t of txData || []) {
+          balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
+
+          const createdAt = new Date(t.created_at)
+          if (createdAt >= todayStart) {
+            if (t.amount > 0) todayCredit += t.amount
+            else todayCollected += Math.abs(t.amount)
+          } else if (createdAt >= yesterdayStart && createdAt < todayStart) {
+            if (t.amount > 0) yesterdayCredit += t.amount
+            else yesterdayCollected += Math.abs(t.amount)
+          }
+        }
+      }
+
+      let outstanding = 0
+      let overdueCount = 0
+      for (const c of customers || []) {
+        const balance = (c.opening_balance || 0) + (balances[c.id] || 0)
+        if (balance > 0) {
+          outstanding += balance
+          overdueCount += 1
+        }
+      }
+
+      setSummary({
+        todayCredit,
+        todayCollected,
+        outstanding,
+        overdueCount,
+        todayCreditTrend: percentTrend(todayCredit, yesterdayCredit),
+        todayCollectedTrend: percentTrend(todayCollected, yesterdayCollected),
+      })
     } catch (error) {
       console.error('Error fetching dashboard summary:', error)
-      // Set mock data for now
-      setSummary({
-        todayCredit: 15000,
-        todayCollected: 8500,
-        outstanding: 42000,
-        overdueCount: 3,
-        todayCreditTrend: 12,
-        todayCollectedTrend: 8,
-        outstandingTrend: -3,
-        overdueTrend: -2,
-      })
+      setSummary(null)
     } finally {
       setLoading(false)
     }
@@ -109,15 +166,14 @@ export default function DashboardSummary() {
         value={summary.outstanding}
         icon={<i className="fa-solid fa-clock"></i>}
         color="var(--blue)"
-        trend={summary.outstandingTrend ? { value: summary.outstandingTrend, label: 'from yesterday' } : undefined}
       />
-      
+
       <SummaryCard
         title="Overdue"
         value={summary.overdueCount}
         icon={<i className="fa-solid fa-user-slash"></i>}
         color="#f97316"
-        trend={summary.overdueTrend ? { value: summary.overdueTrend, label: 'from yesterday' } : undefined}
+        format="count"
       />
       
       <style>{`

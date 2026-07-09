@@ -5,13 +5,14 @@ interface SummaryCardProps {
   value: string | number
   icon: React.ReactNode
   color: string
+  format?: 'currency' | 'count'
   trend?: {
     value: number
     label: string
   }
 }
 
-export default function SummaryCard({ title, value, icon, color, trend }: SummaryCardProps) {
+export default function SummaryCard({ title, value, icon, color, format = 'currency', trend }: SummaryCardProps) {
   return (
     <div className="summary-card">
       <style>{`
@@ -79,7 +80,11 @@ export default function SummaryCard({ title, value, icon, color, trend }: Summar
       </div>
       
       <div className="summary-card-value">
-        {typeof value === 'number' ? '₹' + value.toLocaleString('en-IN') : value}
+        {typeof value === 'number'
+          ? format === 'currency'
+            ? '₹' + value.toLocaleString('en-IN')
+            : value.toLocaleString('en-IN')
+          : value}
       </div>
       
       {trend && (
