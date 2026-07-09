@@ -725,6 +725,21 @@ input, select, button, textarea {
   transform: scale(0.95);
 }
 
+/* Summary cards grid: 2 per row on mobile, 4 per row on desktop */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 1024px) {
+  .summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+}
+
 @media (min-width: 768px) {
   .content {
     padding: 24px 40px;

@@ -27,6 +27,9 @@ export default function DashboardPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [amount, setAmount] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newPhone, setNewPhone] = useState('')
+  const [newOpeningBalance, setNewOpeningBalance] = useState('')
 
   const loadData = useCallback(async () => {
     try {
@@ -133,6 +136,16 @@ export default function DashboardPage() {
 
   const filteredList = getFilteredSorted()
 
+  const closeModal = () => {
+    setShowModal(false)
+    setModalMode('credit')
+    setSelectedCustomerId('')
+    setAmount('')
+    setNewName('')
+    setNewPhone('')
+    setNewOpeningBalance('')
+  }
+
   return (
     <>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
@@ -222,7 +235,7 @@ export default function DashboardPage() {
           <div className="modal-sheet">
             <div className="modal-head">
               <h3>{modalMode === 'credit' ? 'Add Credit' : 'Add Customer'}</h3>
-              <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+              <button className="modal-close" onClick={closeModal}>×</button>
             </div>
 
             {modalMode === 'credit' ? (
@@ -264,9 +277,7 @@ export default function DashboardPage() {
                       if (error) throw error
 
                       showToast('Credit added')
-                      setShowModal(false)
-                      setSelectedCustomerId('')
-                      setAmount('')
+                      closeModal()
                       loadData()
                     } catch {
                       showToast('Failed to add credit', 'error')
@@ -287,14 +298,71 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div>
-                <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginBottom: '16px' }}>
-                  Going to add customer page...
-                </p>
-                <Link href="/add-customer" style={{ textDecoration: 'none' }}>
-                  <button className="btn btn-primary btn-block">
-                    Go to Add Customer
-                  </button>
-                </Link>
+                <div className="field">
+                  <label>Name</label>
+                  <input
+                    type="text"
+                    placeholder="Customer name"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label>Phone (optional)</label>
+                  <input
+                    type="tel"
+                    placeholder="Phone number"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label>Opening Balance (optional)</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={newOpeningBalance}
+                    onChange={(e) => setNewOpeningBalance(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="btn btn-primary btn-block"
+                  disabled={!newName.trim() || submitting}
+                  onClick={async () => {
+                    if (!newName.trim()) return
+
+                    setSubmitting(true)
+                    try {
+                      const user = (await supabase.auth.getUser()).data.user
+                      if (!user) throw new Error('Not authenticated')
+
+                      const { error } = await supabase.from('customers').insert({
+                        user_id: user.id,
+                        name: newName.trim(),
+                        phone: newPhone.trim() || null,
+                        opening_balance: parseFloat(newOpeningBalance) || 0,
+                      })
+                      if (error) throw error
+
+                      showToast('Customer added')
+                      closeModal()
+                      loadData()
+                    } catch {
+                      showToast('Failed to add customer', 'error')
+                    } finally {
+                      setSubmitting(false)
+                    }
+                  }}
+                >
+                  {submitting ? <span className="spinner"></span> : 'Add Customer'}
+                </button>
+                <button
+                  className="btn btn-secondary btn-block"
+                  style={{ marginTop: '10px' }}
+                  onClick={() => setModalMode('credit')}
+                >
+                  Back
+                </button>
               </div>
             )}
           </div>

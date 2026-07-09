@@ -47,12 +47,7 @@ export default function DashboardSummary() {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
-        gap: '20px', 
-        marginBottom: '24px' 
-      }}>
+      <div className="summary-grid">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} style={{ 
             background: 'white', 
@@ -92,12 +87,7 @@ export default function DashboardSummary() {
   if (!summary) return null
 
   return (
-    <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
-      gap: '20px', 
-      marginBottom: '24px'
-    }}>
+    <div className="summary-grid">
       <SummaryCard
         title="Today Credit"
         value={summary.todayCredit}
