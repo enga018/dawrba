@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { formatDate, formatCurrency, formatTime } from '@/lib/utils'
+import { formatDate, formatCurrency, formatTime, formatTimestampDate } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 
@@ -400,7 +400,9 @@ export default function CustomerDetail() {
                     <div className="tx-note">
                       {tx.note || (isCredit ? 'Credit' : 'Payment')}
                       {tx.updated_at && tx.updated_at !== tx.created_at && (
-                        <span style={{ fontSize: '0.7rem', color: 'var(--meta)', marginLeft: '6px', fontStyle: 'italic' }}>(edited)</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--meta)', marginLeft: '6px', fontStyle: 'italic' }}>
+                          (edited {formatTimestampDate(tx.updated_at)}, {formatTime(tx.updated_at)})
+                        </span>
                       )}
                     </div>
                     <div className="tx-date">{formatDate(tx.date)}</div>

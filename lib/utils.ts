@@ -14,6 +14,16 @@ export function formatDate(dateStr?: string | null): string {
   })
 }
 
+export function formatTimestampDate(dateStr?: string | null): string {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 export function formatTime(dateStr?: string | null): string {
   if (!dateStr) return ''
   const d = new Date(dateStr)
