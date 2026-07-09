@@ -346,12 +346,13 @@ export default function CustomerDetail() {
 
       <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '8px' }}>Transactions</h3>
       <div className="tx-list">
-        {transactions.length === 0 ? (
+        {transactions.length === 0 && !(customer.opening_balance > 0) ? (
           <div className="empty">
             <p>No transactions yet.</p>
           </div>
         ) : (
-          transactions.map((tx) => {
+          <>
+          {transactions.map((tx) => {
             const isCredit = tx.amount > 0
             return (
               <div key={tx.id} className="tx-item">
@@ -394,7 +395,24 @@ export default function CustomerDetail() {
                 </div>
               </div>
             )
-          })
+          })}
+          {customer.opening_balance > 0 && (
+            <div className="tx-item">
+              <div className="tx-left">
+                <div className="tx-icon" style={{ background: '#f1f5f9', color: 'var(--muted)' }}>
+                  <i className="fa-solid fa-flag"></i>
+                </div>
+                <div>
+                  <div className="tx-note">Opening Balance</div>
+                  <div className="tx-date">{formatDate(customer.created_at)}</div>
+                </div>
+              </div>
+              <div className="tx-amount" style={{ color: 'var(--muted)' }}>
+                ₹{formatCurrency(customer.opening_balance)}
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
 
