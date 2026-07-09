@@ -26,6 +26,19 @@ interface Transaction {
   updated_at?: string
 }
 
+interface LogEntry {
+  id: string
+  transaction_id: string
+  event_type: 'insert' | 'update' | 'delete'
+  amount: number | null
+  note?: string
+  date?: string
+  previous_amount: number | null
+  previous_note?: string
+  previous_date?: string
+  created_at: string
+}
+
 export default function CustomerDetail() {
   const params = useParams()
   const router = useRouter()
@@ -34,6 +47,8 @@ export default function CustomerDetail() {
 
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([])
+  const [logLoading, setLogLoading] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -60,6 +75,7 @@ export default function CustomerDetail() {
 
   useEffect(() => {
     loadData()
+    loadLog()
     if (searchParams.get('addCredit') === '1') {
       setModalMode('credit')
       setShowModal(true)
@@ -111,11 +127,31 @@ export default function CustomerDetail() {
     }
   }, [customerId, router])
 
+  const loadLog = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transaction_logs')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setLogEntries(data || [])
+    } catch (err) {
+      console.error('Error loading transaction log:', err)
+    } finally {
+      setLogLoading(false)
+    }
+  }, [customerId])
+
   useEffect(() => {
-    const handleOnline = () => loadData()
+    const handleOnline = () => {
+      loadData()
+      loadLog()
+    }
     window.addEventListener('online', handleOnline)
     return () => window.removeEventListener('online', handleOnline)
-  }, [loadData])
+  }, [loadData, loadLog])
 
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -147,6 +183,7 @@ export default function CustomerDetail() {
       setTxNote('')
       setEditingTx(null)
       await loadData()
+      await loadLog()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save transaction'
       setError(msg)
@@ -172,6 +209,7 @@ export default function CustomerDetail() {
       setDeleteConfirm(null)
       showToast('Transaction deleted')
       await loadData()
+      await loadLog()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to delete transaction'
       setError(msg)
@@ -312,6 +350,92 @@ export default function CustomerDetail() {
                       <i className="fa-solid fa-trash-can"></i>
                     </button>
                   </div>
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '8px', marginTop: '20px' }}>
+        Activity Log
+      </h3>
+      <div className="tx-list">
+        {logLoading ? (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <div className="spinner" style={{ margin: '0 auto' }}></div>
+          </div>
+        ) : logEntries.length === 0 ? (
+          <div className="empty">
+            <p>No activity yet.</p>
+          </div>
+        ) : (
+          logEntries.map((entry) => {
+            if (entry.event_type === 'insert') {
+              const isCredit = (entry.amount || 0) > 0
+              return (
+                <div key={entry.id} className="tx-item">
+                  <div className="tx-left">
+                    <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
+                      <i className="fa-solid fa-plus"></i>
+                    </div>
+                    <div>
+                      <div className="tx-note">
+                        {isCredit ? 'Credit added' : 'Payment recorded'}
+                        {entry.note ? ` · ${entry.note}` : ''}
+                      </div>
+                      <div className="tx-date">{formatRelativeTime(entry.created_at)}</div>
+                    </div>
+                  </div>
+                  <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
+                    {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(entry.amount || 0))}
+                  </div>
+                </div>
+              )
+            }
+
+            if (entry.event_type === 'update') {
+              return (
+                <div key={entry.id} className="tx-item">
+                  <div className="tx-left">
+                    <div className="tx-icon" style={{ background: '#eff6ff', color: 'var(--blue)' }}>
+                      <i className="fa-solid fa-pen"></i>
+                    </div>
+                    <div>
+                      <div className="tx-note">Edited</div>
+                      <div className="tx-date">{formatRelativeTime(entry.created_at)}</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--meta)', textDecoration: 'line-through' }}>
+                      ₹{formatCurrency(Math.abs(entry.previous_amount || 0))}
+                    </span>
+                    {' → '}
+                    <span style={{ fontWeight: 700 }}>
+                      ₹{formatCurrency(Math.abs(entry.amount || 0))}
+                    </span>
+                  </div>
+                </div>
+              )
+            }
+
+            const wasCredit = (entry.previous_amount || 0) > 0
+            return (
+              <div key={entry.id} className="tx-item">
+                <div className="tx-left">
+                  <div className="tx-icon" style={{ background: '#fef2f2', color: 'var(--red)' }}>
+                    <i className="fa-solid fa-trash-can"></i>
+                  </div>
+                  <div>
+                    <div className="tx-note">
+                      {wasCredit ? 'Credit' : 'Payment'} deleted
+                      {entry.previous_note ? ` · ${entry.previous_note}` : ''}
+                    </div>
+                    <div className="tx-date">{formatRelativeTime(entry.created_at)}</div>
+                  </div>
+                </div>
+                <div className="tx-amount" style={{ color: 'var(--meta)', textDecoration: 'line-through' }}>
+                  ₹{formatCurrency(Math.abs(entry.previous_amount || 0))}
                 </div>
               </div>
             )
