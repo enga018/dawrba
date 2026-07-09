@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 import { getInitials, formatCurrency, formatRelativeTime } from '@/lib/utils'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
+import { showToast } from '@/lib/toast'
 import DashboardSummary from './DashboardSummary'
 
 interface Customer {
@@ -28,10 +30,42 @@ export default function DashboardPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const res = await fetch('/api/customers')
-      const customersData = await res.json()
-      setCustomers(customersData || [])
-      cacheCustomers(customersData || [])
+      const user = (await supabase.auth.getUser()).data.user
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
+      const { data: customersData, error: customersError } = await supabase
+        .from('customers')
+        .select('id, name, phone, opening_balance, created_at')
+        .eq('user_id', user.id)
+
+      if (customersError) throw customersError
+
+      const ids = (customersData || []).map((c) => c.id)
+      const balances: Record<string, number> = {}
+
+      if (ids.length > 0) {
+        const { data: txData, error: txError } = await supabase
+          .from('transactions')
+          .select('customer_id, amount')
+          .in('customer_id', ids)
+
+        if (txError) throw txError
+
+        for (const t of txData || []) {
+          balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
+        }
+      }
+
+      const withBalance = (customersData || []).map((c) => ({
+        ...c,
+        balance: (c.opening_balance || 0) + (balances[c.id] || 0),
+      }))
+
+      setCustomers(withBalance)
+      cacheCustomers(withBalance)
     } catch {
       const cached = getCachedCustomers<Customer>()
       if (cached && cached.length > 0) {
@@ -217,9 +251,28 @@ export default function DashboardPage() {
                 <button
                   className="btn btn-primary btn-block"
                   disabled={!selectedCustomerId || !amount || submitting}
-                  onClick={() => {
-                    // Handle add credit
-                    setShowModal(false)
+                  onClick={async () => {
+                    const value = parseFloat(amount)
+                    if (!selectedCustomerId || !value) return
+
+                    setSubmitting(true)
+                    try {
+                      const { error } = await supabase.from('transactions').insert({
+                        customer_id: selectedCustomerId,
+                        amount: value,
+                      })
+                      if (error) throw error
+
+                      showToast('Credit added')
+                      setShowModal(false)
+                      setSelectedCustomerId('')
+                      setAmount('')
+                      loadData()
+                    } catch {
+                      showToast('Failed to add credit', 'error')
+                    } finally {
+                      setSubmitting(false)
+                    }
                   }}
                 >
                   {submitting ? <span className="spinner"></span> : 'Add Credit'}
