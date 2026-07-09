@@ -92,6 +92,13 @@ export default function AppLayout({
           </button>
           <button
             className="header-btn"
+            title="Transaction Log"
+            onClick={() => router.push('/transactions')}
+          >
+            <i className="fa-solid fa-receipt"></i>
+          </button>
+          <button
+            className="header-btn"
             title="Settings"
             onClick={() => router.push('/settings')}
           >
