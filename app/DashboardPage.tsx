@@ -20,6 +20,11 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortValue, setSortValue] = useState('name-asc')
   const [offline, setOffline] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [modalMode, setModalMode] = useState<'credit' | 'add-customer'>('credit')
+  const [selectedCustomerId, setSelectedCustomerId] = useState('')
+  const [amount, setAmount] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -165,16 +170,83 @@ export default function DashboardPage() {
         </>
       )}
 
-      <Link href={offline ? '#' : '/add-customer'}>
-        <button
-          className="add-btn"
-          title={offline ? 'Unavailable offline' : 'Add customer'}
-          disabled={offline}
-          style={{ opacity: offline ? 0.5 : 1, cursor: offline ? 'not-allowed' : 'pointer' }}
-        >
-          <i className="fa-solid fa-plus"></i>
-        </button>
-      </Link>
+      <button
+        className="add-btn"
+        title={offline ? 'Unavailable offline' : 'Add credit or customer'}
+        disabled={offline}
+        onClick={() => {
+          setShowModal(true)
+          setModalMode('credit')
+        }}
+        style={{ opacity: offline ? 0.5 : 1, cursor: offline ? 'not-allowed' : 'pointer' }}
+      >
+        <i className="fa-solid fa-plus"></i>
+      </button>
+
+      {showModal && (
+        <div className="modal-backdrop active">
+          <div className="modal-sheet">
+            <div className="modal-head">
+              <h3>{modalMode === 'credit' ? 'Add Credit' : 'Add Customer'}</h3>
+              <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+            </div>
+
+            {modalMode === 'credit' ? (
+              <div>
+                <div className="field">
+                  <label>Select Customer</label>
+                  <select
+                    value={selectedCustomerId}
+                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                  >
+                    <option value="">Choose a customer...</option>
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Amount (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="btn btn-primary btn-block"
+                  disabled={!selectedCustomerId || !amount || submitting}
+                  onClick={() => {
+                    // Handle add credit
+                    setShowModal(false)
+                  }}
+                >
+                  {submitting ? <span className="spinner"></span> : 'Add Credit'}
+                </button>
+                <button
+                  className="btn btn-secondary btn-block"
+                  style={{ marginTop: '10px' }}
+                  onClick={() => setModalMode('add-customer')}
+                >
+                  Add New Customer Instead
+                </button>
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginBottom: '16px' }}>
+                  Going to add customer page...
+                </p>
+                <Link href="/add-customer" style={{ textDecoration: 'none' }}>
+                  <button className="btn btn-primary btn-block">
+                    Go to Add Customer
+                  </button>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       </div>
     </>
   )
