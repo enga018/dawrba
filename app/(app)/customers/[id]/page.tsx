@@ -29,7 +29,7 @@ interface Transaction {
 interface LogEntry {
   id: string
   transaction_id: string
-  event_type: 'insert' | 'update' | 'delete' | 'opening_balance'
+  event_type: 'insert' | 'update' | 'delete' | 'opening_balance' | 'opening_balance_update'
   amount: number | null
   note?: string
   date?: string
@@ -45,6 +45,10 @@ function formatLogEntry(entry: LogEntry): string {
 
   if (entry.event_type === 'opening_balance') {
     return `Opening balance of ₹${formatCurrency(Math.abs(entry.amount || 0))} set on ${dateStr}, ${timeStr}`
+  }
+
+  if (entry.event_type === 'opening_balance_update') {
+    return `Opening balance was edited from ₹${formatCurrency(Math.abs(entry.previous_amount || 0))} to ₹${formatCurrency(Math.abs(entry.amount || 0))} on ${dateStr} at ${timeStr}`
   }
 
   if (entry.event_type === 'insert') {
@@ -87,6 +91,9 @@ export default function CustomerDetail() {
   const [editingTx, setEditingTx] = useState<Transaction | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false)
+  const [openingBalanceInput, setOpeningBalanceInput] = useState('')
+  const [savingOpeningBalance, setSavingOpeningBalance] = useState(false)
 
   useEffect(() => {
     setOffline(!navigator.onLine)
@@ -252,6 +259,35 @@ export default function CustomerDetail() {
     }
   }
 
+  const openOpeningBalanceModal = () => {
+    setOpeningBalanceInput(customer ? String(customer.opening_balance) : '')
+    setShowOpeningBalanceModal(true)
+  }
+
+  const handleSaveOpeningBalance = async () => {
+    const value = parseFloat(openingBalanceInput)
+    if (isNaN(value) || value < 0) return
+
+    setSavingOpeningBalance(true)
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update({ opening_balance: value })
+        .eq('id', customerId)
+      if (error) throw error
+
+      showToast('Opening balance updated')
+      setShowOpeningBalanceModal(false)
+      await loadData()
+      if (logLoaded) await loadLog()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update opening balance'
+      showToast(msg, 'error')
+    } finally {
+      setSavingOpeningBalance(false)
+    }
+  }
+
   const handleWhatsApp = () => {
     if (!customer || !customer.phone) {
       alert('No phone number for this customer')
@@ -407,13 +443,56 @@ export default function CustomerDetail() {
                   <div className="tx-date">{formatDate(customer.created_at)}</div>
                 </div>
               </div>
-              <div className="tx-amount" style={{ color: 'var(--muted)' }}>
-                ₹{formatCurrency(customer.opening_balance)}
+              <div className="tx-actions">
+                <div className="tx-amount" style={{ color: 'var(--muted)' }}>
+                  ₹{formatCurrency(customer.opening_balance)}
+                </div>
+                <div className="tx-btns">
+                  <button
+                    className="tx-btn"
+                    disabled={offline}
+                    onClick={openOpeningBalanceModal}
+                    title="Edit"
+                  >
+                    <i className="fa-solid fa-pen"></i>
+                  </button>
+                </div>
               </div>
             </div>
           )}
           </>
         )}
+      </div>
+
+      {/* Edit Opening Balance modal */}
+      <div className={`modal-backdrop ${showOpeningBalanceModal ? 'active' : ''}`} onClick={() => setShowOpeningBalanceModal(false)}>
+        <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-head">
+            <h3>Edit Opening Balance</h3>
+            <button className="modal-close" onClick={() => setShowOpeningBalanceModal(false)}>
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div className="field">
+            <label htmlFor="openingBalance">Amount (₹)</label>
+            <input
+              type="number"
+              id="openingBalance"
+              placeholder="0"
+              min="0"
+              step="1"
+              value={openingBalanceInput}
+              onChange={(e) => setOpeningBalanceInput(e.target.value)}
+            />
+          </div>
+          <button
+            className="btn btn-primary btn-block"
+            disabled={savingOpeningBalance}
+            onClick={handleSaveOpeningBalance}
+          >
+            {savingOpeningBalance ? <span className="spinner"></span> : 'Save'}
+          </button>
+        </div>
       </div>
 
       {/* Activity Log modal */}
