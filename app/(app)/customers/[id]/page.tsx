@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { formatDate, formatCurrency, formatTime } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 
@@ -41,26 +41,27 @@ interface LogEntry {
 
 function formatLogEntry(entry: LogEntry): string {
   const dateStr = formatDate(entry.date || entry.created_at)
+  const timeStr = formatTime(entry.created_at)
 
   if (entry.event_type === 'opening_balance') {
-    return `Opening balance of ₹${formatCurrency(Math.abs(entry.amount || 0))} set on ${dateStr}`
+    return `Opening balance of ₹${formatCurrency(Math.abs(entry.amount || 0))} set on ${dateStr}, ${timeStr}`
   }
 
   if (entry.event_type === 'insert') {
     const isCredit = (entry.amount || 0) > 0
     const label = isCredit ? 'Credit given' : 'Payment received'
-    return `${label} on ${dateStr} · ₹${formatCurrency(Math.abs(entry.amount || 0))}`
+    return `${label} on ${dateStr}, ${timeStr} · ₹${formatCurrency(Math.abs(entry.amount || 0))}`
   }
 
   if (entry.event_type === 'update') {
     const wasCredit = (entry.previous_amount || 0) > 0
     const label = wasCredit ? 'Credit given' : 'Payment received'
-    return `${label} on ${dateStr} was edited from ₹${formatCurrency(Math.abs(entry.previous_amount || 0))} to ₹${formatCurrency(Math.abs(entry.amount || 0))}`
+    return `${label} on ${dateStr} was edited from ₹${formatCurrency(Math.abs(entry.previous_amount || 0))} to ₹${formatCurrency(Math.abs(entry.amount || 0))} at ${timeStr}`
   }
 
   const wasCredit = (entry.previous_amount || 0) > 0
   const label = wasCredit ? 'Credit given' : 'Payment received'
-  return `${label} on ${dateStr} was deleted (₹${formatCurrency(Math.abs(entry.previous_amount || 0))})`
+  return `${label} on ${dateStr} was deleted (₹${formatCurrency(Math.abs(entry.previous_amount || 0))}) at ${timeStr}`
 }
 
 export default function CustomerDetail() {

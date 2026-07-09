@@ -14,6 +14,16 @@ export function formatDate(dateStr?: string | null): string {
   })
 }
 
+export function formatTime(dateStr?: string | null): string {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return d.toLocaleTimeString('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
 export function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-IN')
 }
