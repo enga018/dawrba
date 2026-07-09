@@ -1,16 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { formatDate, formatCurrency, formatRelativeTime } from '@/lib/utils'
+import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
+import { showToast } from '@/lib/toast'
 
 interface Customer {
   id: string
   name: string
   phone?: string
+  opening_balance: number
   balance: number
+  created_at?: string
 }
 
 interface Transaction {
@@ -19,6 +23,7 @@ interface Transaction {
   note?: string
   date?: string
   created_at: string
+  updated_at?: string
 }
 
 export default function CustomerDetail() {
@@ -36,6 +41,22 @@ export default function CustomerDetail() {
   const [txAmount, setTxAmount] = useState('')
   const [txNote, setTxNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [offline, setOffline] = useState(false)
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    setOffline(!navigator.onLine)
+    const handleOffline = () => setOffline(true)
+    const handleOnline = () => setOffline(false)
+    window.addEventListener('offline', handleOffline)
+    window.addEventListener('online', handleOnline)
+    return () => {
+      window.removeEventListener('offline', handleOffline)
+      window.removeEventListener('online', handleOnline)
+    }
+  }, [])
 
   useEffect(() => {
     loadData()
@@ -45,7 +66,7 @@ export default function CustomerDetail() {
     }
   }, [])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const user = (await supabase.auth.getUser()).data.user
       if (!user) {
@@ -53,17 +74,15 @@ export default function CustomerDetail() {
         return
       }
 
-      // Load customer
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
-        .select('id, name, phone')
+        .select('id, name, phone, opening_balance, created_at')
         .eq('id', customerId)
         .eq('user_id', user.id)
         .single()
 
       if (customerError) throw customerError
 
-      // Load transactions
       const { data: txData, error: txError } = await supabase
         .from('transactions')
         .select('*')
@@ -73,15 +92,30 @@ export default function CustomerDetail() {
 
       if (txError) throw txError
 
-      const balance = (txData || []).reduce((sum, t) => sum + (t.amount || 0), 0)
-      setCustomer({ ...customerData, balance })
+      const ob = customerData.opening_balance || 0
+      const txSum = (txData || []).reduce((sum, t) => sum + (t.amount || 0), 0)
+      setCustomer({ ...customerData, opening_balance: ob, balance: ob + txSum })
       setTransactions(txData || [])
+      cacheTransactions(customerId, txData || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load customer')
+      const cached = getCachedTransactions<Transaction>(customerId)
+      if (cached && cached.length > 0) {
+        const balance = cached.reduce((sum, t) => sum + (t.amount || 0), 0)
+        setCustomer({ id: customerId, name: 'Cached Customer', opening_balance: 0, balance } as Customer)
+        setTransactions(cached)
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to load customer')
+      }
     } finally {
       setLoading(false)
     }
-  }
+  }, [customerId, router])
+
+  useEffect(() => {
+    const handleOnline = () => loadData()
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [loadData])
 
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -90,21 +124,60 @@ export default function CustomerDetail() {
     setSubmitting(true)
     try {
       const amount = modalMode === 'pay' ? -parseFloat(txAmount) : parseFloat(txAmount)
-      const { error } = await supabase.from('transactions').insert({
-        customer_id: customerId,
-        amount,
-        note: txNote || null,
-      })
 
-      if (error) throw error
+      if (editingTx) {
+        const { error } = await supabase
+          .from('transactions')
+          .update({ amount, note: txNote || null, updated_at: new Date().toISOString() })
+          .eq('id', editingTx.id)
+        if (error) throw error
+        showToast('Transaction updated')
+      } else {
+        const { error } = await supabase.from('transactions').insert({
+          customer_id: customerId,
+          amount,
+          note: txNote || null,
+        })
+        if (error) throw error
+        showToast(modalMode === 'credit' ? 'Credit added' : 'Payment recorded')
+      }
+
       setShowModal(false)
       setTxAmount('')
       setTxNote('')
+      setEditingTx(null)
       await loadData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save transaction')
+      const msg = err instanceof Error ? err.message : 'Failed to save transaction'
+      setError(msg)
+      showToast(msg, 'error')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleEdit = (tx: Transaction) => {
+    setEditingTx(tx)
+    setTxAmount(String(Math.abs(tx.amount)))
+    setTxNote(tx.note || '')
+    setModalMode(tx.amount > 0 ? 'credit' : 'pay')
+    setShowModal(true)
+  }
+
+  const handleDelete = async (txId: string) => {
+    setDeleting(true)
+    try {
+      const { error } = await supabase.from('transactions').delete().eq('id', txId)
+      if (error) throw error
+      setDeleteConfirm(null)
+      showToast('Transaction deleted')
+      await loadData()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete transaction'
+      setError(msg)
+      showToast(msg, 'error')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -117,6 +190,14 @@ export default function CustomerDetail() {
     const balance = customer.balance.toLocaleString('en-IN')
     const msg = `Hi ${customer.name}, this is a friendly reminder about your pending balance of ₹${balance}. Please clear it at your earliest convenience.`
     window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+  }
+
+  const openAddModal = (mode: 'credit' | 'pay') => {
+    setEditingTx(null)
+    setTxAmount('')
+    setTxNote('')
+    setModalMode(mode)
+    setShowModal(true)
   }
 
   if (loading) {
@@ -133,15 +214,7 @@ export default function CustomerDetail() {
 
   return (
     <>
-      <style>{`
-        .modal-backdrop.active {
-          opacity: 1;
-          visibility: visible;
-          pointer-events: auto;
-        }
-      `}</style>
-
-      <Link href="/dashboard">
+      <Link href="/">
         <div className="back-row">
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>
@@ -159,22 +232,30 @@ export default function CustomerDetail() {
         <div className={`detail-balance ${customer.balance <= 0 ? 'zero' : ''}`}>
           ₹{formatCurrency(customer.balance)}
         </div>
+        {customer.opening_balance > 0 && (
+          <div style={{ fontSize: '0.82rem', color: 'var(--meta)', marginTop: '4px' }}>
+            Opening balance: ₹{formatCurrency(customer.opening_balance)}
+          </div>
+        )}
+        {customer.created_at && (
+          <div style={{ fontSize: '0.75rem', color: 'var(--meta)', marginTop: '8px' }}>
+            Customer since {formatDate(customer.created_at)}
+          </div>
+        )}
         <div className="detail-actions">
           <button
             className="btn btn-red btn-sm"
-            onClick={() => {
-              setModalMode('credit')
-              setShowModal(true)
-            }}
+            disabled={offline}
+            onClick={() => openAddModal('credit')}
+            title={offline ? 'Unavailable offline' : 'Add Credit'}
           >
             <i className="fa-solid fa-plus"></i> Add Credit
           </button>
           <button
             className="btn btn-green btn-sm"
-            onClick={() => {
-              setModalMode('pay')
-              setShowModal(true)
-            }}
+            disabled={offline}
+            onClick={() => openAddModal('pay')}
+            title={offline ? 'Unavailable offline' : 'Collect Payment'}
           >
             <i className="fa-solid fa-arrow-right"></i> Collect
           </button>
@@ -200,12 +281,37 @@ export default function CustomerDetail() {
                     <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-minus'}`}></i>
                   </div>
                   <div>
-                    <div className="tx-note">{tx.note || (isCredit ? 'Credit' : 'Payment')}</div>
+                    <div className="tx-note">
+                      {tx.note || (isCredit ? 'Credit' : 'Payment')}
+                      {tx.updated_at && tx.updated_at !== tx.created_at && (
+                        <span style={{ fontSize: '0.7rem', color: 'var(--meta)', marginLeft: '6px', fontStyle: 'italic' }}>(edited)</span>
+                      )}
+                    </div>
                     <div className="tx-date">{formatDate(tx.date)}</div>
                   </div>
                 </div>
-                <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
-                  {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
+                <div className="tx-actions">
+                  <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
+                    {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
+                  </div>
+                  <div className="tx-btns">
+                    <button
+                      className="tx-btn"
+                      disabled={offline}
+                      onClick={() => handleEdit(tx)}
+                      title="Edit"
+                    >
+                      <i className="fa-solid fa-pen"></i>
+                    </button>
+                    <button
+                      className="tx-btn tx-btn-del"
+                      disabled={offline}
+                      onClick={() => setDeleteConfirm(tx.id)}
+                      title="Delete"
+                    >
+                      <i className="fa-solid fa-trash-can"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             )
@@ -213,11 +319,48 @@ export default function CustomerDetail() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Delete confirmation */}
+      {deleteConfirm && (
+        <div className="modal-backdrop active" onClick={() => !deleting && setDeleteConfirm(null)}>
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>Delete transaction?</h3>
+              <button
+                className="modal-close"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <p style={{ margin: '16px 0', color: 'var(--muted)', fontSize: '0.9rem' }}>
+              This action cannot be undone. The customer balance will be recalculated.
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="btn btn-secondary btn-block"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-red btn-block"
+                onClick={() => handleDelete(deleteConfirm)}
+                disabled={deleting}
+              >
+                {deleting ? <span className="spinner"></span> : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
       <div className={`modal-backdrop ${showModal ? 'active' : ''}`} onClick={() => setShowModal(false)}>
         <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
-            <h3>{modalMode === 'credit' ? 'Add Credit' : 'Collect Payment'}</h3>
+            <h3>{editingTx ? 'Edit Transaction' : modalMode === 'credit' ? 'Add Credit' : 'Collect Payment'}</h3>
             <button
               className="modal-close"
               onClick={() => setShowModal(false)}
@@ -252,12 +395,49 @@ export default function CustomerDetail() {
               />
             </div>
             <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-              {submitting ? <span className="spinner"></span> : 'Save'}
+              {submitting ? <span className="spinner"></span> : editingTx ? 'Update' : 'Save'}
             </button>
           </form>
           {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
         </div>
       </div>
+
+      <style>{`
+        .tx-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .tx-btns {
+          display: flex;
+          gap: 4px;
+        }
+        .tx-btn {
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--meta);
+          cursor: pointer;
+          display: grid;
+          place-items: center;
+          font-size: 0.75rem;
+          transition: all 0.15s ease;
+        }
+        .tx-btn:hover {
+          border-color: var(--blue);
+          color: var(--blue);
+        }
+        .tx-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+        .tx-btn-del:hover {
+          border-color: var(--red);
+          color: var(--red);
+        }
+      `}</style>
     </>
   )
 }

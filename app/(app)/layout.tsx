@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import OfflineBanner from '@/app/OfflineBanner'
 import type { User } from '@supabase/supabase-js'
 
 export default function AppLayout({
@@ -70,18 +71,32 @@ export default function AppLayout({
 
   return (
     <>
+      <OfflineBanner />
       <div className="header">
         <h1>DawrBa<span className="dot"></span></h1>
         <div className="header-actions">
           {shopName && (
             <button
               className="header-shop-name"
-              title="Edit shop name"
-              onClick={() => router.push('/setup')}
+              title={shopName}
             >
               {shopName}
             </button>
           )}
+          <button
+            className="header-btn"
+            title="Daily Summary"
+            onClick={() => router.push('/daily-summary')}
+          >
+            <i className="fa-solid fa-calendar-day"></i>
+          </button>
+          <button
+            className="header-btn"
+            title="Settings"
+            onClick={() => router.push('/settings')}
+          >
+            <i className="fa-solid fa-gear"></i>
+          </button>
           <button
             className="header-btn"
             title="Logout"

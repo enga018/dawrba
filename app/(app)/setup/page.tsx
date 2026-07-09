@@ -25,7 +25,7 @@ export default function Setup() {
       })
 
       if (dbError) throw dbError
-      router.push('/dashboard')
+      router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Setup failed')
     } finally {

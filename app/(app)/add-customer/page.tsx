@@ -16,6 +16,7 @@ export default function AddCustomer() {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
+    openingBalance: '',
     amount: '',
     note: '',
   })
@@ -61,12 +62,14 @@ export default function AddCustomer() {
       const user = (await supabase.auth.getUser()).data.user
       if (!user) throw new Error('Not authenticated')
 
+      const ob = parseFloat(formData.openingBalance) || 0
       const { data: customer, error: customerError } = await supabase
         .from('customers')
         .insert({
           user_id: user.id,
           name: formData.name,
           phone: formData.phone || null,
+          opening_balance: ob,
         })
         .select()
         .single()
@@ -82,7 +85,7 @@ export default function AddCustomer() {
         if (txError) throw txError
       }
 
-      router.push('/dashboard')
+      router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add customer')
     } finally {
@@ -92,7 +95,7 @@ export default function AddCustomer() {
 
   return (
     <>
-      <Link href="/dashboard">
+      <Link href="/">
         <div className="back-row">
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>
@@ -171,12 +174,25 @@ export default function AddCustomer() {
             onChange={handleChange}
           />
         </div>
+        <div className="field">
+          <label htmlFor="openingBalance">Opening balance (₹) <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span></label>
+          <input
+            type="number"
+            id="openingBalance"
+            name="openingBalance"
+            placeholder="0"
+            min="0"
+            step="1"
+            value={formData.openingBalance}
+            onChange={handleChange}
+          />
+        </div>
         <button
           type="button"
           className="add-extra-toggle"
           onClick={() => setShowExtra(!showExtra)}
         >
-          <i className="fa-solid fa-chevron-down"></i> Add initial credit
+          <i className="fa-solid fa-chevron-down"></i> Add initial credit (extra)
         </button>
         {showExtra && (
           <div className="add-extra show">

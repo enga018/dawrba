@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import '../styles/globals.css'
+import ToastContainer from './ToastContainer'
 
 export const metadata: Metadata = {
   title: 'DawrBa',
@@ -33,7 +34,7 @@ export default function RootLayout({
       </head>
       <body>
         {children}
-        <div id="toast" className="toast"></div>
+        <ToastContainer />
       </body>
     </html>
   )
