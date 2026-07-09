@@ -4,9 +4,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { formatDate, formatCurrency, formatTime } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
+import { formatLogEntry, type LogEntry } from '@/lib/transactionLog'
 
 interface Customer {
   id: string
@@ -24,48 +25,6 @@ interface Transaction {
   date?: string
   created_at: string
   updated_at?: string
-}
-
-interface LogEntry {
-  id: string
-  transaction_id: string
-  event_type: 'insert' | 'update' | 'delete' | 'opening_balance' | 'opening_balance_update'
-  amount: number | null
-  note?: string
-  date?: string
-  previous_amount: number | null
-  previous_note?: string
-  previous_date?: string
-  created_at: string
-}
-
-function formatLogEntry(entry: LogEntry): string {
-  const dateStr = formatDate(entry.date || entry.created_at)
-  const timeStr = formatTime(entry.created_at)
-
-  if (entry.event_type === 'opening_balance') {
-    return `Opening balance of ₹${formatCurrency(Math.abs(entry.amount || 0))} set on ${dateStr}, ${timeStr}`
-  }
-
-  if (entry.event_type === 'opening_balance_update') {
-    return `Opening balance was edited from ₹${formatCurrency(Math.abs(entry.previous_amount || 0))} to ₹${formatCurrency(Math.abs(entry.amount || 0))} on ${dateStr} at ${timeStr}`
-  }
-
-  if (entry.event_type === 'insert') {
-    const isCredit = (entry.amount || 0) > 0
-    const label = isCredit ? 'Credit given' : 'Payment received'
-    return `${label} on ${dateStr}, ${timeStr} · ₹${formatCurrency(Math.abs(entry.amount || 0))}`
-  }
-
-  if (entry.event_type === 'update') {
-    const wasCredit = (entry.previous_amount || 0) > 0
-    const label = wasCredit ? 'Credit given' : 'Payment received'
-    return `${label} on ${dateStr} was edited from ₹${formatCurrency(Math.abs(entry.previous_amount || 0))} to ₹${formatCurrency(Math.abs(entry.amount || 0))} at ${timeStr}`
-  }
-
-  const wasCredit = (entry.previous_amount || 0) > 0
-  const label = wasCredit ? 'Credit given' : 'Payment received'
-  return `${label} on ${dateStr} was deleted (₹${formatCurrency(Math.abs(entry.previous_amount || 0))}) at ${timeStr}`
 }
 
 export default function CustomerDetail() {
@@ -335,7 +294,7 @@ export default function CustomerDetail() {
           className="tx-btn"
           style={{ position: 'absolute', top: '16px', right: '16px' }}
           onClick={openLogModal}
-          title="Activity Log"
+          title="Transaction Log"
         >
           <i className="fa-solid fa-clock-rotate-left"></i>
         </button>
@@ -492,11 +451,11 @@ export default function CustomerDetail() {
         </div>
       </div>
 
-      {/* Activity Log modal */}
+      {/* Transaction Log modal */}
       <div className={`modal-backdrop ${showLogModal ? 'active' : ''}`} onClick={() => setShowLogModal(false)}>
         <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
-            <h3>Activity Log</h3>
+            <h3>Transaction Log</h3>
             <button className="modal-close" onClick={() => setShowLogModal(false)}>
               <i className="fa-solid fa-xmark"></i>
             </button>
