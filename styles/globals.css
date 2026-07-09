@@ -729,8 +729,8 @@ input, select, button, textarea {
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-  margin-bottom: 24px;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
 @media (min-width: 1024px) {

@@ -72,6 +72,30 @@ export default function SummaryCard({ title, value, icon, color, format = 'curre
         .trend-neutral {
           color: var(--meta);
         }
+        @media (max-width: 767px) {
+          .summary-card {
+            padding: 12px;
+            border-radius: 14px;
+          }
+          .summary-card-header {
+            margin-bottom: 6px;
+          }
+          .summary-card-title {
+            font-size: 0.68rem;
+          }
+          .summary-card-icon {
+            width: 26px;
+            height: 26px;
+            font-size: 0.8rem;
+          }
+          .summary-card-value {
+            font-size: 1.15rem;
+            margin-bottom: 2px;
+          }
+          .summary-card-trend {
+            font-size: 0.7rem;
+          }
+        }
       `}</style>
       
       <div className="summary-card-header">
