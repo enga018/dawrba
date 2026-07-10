@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { formatLogEntry, type LogEntry } from '@/lib/transactionLog'
+
+const PAGE_SIZE = 20
 
 export default function CustomerTransactionLogPage() {
   const params = useParams()
@@ -14,6 +16,20 @@ export default function CustomerTransactionLogPage() {
   const [customerName, setCustomerName] = useState('')
   const [entries, setEntries] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+
+  const loadPage = useCallback(async (offset: number) => {
+    const { data, error } = await supabase
+      .from('transaction_logs')
+      .select('*')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1)
+
+    if (error || !data) return []
+    return data
+  }, [customerId])
 
   useEffect(() => {
     const load = async () => {
@@ -32,21 +48,21 @@ export default function CustomerTransactionLogPage() {
 
       if (customerData) setCustomerName(customerData.name)
 
-      const { data, error } = await supabase
-        .from('transaction_logs')
-        .select('*')
-        .eq('customer_id', customerId)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error loading transaction log:', error)
-      } else {
-        setEntries(data || [])
-      }
+      const page = await loadPage(0)
+      setEntries(page)
+      setHasMore(page.length === PAGE_SIZE)
       setLoading(false)
     }
     load()
-  }, [customerId, router])
+  }, [customerId, router, loadPage])
+
+  const handleSeeMore = async () => {
+    setLoadingMore(true)
+    const page = await loadPage(entries.length)
+    setEntries((prev) => [...prev, ...page])
+    setHasMore(page.length === PAGE_SIZE)
+    setLoadingMore(false)
+  }
 
   if (loading) {
     return (
@@ -89,6 +105,17 @@ export default function CustomerTransactionLogPage() {
           ))
         )}
       </div>
+
+      {hasMore && (
+        <button
+          className="btn btn-secondary btn-sm btn-block"
+          style={{ marginTop: '12px' }}
+          disabled={loadingMore}
+          onClick={handleSeeMore}
+        >
+          {loadingMore ? <span className="spinner"></span> : 'See more'}
+        </button>
+      )}
     </>
   )
 }

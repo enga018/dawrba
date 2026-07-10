@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newOpeningBalance, setNewOpeningBalance] = useState('')
+  const [visibleCount, setVisibleCount] = useState(20)
 
   const loadData = useCallback(async () => {
     try {
@@ -137,6 +138,10 @@ export default function DashboardPage() {
 
   const filteredList = getFilteredSorted()
 
+  useEffect(() => {
+    setVisibleCount(20)
+  }, [searchQuery, sortValue])
+
   const closeModal = () => {
     setShowModal(false)
     setModalMode('credit')
@@ -190,31 +195,43 @@ export default function DashboardPage() {
           <DashboardSummary />
 
           <div className="dashboard-columns">
-            <div className="customer-list">
-              {filteredList.map((customer) => (
-                <Link
-                  key={customer.id}
-                  href={`/customers/${customer.id}`}
-                  className="customer-card"
-                  style={{ textDecoration: 'none' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                    <div className="avatar">{getInitials(customer.name)}</div>
-                    <div>
-                      <div className="cc-name">{customer.name}</div>
-                      <div className="cc-meta">
-                        {customer.phone || (customer.created_at ? formatRelativeTime(customer.created_at) : '')}
-                        {customer.phone && customer.created_at ? ` · ${formatRelativeTime(customer.created_at)}` : ''}
+            <div>
+              <div className="customer-list">
+                {filteredList.slice(0, visibleCount).map((customer) => (
+                  <Link
+                    key={customer.id}
+                    href={`/customers/${customer.id}`}
+                    className="customer-card"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                      <div className="avatar">{getInitials(customer.name)}</div>
+                      <div>
+                        <div className="cc-name">{customer.name}</div>
+                        <div className="cc-meta">
+                          {customer.phone || (customer.created_at ? formatRelativeTime(customer.created_at) : '')}
+                          {customer.phone && customer.created_at ? ` · ${formatRelativeTime(customer.created_at)}` : ''}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
-                    {(customer.balance || 0) <= 0
-                      ? '₹0'
-                      : '₹' + formatCurrency(customer.balance || 0)}
-                  </div>
-                </Link>
-              ))}
+                    <div className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
+                      {(customer.balance || 0) <= 0
+                        ? '₹0'
+                        : '₹' + formatCurrency(customer.balance || 0)}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              {filteredList.length > visibleCount && (
+                <button
+                  className="btn btn-secondary btn-sm btn-block"
+                  style={{ marginTop: '12px' }}
+                  onClick={() => setVisibleCount((prev) => prev + 20)}
+                >
+                  See more
+                </button>
+              )}
             </div>
 
             <RecentTransactions />
