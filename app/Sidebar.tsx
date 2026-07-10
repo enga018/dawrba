@@ -34,10 +34,6 @@ export default function Sidebar() {
           <i className="fa-solid fa-users"></i>
           <span>Customers</span>
         </Link>
-        <Link href="/add-customer" className={`sidebar-item sidebar-item-add ${isActive('/add-customer') ? 'active' : ''}`}>
-          <i className="fa-solid fa-plus"></i>
-          <span>Add</span>
-        </Link>
         <Link href="/reports" className={`sidebar-item ${isActive('/reports') ? 'active' : ''}`}>
           <i className="fa-solid fa-chart-pie"></i>
           <span>Reports</span>

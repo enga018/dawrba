@@ -1928,9 +1928,39 @@ input, select, button, textarea {
   }
 }
 
-/* Add button (floating) - kept for backward compatibility but hidden */
+/* Add button (floating) - hidden on mobile, shown on desktop */
 .add-btn {
   display: none;
+}
+
+@media (min-width: 1024px) {
+  .add-btn {
+    display: flex;
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: white;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    box-shadow: 0 4px 12px rgba(21, 101, 255, 0.4);
+    z-index: 20;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .add-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 16px rgba(21, 101, 255, 0.5);
+  }
+
+  .add-btn:active {
+    transform: scale(0.95);
+  }
 }
 
 /* Bottom navigation (mobile + tablet only) */
