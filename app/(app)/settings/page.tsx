@@ -89,8 +89,8 @@ export default function SettingsPage() {
         </div>
       </Link>
 
-      <div className="detail-card">
-        <form onSubmit={handleSave}>
+      <form onSubmit={handleSave}>
+        <div className="detail-card">
           <div className="field">
             <label htmlFor="shopName">Shop name</label>
             <input
@@ -113,18 +113,6 @@ export default function SettingsPage() {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
-            {saving ? <span className="spinner"></span> : 'Save Settings'}
-          </button>
-          {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
-        </form>
-      </div>
-
-      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '24px 0 12px' }}>
-        Report Schedule
-      </h3>
-      <div className="detail-card">
-        <form onSubmit={handleSave}>
           <div className="field">
             <label htmlFor="weeklyReportDay">Week ends on</label>
             <select
@@ -140,8 +128,28 @@ export default function SettingsPage() {
           <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
             {saving ? <span className="spinner"></span> : 'Save Settings'}
           </button>
-        </form>
-      </div>
+          {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
+        </div>
+      </form>
+
+      <Link
+        href="/log"
+        className="detail-card"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          textDecoration: 'none',
+          color: 'var(--text)',
+          marginTop: '16px',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
+          <i className="fa-solid fa-clock-rotate-left" style={{ color: 'var(--blue)' }}></i>
+          Activity Log
+        </span>
+        <i className="fa-solid fa-chevron-right" style={{ color: 'var(--meta)' }}></i>
+      </Link>
 
       <div style={{ marginTop: '24px' }}>
         <button className="btn btn-secondary btn-block" onClick={handleLogout}>

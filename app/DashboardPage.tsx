@@ -126,9 +126,9 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          <DashboardHero />
-
           <DashboardSummary />
+
+          <DashboardHero />
 
           <div className="dashboard-columns">
             <div className="dashboard-customers">

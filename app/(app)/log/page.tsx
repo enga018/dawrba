@@ -64,12 +64,12 @@ export default function TransactionLogPage() {
 
   return (
     <>
-      <Link href="/">
+      <Link href="/settings">
         <div className="back-row">
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>
           </button>
-          <h2>Transaction Log</h2>
+          <h2>Activity Log</h2>
         </div>
       </Link>
 
