@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { getInitials } from '@/lib/utils'
+import { showToast } from '@/lib/toast'
 
 interface ExistingCustomer {
   id: string
@@ -13,6 +13,11 @@ interface ExistingCustomer {
 }
 
 export default function AddCustomer() {
+  const [modalMode, setModalMode] = useState<'credit' | 'add-customer'>('credit')
+  const [existingCustomers, setExistingCustomers] = useState<ExistingCustomer[]>([])
+  const [selectedCustomerId, setSelectedCustomerId] = useState('')
+  const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -23,8 +28,6 @@ export default function AddCustomer() {
   const [showExtra, setShowExtra] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [existingCustomers, setExistingCustomers] = useState<ExistingCustomer[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -37,20 +40,37 @@ export default function AddCustomer() {
         .eq('user_id', user.id)
         .order('name', { ascending: true })
       setExistingCustomers(data || [])
+      if ((data || []).length === 0) setModalMode('add-customer')
     }
     loadExisting()
   }, [])
 
-  const searchResults =
-    searchQuery.trim().length === 0
-      ? []
-      : existingCustomers.filter((c) =>
-          c.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
-        )
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleAddCredit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedCustomerId || !amount || parseFloat(amount) <= 0) return
+
+    setError('')
+    setLoading(true)
+    try {
+      const { error: txError } = await supabase.from('transactions').insert({
+        customer_id: selectedCustomerId,
+        amount: parseFloat(amount),
+        note: note || null,
+      })
+      if (txError) throw txError
+
+      showToast('Credit added')
+      router.push('/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add credit')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,6 +105,7 @@ export default function AddCustomer() {
         if (txError) throw txError
       }
 
+      showToast('Customer added')
       router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add customer')
@@ -100,138 +121,168 @@ export default function AddCustomer() {
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>
           </button>
-          <h2>Add Customer</h2>
+          <h2>{modalMode === 'credit' ? 'Add Credit' : 'Add Customer'}</h2>
         </div>
       </Link>
 
-      <div className="field">
-        <label htmlFor="existingSearch">Add credit to an existing customer</label>
-        <input
-          type="text"
-          id="existingSearch"
-          placeholder="Search by name..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-      {searchQuery.trim().length > 0 && (
-        <div style={{ marginBottom: '18px' }}>
-          {searchResults.length === 0 ? (
-            <div style={{ fontSize: '0.85rem', color: 'var(--meta)', padding: '4px 2px' }}>
-              No matching customer — add as new below.
-            </div>
-          ) : (
-            <div className="customer-list">
-              {searchResults.map((c) => (
-                <div
-                  key={c.id}
-                  className="customer-card"
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => router.push(`/customers/${c.id}?addCredit=1`)}
-                >
-                  <div className="cc-left">
-                    <div className="avatar">{getInitials(c.name)}</div>
-                    <div>
-                      <div className="cc-name">{c.name}</div>
-                      <div className="cc-meta">{c.phone || ''}</div>
-                    </div>
-                  </div>
-                  <i className="fa-solid fa-chevron-right" style={{ color: 'var(--meta)' }}></i>
-                </div>
+      {modalMode === 'credit' ? (
+        <form onSubmit={handleAddCredit}>
+          <div className="field">
+            <label htmlFor="selectedCustomer">Select customer</label>
+            <select
+              id="selectedCustomer"
+              value={selectedCustomerId}
+              onChange={(e) => setSelectedCustomerId(e.target.value)}
+              required
+            >
+              <option value="">Choose a customer...</option>
+              {existingCustomers.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="amount">Amount (₹)</label>
+            <input
+              type="number"
+              id="amount"
+              placeholder="0"
+              min="1"
+              step="1"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="note">
+              Note <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span>
+            </label>
+            <input
+              type="text"
+              id="note"
+              placeholder="e.g. Milk supply"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary btn-block"
+            disabled={!selectedCustomerId || !amount || loading}
+          >
+            {loading ? <span className="spinner"></span> : 'Add Credit'}
+          </button>
+          {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
+          <button
+            type="button"
+            className="btn btn-secondary btn-block"
+            style={{ marginTop: '10px' }}
+            onClick={() => {
+              setError('')
+              setModalMode('add-customer')
+            }}
+          >
+            Add New Customer Instead
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label htmlFor="name">Customer name</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              placeholder="Full name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="phone">Phone number</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              placeholder="+91 98765 43210"
+              value={formData.phone}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="openingBalance">Opening balance (₹) <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span></label>
+            <input
+              type="number"
+              id="openingBalance"
+              name="openingBalance"
+              placeholder="0"
+              min="0"
+              step="1"
+              value={formData.openingBalance}
+              onChange={handleChange}
+            />
+          </div>
+          <button
+            type="button"
+            className="add-extra-toggle"
+            onClick={() => setShowExtra(!showExtra)}
+          >
+            <i className="fa-solid fa-chevron-down"></i> Add initial credit (extra)
+          </button>
+          {showExtra && (
+            <div className="add-extra show">
+              <div className="field">
+                <label htmlFor="initialAmount">Amount (₹)</label>
+                <input
+                  type="number"
+                  id="initialAmount"
+                  name="amount"
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                  value={formData.amount}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="initialNote">Note</label>
+                <input
+                  type="text"
+                  id="initialNote"
+                  name="note"
+                  placeholder="e.g. Milk supply"
+                  value={formData.note}
+                  onChange={handleChange}
+                />
+              </div>
             </div>
           )}
-        </div>
+          <button
+            type="submit"
+            className="btn btn-primary btn-block"
+            style={{ marginTop: '8px' }}
+            disabled={loading}
+          >
+            {loading ? <span className="spinner"></span> : 'Save Customer'}
+          </button>
+          {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
+          {existingCustomers.length > 0 && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-block"
+              style={{ marginTop: '10px' }}
+              onClick={() => {
+                setError('')
+                setModalMode('credit')
+              }}
+            >
+              Back to Add Credit
+            </button>
+          )}
+        </form>
       )}
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '18px 0', color: 'var(--meta)', fontSize: '0.8rem', fontWeight: 600 }}>
-        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
-        OR ADD A NEW CUSTOMER
-        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        <div className="field">
-          <label htmlFor="name">Customer name</label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            placeholder="Full name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="phone">Phone number</label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            placeholder="+91 98765 43210"
-            value={formData.phone}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="openingBalance">Opening balance (₹) <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span></label>
-          <input
-            type="number"
-            id="openingBalance"
-            name="openingBalance"
-            placeholder="0"
-            min="0"
-            step="1"
-            value={formData.openingBalance}
-            onChange={handleChange}
-          />
-        </div>
-        <button
-          type="button"
-          className="add-extra-toggle"
-          onClick={() => setShowExtra(!showExtra)}
-        >
-          <i className="fa-solid fa-chevron-down"></i> Add initial credit (extra)
-        </button>
-        {showExtra && (
-          <div className="add-extra show">
-            <div className="field">
-              <label htmlFor="amount">Amount (₹)</label>
-              <input
-                type="number"
-                id="amount"
-                name="amount"
-                placeholder="0"
-                min="0"
-                step="1"
-                value={formData.amount}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="note">Note</label>
-              <input
-                type="text"
-                id="note"
-                name="note"
-                placeholder="e.g. Milk supply"
-                value={formData.note}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-        )}
-        <button
-          type="submit"
-          className="btn btn-primary btn-block"
-          style={{ marginTop: '8px' }}
-          disabled={loading}
-        >
-          {loading ? <span className="spinner"></span> : 'Save Customer'}
-        </button>
-        {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
-      </form>
     </>
   )
 }

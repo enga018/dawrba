@@ -1,13 +1,12 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { getInitials, formatCurrency, formatRelativeTime } from '@/lib/utils'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import DashboardSummary from './DashboardSummary'
 import RecentTransactions from './RecentTransactions'
+import CustomerList from './CustomerList'
 
 interface Customer {
   id: string
@@ -20,8 +19,6 @@ interface Customer {
 export default function DashboardPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [sortValue, setSortValue] = useState('name-asc')
   const [offline, setOffline] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [modalMode, setModalMode] = useState<'credit' | 'add-customer'>('credit')
@@ -31,7 +28,7 @@ export default function DashboardPage() {
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newOpeningBalance, setNewOpeningBalance] = useState('')
-  const [visibleCount, setVisibleCount] = useState(20)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const loadData = useCallback(async () => {
     try {
@@ -103,45 +100,6 @@ export default function DashboardPage() {
     return () => window.removeEventListener('online', handleOnline)
   }, [loadData])
 
-  const getFilteredSorted = () => {
-    let list = [...customers]
-
-    if (searchQuery) {
-      list = list.filter((c) =>
-        c.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-
-    switch (sortValue) {
-      case 'name-asc':
-        list.sort((a, b) => a.name.localeCompare(b.name))
-        break
-      case 'name-desc':
-        list.sort((a, b) => b.name.localeCompare(a.name))
-        break
-      case 'balance-desc':
-        list.sort((a, b) => (b.balance || 0) - (a.balance || 0))
-        break
-      case 'balance-asc':
-        list.sort((a, b) => (a.balance || 0) - (b.balance || 0))
-        break
-      case 'newest':
-        list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        break
-      case 'oldest':
-        list.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-        break
-    }
-
-    return list
-  }
-
-  const filteredList = getFilteredSorted()
-
-  useEffect(() => {
-    setVisibleCount(20)
-  }, [searchQuery, sortValue])
-
   const closeModal = () => {
     setShowModal(false)
     setModalMode('credit')
@@ -170,72 +128,7 @@ export default function DashboardPage() {
 
           <div className="dashboard-columns">
             <div className="dashboard-customers">
-              <div className="toolbar">
-                <div className="search-wrap">
-                  <i className="fa-solid fa-search"></i>
-                  <input
-                    type="text"
-                    placeholder="Search customers..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <div className="sort-wrap">
-                  <select value={sortValue} onChange={(e) => setSortValue(e.target.value)}>
-                    <option value="name-asc">Name (A-Z)</option>
-                    <option value="name-desc">Name (Z-A)</option>
-                    <option value="balance-desc">Balance (High-Low)</option>
-                    <option value="balance-asc">Balance (Low-High)</option>
-                    <option value="newest">Newest first</option>
-                    <option value="oldest">Oldest first</option>
-                  </select>
-                </div>
-              </div>
-
-              {filteredList.length === 0 ? (
-                <div className="empty">
-                  <p>No customers match your search.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="customer-list">
-                    {filteredList.slice(0, visibleCount).map((customer) => (
-                      <Link
-                        key={customer.id}
-                        href={`/customers/${customer.id}`}
-                        className="customer-card"
-                        style={{ textDecoration: 'none' }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                          <div className="avatar">{getInitials(customer.name)}</div>
-                          <div>
-                            <div className="cc-name">{customer.name}</div>
-                            <div className="cc-meta">
-                              {customer.phone || (customer.created_at ? formatRelativeTime(customer.created_at) : '')}
-                              {customer.phone && customer.created_at ? ` · ${formatRelativeTime(customer.created_at)}` : ''}
-                            </div>
-                          </div>
-                        </div>
-                        <div className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
-                          {(customer.balance || 0) <= 0
-                            ? '₹0'
-                            : '₹' + formatCurrency(customer.balance || 0)}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-
-                  {filteredList.length > visibleCount && (
-                    <button
-                      className="btn btn-secondary btn-sm btn-block"
-                      style={{ marginTop: '12px' }}
-                      onClick={() => setVisibleCount((prev) => prev + 20)}
-                    >
-                      See more
-                    </button>
-                  )}
-                </>
-              )}
+              <CustomerList key={refreshKey} />
             </div>
 
             <RecentTransactions />
@@ -305,6 +198,7 @@ export default function DashboardPage() {
                       showToast('Credit added')
                       closeModal()
                       loadData()
+                      setRefreshKey((k) => k + 1)
                     } catch {
                       showToast('Failed to add credit', 'error')
                     } finally {
@@ -373,6 +267,7 @@ export default function DashboardPage() {
                       showToast('Customer added')
                       closeModal()
                       loadData()
+                      setRefreshKey((k) => k + 1)
                     } catch {
                       showToast('Failed to add customer', 'error')
                     } finally {

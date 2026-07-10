@@ -136,6 +136,14 @@ input, select, button, textarea {
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* Reports/Settings/Logout are covered by the bottom nav (and the
+   Settings page itself) once it takes over on small screens. */
+@media (max-width: 899px) {
+  .header-btn-nav {
+    display: none;
+  }
+}
+
 .header-shop-name {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -872,6 +880,14 @@ input, select, button, textarea {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px;
+}
+
+/* On mobile, Home is just the summary + recent transactions -- the
+   customer list lives on its own "Customers" nav tab instead. */
+@media (max-width: 899px) {
+  .dashboard-customers {
+    display: none;
+  }
 }
 
 @media (min-width: 900px) {
