@@ -29,7 +29,6 @@ export default function BottomNav({ onAddClick }: BottomNavProps) {
         <span className="bottom-nav-add-icon">
           <i className="fa-solid fa-plus"></i>
         </span>
-        <span>Add</span>
       </button>
       <Link href="/reports" className={`bottom-nav-item ${isActive('/reports') ? 'active' : ''}`}>
         <i className="fa-solid fa-chart-pie"></i>
