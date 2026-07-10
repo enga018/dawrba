@@ -113,6 +113,12 @@ input, select, button, textarea {
   margin: 0 auto;
 }
 
+/* Wider content cap for pages that use the extra room (multi-column
+   dashboard layout) instead of the default single-column max-width. */
+.content-wide {
+  max-width: 1200px;
+}
+
 /* Auth card */
 .auth-card {
   max-width: 400px;
@@ -849,17 +855,19 @@ input, select, button, textarea {
   transform: scale(0.95);
 }
 
-/* Summary cards grid: 2 per row on mobile, 4 per row on desktop */
+/* Summary cards grid: auto-fit divides the row evenly among however
+   many cards actually fit -- 2 per row on a phone, up to all 4 in a
+   single row once there's enough width, same auto-fit/1fr pattern as
+   the customer list. */
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
   margin-bottom: 18px;
 }
 
 @media (min-width: 900px) {
   .summary-grid {
-    grid-template-columns: repeat(4, 1fr);
     gap: 20px;
   }
 }

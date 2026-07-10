@@ -109,7 +109,7 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <div className="content">
+        <div className="content content-wide">
           <DashboardPage />
         </div>
       </>
