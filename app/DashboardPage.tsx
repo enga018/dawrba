@@ -7,6 +7,7 @@ import { showToast } from '@/lib/toast'
 import DashboardSummary from './DashboardSummary'
 import RecentTransactions from './RecentTransactions'
 import CustomerList from './CustomerList'
+import AmountKeypad from './AmountKeypad'
 
 interface Customer {
   id: string
@@ -159,27 +160,26 @@ export default function DashboardPage() {
 
             {modalMode === 'credit' ? (
               <div>
-                <div className="field">
-                  <label>Select Customer</label>
-                  <select
-                    value={selectedCustomerId}
-                    onChange={(e) => setSelectedCustomerId(e.target.value)}
-                  >
-                    <option value="">Choose a customer...</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                <div className="amount-entry">
+                  <div className="amount-display">
+                    ₹{amount ? Number(amount).toLocaleString('en-IN') : '0'}
+                  </div>
+                  <div className="amount-target">
+                    <span className="amount-target-label">Adding credit to</span>
+                    <select
+                      value={selectedCustomerId}
+                      onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    >
+                      <option value="">Select customer...</option>
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="field">
-                  <label>Amount (₹)</label>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
-                </div>
+
+                <AmountKeypad value={amount} onChange={setAmount} />
+
                 <button
                   className="btn btn-primary btn-block"
                   disabled={!selectedCustomerId || !amount || submitting}

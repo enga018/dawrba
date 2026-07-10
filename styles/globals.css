@@ -768,6 +768,81 @@ input, select, button, textarea {
   color: var(--muted);
 }
 
+/* Amount entry (Add Credit keypad) */
+.amount-entry {
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+.amount-display {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.amount-target {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.amount-target-label {
+  font-size: 0.72rem;
+  color: var(--meta);
+  font-weight: 500;
+}
+
+.amount-target select {
+  appearance: none;
+  text-align: center;
+  text-align-last: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--tint-blue);
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  cursor: pointer;
+  max-width: 100%;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 16px 0 4px;
+}
+
+.keypad-key {
+  padding: 14px 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.keypad-key:hover {
+  background: var(--surface-alt);
+}
+
+.keypad-key:active {
+  background: var(--tint-blue);
+}
+
+.keypad-key-muted {
+  color: var(--muted);
+  font-size: 1.2rem;
+}
+
 /* Toast notification */
 .toast-container {
   position: fixed;
