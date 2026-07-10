@@ -85,8 +85,8 @@ export default function AppLayout({
           )}
           <button
             className="header-btn"
-            title="Daily Summary"
-            onClick={() => router.push('/daily-summary')}
+            title="Reports"
+            onClick={() => router.push('/reports')}
           >
             <i className="fa-solid fa-calendar-day"></i>
           </button>

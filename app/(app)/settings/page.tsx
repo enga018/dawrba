@@ -9,6 +9,10 @@ import { showToast } from '@/lib/toast'
 export default function SettingsPage() {
   const [shopName, setShopName] = useState('')
   const [email, setEmail] = useState('')
+  const [dailyReportTime, setDailyReportTime] = useState('21:00')
+  const [weeklyReportDay, setWeeklyReportDay] = useState('sunday')
+  const [weeklyReportTime, setWeeklyReportTime] = useState('21:00')
+  const [monthlyReportTime, setMonthlyReportTime] = useState('21:00')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -25,13 +29,17 @@ export default function SettingsPage() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('shop_name')
+        .select('shop_name, daily_report_time, weekly_report_day, weekly_report_time, monthly_report_time')
         .eq('id', user.id)
         .single()
 
       if (data?.shop_name) {
         setShopName(data.shop_name)
       }
+      if (data?.daily_report_time) setDailyReportTime(data.daily_report_time.slice(0, 5))
+      if (data?.weekly_report_day) setWeeklyReportDay(data.weekly_report_day)
+      if (data?.weekly_report_time) setWeeklyReportTime(data.weekly_report_time.slice(0, 5))
+      if (data?.monthly_report_time) setMonthlyReportTime(data.monthly_report_time.slice(0, 5))
       setLoading(false)
     }
     loadProfile()
@@ -49,6 +57,10 @@ export default function SettingsPage() {
       const { error: dbError } = await supabase.from('profiles').upsert({
         id: user.id,
         shop_name: shopName,
+        daily_report_time: dailyReportTime,
+        weekly_report_day: weeklyReportDay,
+        weekly_report_time: weeklyReportTime,
+        monthly_report_time: monthlyReportTime,
       })
 
       if (dbError) throw dbError
@@ -113,6 +125,62 @@ export default function SettingsPage() {
             {saving ? <span className="spinner"></span> : 'Save Settings'}
           </button>
           {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
+        </form>
+      </div>
+
+      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '24px 0 12px' }}>
+        Report Schedule
+      </h3>
+      <div className="detail-card">
+        <form onSubmit={handleSave}>
+          <div className="field">
+            <label htmlFor="dailyReportTime">Daily report time</label>
+            <input
+              type="time"
+              id="dailyReportTime"
+              value={dailyReportTime}
+              onChange={(e) => setDailyReportTime(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="weeklyReportDay">Weekly report day</label>
+            <select
+              id="weeklyReportDay"
+              value={weeklyReportDay}
+              onChange={(e) => setWeeklyReportDay(e.target.value)}
+            >
+              <option value="saturday">Saturday</option>
+              <option value="sunday">Sunday</option>
+            </select>
+          </div>
+
+          <div className="field">
+            <label htmlFor="weeklyReportTime">Weekly report time</label>
+            <input
+              type="time"
+              id="weeklyReportTime"
+              value={weeklyReportTime}
+              onChange={(e) => setWeeklyReportTime(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="monthlyReportTime">Monthly report time (last day of month)</label>
+            <input
+              type="time"
+              id="monthlyReportTime"
+              value={monthlyReportTime}
+              onChange={(e) => setMonthlyReportTime(e.target.value)}
+              required
+            />
+          </div>
+
+          <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
+            {saving ? <span className="spinner"></span> : 'Save Settings'}
+          </button>
         </form>
       </div>
 
