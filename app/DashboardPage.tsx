@@ -22,7 +22,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [offline, setOffline] = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [modalMode, setModalMode] = useState<'credit' | 'add-customer'>('credit')
+  const [modalMode, setModalMode] = useState<'credit' | 'pay' | 'add-customer'>('credit')
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [amount, setAmount] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -154,18 +154,37 @@ export default function DashboardPage() {
         <div className="modal-backdrop active">
           <div className="modal-sheet">
             <div className="modal-head">
-              <h3>{modalMode === 'credit' ? 'Add Credit' : 'Add Customer'}</h3>
+              <h3>{modalMode === 'pay' ? 'Collect Payment' : modalMode === 'credit' ? 'Add Credit' : 'Add Customer'}</h3>
               <button className="modal-close" onClick={closeModal}>×</button>
             </div>
 
-            {modalMode === 'credit' ? (
+            {modalMode === 'credit' || modalMode === 'pay' ? (
               <div>
+                <div className="segmented">
+                  <button
+                    type="button"
+                    className={`segmented-btn ${modalMode === 'credit' ? 'active' : ''}`}
+                    onClick={() => setModalMode('credit')}
+                  >
+                    Give Credit
+                  </button>
+                  <button
+                    type="button"
+                    className={`segmented-btn ${modalMode === 'pay' ? 'active' : ''}`}
+                    onClick={() => setModalMode('pay')}
+                  >
+                    Collect Payment
+                  </button>
+                </div>
+
                 <div className="amount-entry">
                   <div className="amount-display">
                     ₹{amount ? Number(amount).toLocaleString('en-IN') : '0'}
                   </div>
                   <div className="amount-target">
-                    <span className="amount-target-label">Adding credit to</span>
+                    <span className="amount-target-label">
+                      {modalMode === 'pay' ? 'Collecting from' : 'Adding credit to'}
+                    </span>
                     <select
                       value={selectedCustomerId}
                       onChange={(e) => setSelectedCustomerId(e.target.value)}
@@ -187,26 +206,27 @@ export default function DashboardPage() {
                     const value = parseFloat(amount)
                     if (!selectedCustomerId || !value) return
 
+                    const signed = modalMode === 'pay' ? -value : value
                     setSubmitting(true)
                     try {
                       const { error } = await supabase.from('transactions').insert({
                         customer_id: selectedCustomerId,
-                        amount: value,
+                        amount: signed,
                       })
                       if (error) throw error
 
-                      showToast('Credit added')
+                      showToast(modalMode === 'pay' ? 'Payment recorded' : 'Credit added')
                       closeModal()
                       loadData()
                       setRefreshKey((k) => k + 1)
                     } catch {
-                      showToast('Failed to add credit', 'error')
+                      showToast(modalMode === 'pay' ? 'Failed to record payment' : 'Failed to add credit', 'error')
                     } finally {
                       setSubmitting(false)
                     }
                   }}
                 >
-                  {submitting ? <span className="spinner"></span> : 'Add Credit'}
+                  {submitting ? <span className="spinner"></span> : modalMode === 'pay' ? 'Collect Payment' : 'Add Credit'}
                 </button>
                 <button
                   className="btn btn-secondary btn-block"

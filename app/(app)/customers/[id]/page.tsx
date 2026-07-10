@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
+import AmountKeypad from '@/app/AmountKeypad'
 
 interface Customer {
   id: string
@@ -478,19 +479,20 @@ export default function CustomerDetail() {
             </button>
           </div>
           <form onSubmit={handleAddTransaction}>
-            <div className="field">
-              <label htmlFor="txAmount">Amount (₹)</label>
-              <input
-                type="number"
-                id="txAmount"
-                placeholder="0"
-                min="1"
-                step="1"
-                value={txAmount}
-                onChange={(e) => setTxAmount(e.target.value)}
-                required
-              />
+            <div className="amount-entry">
+              <div className="amount-display">
+                ₹{txAmount ? Number(txAmount).toLocaleString('en-IN') : '0'}
+              </div>
+              <div className="amount-target">
+                <span className="amount-target-label">
+                  {modalMode === 'credit' ? 'Adding credit to' : 'Collecting from'}
+                </span>
+                <span className="amount-target-name">{customer.name}</span>
+              </div>
             </div>
+
+            <AmountKeypad value={txAmount} onChange={setTxAmount} />
+
             <div className="field">
               <label htmlFor="txNote">
                 Note <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span>
@@ -503,13 +505,23 @@ export default function CustomerDetail() {
                 onChange={(e) => setTxNote(e.target.value)}
               />
             </div>
-            <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-              {submitting ? <span className="spinner"></span> : editingTx ? 'Update' : 'Save'}
+            <button type="submit" className="btn btn-primary btn-block" disabled={!txAmount || submitting}>
+              {submitting ? <span className="spinner"></span> : editingTx ? 'Update' : modalMode === 'credit' ? 'Add Credit' : 'Collect Payment'}
             </button>
           </form>
           {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
         </div>
       </div>
+
+      <button
+        className="add-btn"
+        title={offline ? 'Unavailable offline' : 'Add credit'}
+        disabled={offline}
+        onClick={() => openAddModal('credit')}
+        style={{ opacity: offline ? 0.5 : 1, cursor: offline ? 'not-allowed' : 'pointer' }}
+      >
+        <i className="fa-solid fa-plus"></i>
+      </button>
 
       <style>{`
         .tx-actions {
