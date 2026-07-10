@@ -23,6 +23,8 @@ export default function SummaryCard({ title, value, icon, color, bg, format = 'c
           padding: 12px;
           border: 1px solid var(--border);
           transition: box-shadow 0.2s ease;
+          container-type: inline-size;
+          container-name: summary-card;
         }
         .summary-card:hover {
           box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
@@ -73,7 +75,7 @@ export default function SummaryCard({ title, value, icon, color, bg, format = 'c
         .trend-neutral {
           color: var(--meta);
         }
-        @media (min-width: 900px) {
+        @container summary-card (min-width: 200px) {
           .summary-card {
             padding: 16px;
             border-radius: 16px;

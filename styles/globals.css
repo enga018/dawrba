@@ -439,6 +439,65 @@ input, select, button, textarea {
 /* Transaction list */
 .tx-list {
   margin-top: 4px;
+  container-type: inline-size;
+  container-name: tx-list;
+}
+
+/* Rows reflow to the list's own rendered width, not the viewport --
+   same list looks right whether it's a narrow sidebar, a full-width
+   stacked block, or a customer page's transaction history. */
+@container tx-list (max-width: 360px) {
+  .tx-item {
+    padding: 10px 0;
+  }
+  .tx-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.68rem;
+  }
+  .tx-note {
+    font-size: 0.78rem;
+  }
+  .tx-date {
+    font-size: 0.72rem;
+  }
+  .tx-amount {
+    font-size: 0.85rem;
+  }
+}
+
+@container tx-list (min-width: 500px) {
+  .tx-item {
+    padding: 14px 0;
+  }
+  .tx-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 0.85rem;
+  }
+  .tx-note {
+    font-size: 0.95rem;
+  }
+  .tx-date {
+    font-size: 0.82rem;
+  }
+  .tx-amount {
+    font-size: 1.05rem;
+  }
+}
+
+@container tx-list (min-width: 700px) {
+  .tx-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 0.95rem;
+  }
+  .tx-note {
+    font-size: 1.05rem;
+  }
+  .tx-amount {
+    font-size: 1.15rem;
+  }
 }
 
 .tx-item {
@@ -750,70 +809,6 @@ input, select, button, textarea {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px;
-  container-type: inline-size;
-  container-name: dashboard-recent;
-}
-
-/* Reflow the recent-transactions rows to their own box width, not the viewport,
-   so they stay legible whether this panel is a narrow sidebar or full width. */
-@container dashboard-recent (max-width: 360px) {
-  .dashboard-recent .tx-item {
-    padding: 10px 0;
-  }
-  .dashboard-recent .tx-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 0.68rem;
-  }
-  .dashboard-recent .tx-note {
-    font-size: 0.78rem;
-  }
-  .dashboard-recent .tx-date {
-    font-size: 0.72rem;
-  }
-  .dashboard-recent .tx-amount {
-    font-size: 0.85rem;
-  }
-}
-
-/* When the panel is stacked full-width (below 900px) or otherwise
-   ends up wide, scale rows up to use the extra room instead of
-   staying pinned at sidebar-sized text. */
-@container dashboard-recent (min-width: 500px) {
-  .dashboard-recent {
-    padding: 20px;
-  }
-  .dashboard-recent .tx-item {
-    padding: 14px 0;
-  }
-  .dashboard-recent .tx-icon {
-    width: 38px;
-    height: 38px;
-    font-size: 0.85rem;
-  }
-  .dashboard-recent .tx-note {
-    font-size: 0.95rem;
-  }
-  .dashboard-recent .tx-date {
-    font-size: 0.82rem;
-  }
-  .dashboard-recent .tx-amount {
-    font-size: 1.05rem;
-  }
-}
-
-@container dashboard-recent (min-width: 700px) {
-  .dashboard-recent .tx-icon {
-    width: 44px;
-    height: 44px;
-    font-size: 0.95rem;
-  }
-  .dashboard-recent .tx-note {
-    font-size: 1.05rem;
-  }
-  .dashboard-recent .tx-amount {
-    font-size: 1.15rem;
-  }
 }
 
 @media (min-width: 900px) {
