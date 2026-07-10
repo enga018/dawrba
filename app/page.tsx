@@ -9,7 +9,9 @@ import OfflineBanner from './OfflineBanner'
 import ThemeToggle from './ThemeToggle'
 import BottomNav from './BottomNav'
 import Sidebar from './Sidebar'
-import AddModal from './AddModal'
+import TransactionModal from './TransactionModal'
+import AddCustomerModal from './AddCustomerModal'
+import AddTransactionPicker from './AddTransactionPicker'
 import FabMenu from './FabMenu'
 import type { User } from '@supabase/supabase-js'
 
@@ -25,8 +27,8 @@ export default function Home() {
   const [shopName, setShopName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isOnline, setIsOnline] = useState(true)
-  const [showQuickAdd, setShowQuickAdd] = useState(false)
-  const [quickAddMode, setQuickAddMode] = useState<'credit' | 'pay' | 'add-customer'>('credit')
+  const [showPicker, setShowPicker] = useState(false)
+  const [activeModal, setActiveModal] = useState<'credit' | 'pay' | 'add-customer' | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -111,14 +113,21 @@ export default function Home() {
             <DashboardPage />
           </div>
           <FabMenu
-            onSelect={(mode) => {
-              setQuickAddMode(mode === 'payment' ? 'pay' : mode === 'new' ? 'add-customer' : 'credit')
-              setShowQuickAdd(true)
-            }}
+            onSelect={(mode) => setActiveModal(mode === 'payment' ? 'pay' : mode === 'new' ? 'add-customer' : 'credit')}
           />
-          <BottomNav onAddClick={() => { setQuickAddMode('credit'); setShowQuickAdd(true) }} />
+          <BottomNav onAddClick={() => setShowPicker(true)} />
         </div>
-        <AddModal show={showQuickAdd} defaultMode={quickAddMode} onClose={() => setShowQuickAdd(false)} />
+        <AddTransactionPicker
+          show={showPicker}
+          onClose={() => setShowPicker(false)}
+          onSelect={(mode) => {
+            setShowPicker(false)
+            setActiveModal(mode === 'payment' ? 'pay' : mode === 'new' ? 'add-customer' : 'credit')
+          }}
+        />
+        <TransactionModal show={activeModal === 'credit'} mode="credit" onClose={() => setActiveModal(null)} />
+        <TransactionModal show={activeModal === 'pay'} mode="pay" onClose={() => setActiveModal(null)} />
+        <AddCustomerModal show={activeModal === 'add-customer'} onClose={() => setActiveModal(null)} />
       </div>
     )
   }

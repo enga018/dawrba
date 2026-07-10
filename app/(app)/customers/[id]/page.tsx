@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { formatDate, formatCurrency, getInitials, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
-import AmountKeypad from '@/app/AmountKeypad'
+import TransactionModal from '@/app/TransactionModal'
 
 interface Customer {
   id: string
@@ -40,11 +40,7 @@ export default function CustomerDetail() {
   const [visibleCount, setVisibleCount] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [showModal, setShowModal] = useState(false)
-  const [modalMode, setModalMode] = useState<'credit' | 'pay'>('credit')
-  const [txAmount, setTxAmount] = useState('')
-  const [txNote, setTxNote] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const [activeModal, setActiveModal] = useState<'credit' | 'pay' | null>(null)
   const [offline, setOffline] = useState(false)
   const [editingTx, setEditingTx] = useState<Transaction | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
@@ -78,8 +74,7 @@ export default function CustomerDetail() {
   useEffect(() => {
     loadData()
     if (searchParams.get('addCredit') === '1') {
-      setModalMode('credit')
-      setShowModal(true)
+      setActiveModal('credit')
     }
   }, [])
 
@@ -140,46 +135,9 @@ export default function CustomerDetail() {
     return () => window.removeEventListener('online', handleOnline)
   }, [loadData])
 
-  const handleAddTransaction = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!txAmount || parseFloat(txAmount) <= 0) return
-    setSubmitting(true)
-    try {
-      const amount = modalMode === 'pay' ? -parseFloat(txAmount) : parseFloat(txAmount)
-      if (editingTx) {
-        const { error } = await supabase
-          .from('transactions')
-          .update({ amount, note: txNote || null, updated_at: new Date().toISOString() })
-          .eq('id', editingTx.id)
-        if (error) throw error
-        showToast('Transaction updated')
-      } else {
-        const { error } = await supabase.from('transactions').insert({
-          customer_id: customerId, amount, note: txNote || null,
-        })
-        if (error) throw error
-        showToast(modalMode === 'credit' ? 'Credit added' : 'Payment recorded')
-      }
-      setShowModal(false)
-      setTxAmount('')
-      setTxNote('')
-      setEditingTx(null)
-      await loadData()
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to save transaction'
-      setError(msg)
-      showToast(msg, 'error')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   const handleEdit = (tx: Transaction) => {
     setEditingTx(tx)
-    setTxAmount(String(Math.abs(tx.amount)))
-    setTxNote(tx.note || '')
-    setModalMode(tx.amount > 0 ? 'credit' : 'pay')
-    setShowModal(true)
+    setActiveModal(tx.amount > 0 ? 'credit' : 'pay')
   }
 
   const handleDelete = async (txId: string) => {
@@ -223,10 +181,7 @@ export default function CustomerDetail() {
 
   const openAddModal = (mode: 'credit' | 'pay') => {
     setEditingTx(null)
-    setTxAmount('')
-    setTxNote('')
-    setModalMode(mode)
-    setShowModal(true)
+    setActiveModal(mode)
   }
 
   const handleDeleteCustomer = async () => {
@@ -594,34 +549,16 @@ export default function CustomerDetail() {
         </div>
       )}
 
-      {/* Add/Edit Transaction Modal */}
-      <div className={`modal-backdrop ${showModal ? 'active' : ''}`} onClick={() => setShowModal(false)}>
-        <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-head">
-            <h3>{editingTx ? 'Edit Transaction' : modalMode === 'credit' ? 'Add Credit' : 'Collect Payment'}</h3>
-            <button className="modal-close" onClick={() => setShowModal(false)}><i className="fa-solid fa-xmark"></i></button>
-          </div>
-          <form onSubmit={handleAddTransaction}>
-            <div className="amount-entry">
-              <div className="amount-display">Rs.{txAmount ? Number(txAmount).toLocaleString('en-IN') : '0'}</div>
-              <div className="amount-target">
-                <span className="amount-target-label">{modalMode === 'credit' ? 'Adding credit to' : 'Collecting from'}</span>
-                <span className="amount-target-name">{customer.name}</span>
-              </div>
-            </div>
-            <AmountKeypad value={txAmount} onChange={setTxAmount} />
-            <div className="field">
-              <label>Note <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span></label>
-              <input type="text" placeholder="e.g. Weekly payment" value={txNote} onChange={(e) => setTxNote(e.target.value)} />
-            </div>
-            <button type="submit" className="btn btn-primary btn-block" disabled={!txAmount || submitting}>
-              {submitting ? <span className="spinner"></span> : editingTx ? 'Update' : modalMode === 'credit' ? 'Add Credit' : 'Collect Payment'}
-            </button>
-          </form>
-          {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
-        </div>
-      </div>
-
+      <TransactionModal
+        show={activeModal !== null}
+        mode={activeModal === 'pay' ? 'pay' : 'credit'}
+        customerId={customerId}
+        customerName={customer.name}
+        currentBalance={customer.balance}
+        editingTx={editingTx}
+        onClose={() => { setActiveModal(null); setEditingTx(null) }}
+        onSaved={loadData}
+      />
     </>
   )
 }

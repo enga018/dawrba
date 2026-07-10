@@ -2789,6 +2789,21 @@ input, select, button, textarea {
   transition: background 0.15s;
 }
 
+/* .profile-menu-item is normally a <Link>; reset default button chrome
+   for the picker modal's <button> usage. */
+button.profile-menu-item {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+  text-align: left;
+  font: inherit;
+}
+
+button.profile-menu-item:last-child {
+  border-bottom: none;
+}
+
 .profile-menu-item:last-child {
   border-bottom: none;
 }
