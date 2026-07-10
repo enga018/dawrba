@@ -4,20 +4,17 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { loadReportData, type ReportData } from '@/lib/reports'
-import { formatCurrency, formatTime } from '@/lib/utils'
+import { loadReportData, type ReportData, type Schedule } from '@/lib/reports'
+import { formatCurrency, formatTime, formatTimestampDate } from '@/lib/utils'
 
 type Period = 'daily' | 'weekly' | 'monthly'
 
-interface Schedule {
-  dailyTime: string
-  weeklyDay: string
-  weeklyTime: string
-  monthlyTime: string
-}
-
 function timeLabel(time: string): string {
   return formatTime(`2000-01-01T${time}`)
+}
+
+function completeAtLabel(date: Date): string {
+  return `${formatTimestampDate(date.toISOString())}, ${formatTime(date.toISOString())}`
 }
 
 function TrendRow({ value }: { value?: number }) {
@@ -48,8 +45,8 @@ export default function ReportsPage() {
   const router = useRouter()
   const triggeredRef = useRef<Set<string>>(new Set())
 
-  const load = useCallback(async () => {
-    const report = await loadReportData()
+  const load = useCallback(async (sched: Schedule) => {
+    const report = await loadReportData(sched)
     setData(report)
   }, [])
 
@@ -67,16 +64,15 @@ export default function ReportsPage() {
         .eq('id', user.id)
         .single()
 
-      if (profile) {
-        setSchedule({
-          dailyTime: profile.daily_report_time,
-          weeklyDay: profile.weekly_report_day,
-          weeklyTime: profile.weekly_report_time,
-          monthlyTime: profile.monthly_report_time,
-        })
+      const sched: Schedule = {
+        dailyTime: profile?.daily_report_time?.slice(0, 5) || '21:00',
+        weeklyDay: profile?.weekly_report_day || 'sunday',
+        weeklyTime: profile?.weekly_report_time?.slice(0, 5) || '21:00',
+        monthlyTime: profile?.monthly_report_time?.slice(0, 5) || '21:00',
       }
+      setSchedule(sched)
 
-      await load()
+      await load(sched)
       setLoading(false)
     }
     init()
@@ -93,26 +89,26 @@ export default function ReportsPage() {
       const dateKey = now.toISOString().slice(0, 10)
       const dayName = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
 
-      if (schedule.dailyTime.slice(0, 5) === hhmm) {
+      if (schedule.dailyTime === hhmm) {
         const key = `daily-${dateKey}`
         if (!triggeredRef.current.has(key)) {
           triggeredRef.current.add(key)
-          load()
+          load(schedule)
         }
       }
-      if (schedule.weeklyTime.slice(0, 5) === hhmm && dayName === schedule.weeklyDay) {
+      if (schedule.weeklyTime === hhmm && dayName === schedule.weeklyDay) {
         const key = `weekly-${dateKey}`
         if (!triggeredRef.current.has(key)) {
           triggeredRef.current.add(key)
-          load()
+          load(schedule)
         }
       }
       const isLastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() === now.getDate()
-      if (schedule.monthlyTime.slice(0, 5) === hhmm && isLastDayOfMonth) {
+      if (schedule.monthlyTime === hhmm && isLastDayOfMonth) {
         const key = `monthly-${dateKey}`
         if (!triggeredRef.current.has(key)) {
           triggeredRef.current.add(key)
-          load()
+          load(schedule)
         }
       }
     }
@@ -121,7 +117,7 @@ export default function ReportsPage() {
     return () => clearInterval(interval)
   }, [schedule, load])
 
-  if (loading || !data) {
+  if (loading || !data || !schedule) {
     return (
       <div style={{ textAlign: 'center', padding: '40px 20px' }}>
         <div className="spinner" style={{ margin: '0 auto' }}></div>
@@ -131,14 +127,34 @@ export default function ReportsPage() {
 
   const view =
     period === 'daily'
-      ? { totals: data.daily, trend: data.dailyTrend, label: 'Today', vs: 'vs yesterday' }
+      ? {
+          totals: data.daily,
+          trend: data.dailyTrend,
+          complete: data.dailyComplete,
+          completeAt: data.dailyCompleteAt,
+          label: 'Today',
+          vs: 'vs yesterday',
+        }
       : period === 'weekly'
-        ? { totals: data.weekly, trend: data.weeklyTrend, label: 'Last 7 days', vs: 'vs previous 7 days' }
-        : { totals: data.monthly, trend: data.monthlyTrend, label: 'This month', vs: 'vs last month' }
+        ? {
+            totals: data.weekly,
+            trend: data.weeklyTrend,
+            complete: data.weeklyComplete,
+            completeAt: data.weeklyCompleteAt,
+            label: 'This week',
+            vs: 'vs previous week',
+          }
+        : {
+            totals: data.monthly,
+            trend: data.monthlyTrend,
+            complete: data.monthlyComplete,
+            completeAt: data.monthlyCompleteAt,
+            label: 'This month',
+            vs: 'vs last month',
+          }
 
-  const scheduleLabel = !schedule
-    ? ''
-    : period === 'daily'
+  const scheduleLabel =
+    period === 'daily'
       ? `Updates daily around ${timeLabel(schedule.dailyTime)}`
       : period === 'weekly'
         ? `Updates every ${schedule.weeklyDay === 'saturday' ? 'Saturday' : 'Sunday'} around ${timeLabel(schedule.weeklyTime)}`
@@ -196,8 +212,29 @@ export default function ReportsPage() {
           </div>
         </div>
         <div style={{ fontSize: '0.72rem', color: 'var(--meta)', marginTop: '10px' }}>
-          {view.vs} · {view.totals.count} transaction{view.totals.count === 1 ? '' : 's'}
+          {view.totals.count} transaction{view.totals.count === 1 ? '' : 's'} so far
         </div>
+        {!view.complete && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '6px',
+              marginTop: '10px',
+              padding: '8px 10px',
+              borderRadius: '10px',
+              background: 'var(--surface-alt)',
+              fontSize: '0.72rem',
+              color: 'var(--muted)',
+            }}
+          >
+            <i className="fa-solid fa-clock" style={{ marginTop: '2px' }}></i>
+            <span>
+              This period isn&apos;t complete yet, so the {view.vs} comparison is hidden. Complete
+              data available after {completeAtLabel(view.completeAt)}.
+            </span>
+          </div>
+        )}
       </div>
 
       {(view.totals.largestCredit || view.totals.largestCollection) && (

@@ -15,13 +15,26 @@ export interface PeriodTotals {
   largestCollection?: LargestTx
 }
 
+export interface Schedule {
+  dailyTime: string
+  weeklyDay: string
+  weeklyTime: string
+  monthlyTime: string
+}
+
 export interface ReportData {
   daily: PeriodTotals
   dailyTrend: { credit?: number; collected?: number }
+  dailyComplete: boolean
+  dailyCompleteAt: Date
   weekly: PeriodTotals
   weeklyTrend: { credit?: number; collected?: number }
+  weeklyComplete: boolean
+  weeklyCompleteAt: Date
   monthly: PeriodTotals
   monthlyTrend: { credit?: number; collected?: number }
+  monthlyComplete: boolean
+  monthlyCompleteAt: Date
 }
 
 function emptyTotals(): PeriodTotals {
@@ -54,25 +67,68 @@ function bucketWithLargest(
   }
 }
 
-export async function loadReportData(): Promise<ReportData | null> {
-  const user = (await supabase.auth.getUser()).data.user
-  if (!user) return null
+function applyTime(date: Date, time: string): Date {
+  const [h, m] = time.split(':').map(Number)
+  const result = new Date(date)
+  result.setHours(h, m, 0, 0)
+  return result
+}
 
-  const now = new Date()
+function getDayBoundaries(now: Date, dailyTime: string) {
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
 
   const yesterdayStart = new Date(todayStart)
   yesterdayStart.setDate(yesterdayStart.getDate() - 1)
 
-  const thisWeekStart = new Date(now)
-  thisWeekStart.setDate(thisWeekStart.getDate() - 7)
+  const todayCompleteAt = applyTime(now, dailyTime)
 
-  const lastWeekStart = new Date(now)
-  lastWeekStart.setDate(lastWeekStart.getDate() - 14)
+  return { todayStart, yesterdayStart, todayCompleteAt }
+}
 
+function getWeekBoundaries(now: Date, weeklyDay: string, weeklyTime: string) {
+  const targetEndDay = weeklyDay === 'saturday' ? 6 : 0 // Date.getDay(): 0 = Sunday, 6 = Saturday
+  const daysUntilEnd = (targetEndDay - now.getDay() + 7) % 7
+
+  const thisWeekCompleteAt = applyTime(now, weeklyTime)
+  thisWeekCompleteAt.setDate(thisWeekCompleteAt.getDate() + daysUntilEnd)
+
+  const thisWeekStart = new Date(thisWeekCompleteAt)
+  thisWeekStart.setDate(thisWeekStart.getDate() - 6)
+  thisWeekStart.setHours(0, 0, 0, 0)
+
+  const lastWeekStart = new Date(thisWeekStart)
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7)
+
+  return { thisWeekStart, lastWeekStart, thisWeekCompleteAt }
+}
+
+function getMonthBoundaries(now: Date, monthlyTime: string) {
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  const thisMonthCompleteAt = applyTime(lastDayOfMonth, monthlyTime)
+
+  return { thisMonthStart, lastMonthStart, thisMonthCompleteAt }
+}
+
+export async function loadReportData(schedule: Schedule): Promise<ReportData | null> {
+  const user = (await supabase.auth.getUser()).data.user
+  if (!user) return null
+
+  const now = new Date()
+
+  const { todayStart, yesterdayStart, todayCompleteAt } = getDayBoundaries(now, schedule.dailyTime)
+  const { thisWeekStart, lastWeekStart, thisWeekCompleteAt } = getWeekBoundaries(
+    now,
+    schedule.weeklyDay,
+    schedule.weeklyTime
+  )
+  const { thisMonthStart, lastMonthStart, thisMonthCompleteAt } = getMonthBoundaries(
+    now,
+    schedule.monthlyTime
+  )
 
   const earliestNeeded = new Date(
     Math.min(yesterdayStart.getTime(), lastWeekStart.getTime(), lastMonthStart.getTime())
@@ -115,21 +171,37 @@ export async function loadReportData(): Promise<ReportData | null> {
     }
   }
 
+  const dailyComplete = now >= todayCompleteAt
+  const weeklyComplete = now >= thisWeekCompleteAt
+  const monthlyComplete = now >= thisMonthCompleteAt
+
   return {
     daily,
-    dailyTrend: {
-      credit: percentTrend(daily.credit, yesterday.credit),
-      collected: percentTrend(daily.collected, yesterday.collected),
-    },
+    dailyTrend: dailyComplete
+      ? {
+          credit: percentTrend(daily.credit, yesterday.credit),
+          collected: percentTrend(daily.collected, yesterday.collected),
+        }
+      : {},
+    dailyComplete,
+    dailyCompleteAt: todayCompleteAt,
     weekly,
-    weeklyTrend: {
-      credit: percentTrend(weekly.credit, lastWeek.credit),
-      collected: percentTrend(weekly.collected, lastWeek.collected),
-    },
+    weeklyTrend: weeklyComplete
+      ? {
+          credit: percentTrend(weekly.credit, lastWeek.credit),
+          collected: percentTrend(weekly.collected, lastWeek.collected),
+        }
+      : {},
+    weeklyComplete,
+    weeklyCompleteAt: thisWeekCompleteAt,
     monthly,
-    monthlyTrend: {
-      credit: percentTrend(monthly.credit, lastMonth.credit),
-      collected: percentTrend(monthly.collected, lastMonth.collected),
-    },
+    monthlyTrend: monthlyComplete
+      ? {
+          credit: percentTrend(monthly.credit, lastMonth.credit),
+          collected: percentTrend(monthly.collected, lastMonth.collected),
+        }
+      : {},
+    monthlyComplete,
+    monthlyCompleteAt: thisMonthCompleteAt,
   }
 }
