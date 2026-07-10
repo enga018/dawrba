@@ -768,6 +768,35 @@ input, select, button, textarea {
   color: var(--muted);
 }
 
+/* Segmented toggle (Give Credit / Collect Payment) */
+.segmented {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-alt);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 4px;
+}
+
+.segmented-btn {
+  flex: 1;
+  padding: 9px 0;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.segmented-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(2, 6, 23, 0.12);
+}
+
 /* Amount entry (Add Credit keypad) */
 .amount-entry {
   text-align: center;
