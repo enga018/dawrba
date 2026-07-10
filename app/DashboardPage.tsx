@@ -32,6 +32,12 @@ export default function DashboardPage() {
 
   useEffect(() => { loadData() }, [loadData])
 
+  useEffect(() => {
+    const onRefresh = () => loadData()
+    window.addEventListener('dawrba:refresh', onRefresh)
+    return () => window.removeEventListener('dawrba:refresh', onRefresh)
+  }, [loadData])
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '60px 20px' }}>

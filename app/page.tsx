@@ -9,7 +9,7 @@ import OfflineBanner from './OfflineBanner'
 import ThemeToggle from './ThemeToggle'
 import BottomNav from './BottomNav'
 import Sidebar from './Sidebar'
-import QuickAddSheet from './QuickAddSheet'
+import AddModal from './AddModal'
 import type { User } from '@supabase/supabase-js'
 
 function getGreeting(): string {
@@ -108,9 +108,12 @@ export default function Home() {
           <div className="content content-wide">
             <DashboardPage />
           </div>
+          <button className="add-btn" title="Add credit or customer" onClick={() => setShowQuickAdd(true)}>
+            <i className="fa-solid fa-plus"></i>
+          </button>
           <BottomNav onAddClick={() => setShowQuickAdd(true)} />
         </div>
-        <QuickAddSheet show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
+        <AddModal show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
       </div>
     )
   }

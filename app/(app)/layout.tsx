@@ -7,7 +7,7 @@ import OfflineBanner from '@/app/OfflineBanner'
 import BottomNav from '@/app/BottomNav'
 import Sidebar from '@/app/Sidebar'
 import FloatingAddButton from '@/app/FloatingAddButton'
-import QuickAddSheet from '@/app/QuickAddSheet'
+import AddModal from '@/app/AddModal'
 import type { User } from '@supabase/supabase-js'
 
 export default function AppLayout({
@@ -95,8 +95,8 @@ export default function AppLayout({
         </div>
         <BottomNav onAddClick={() => setShowQuickAdd(true)} />
       </div>
-      <FloatingAddButton />
-      <QuickAddSheet show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
+      <FloatingAddButton onClick={() => setShowQuickAdd(true)} />
+      <AddModal show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
     </div>
   )
 }
