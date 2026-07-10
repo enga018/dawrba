@@ -711,7 +711,7 @@ input, select, button, textarea {
   padding: 16px;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .dashboard-columns {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -757,7 +757,7 @@ input, select, button, textarea {
   margin-bottom: 18px;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .summary-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
@@ -791,7 +791,7 @@ input, select, button, textarea {
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .customer-list {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }

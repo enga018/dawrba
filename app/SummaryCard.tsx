@@ -73,7 +73,7 @@ export default function SummaryCard({ title, value, icon, color, bg, format = 'c
         .trend-neutral {
           color: var(--meta);
         }
-        @media (min-width: 1024px) {
+        @media (min-width: 900px) {
           .summary-card {
             padding: 16px;
             border-radius: 16px;
