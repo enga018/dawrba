@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import OfflineBanner from '@/app/OfflineBanner'
-import ThemeToggle from '@/app/ThemeToggle'
 import BottomNav from '@/app/BottomNav'
 import Sidebar from '@/app/Sidebar'
 import QuickAddSheet from '@/app/QuickAddSheet'
@@ -85,7 +84,6 @@ export default function AppLayout({
                 {shopName}
               </button>
             )}
-            <ThemeToggle />
           </div>
         </div>
         <div className="content">

@@ -100,7 +100,6 @@ export default function Home() {
                 <i className={`fa-solid ${isOnline ? 'fa-wifi' : 'fa-wifi'}`}></i>
                 {isOnline ? 'Online' : 'Offline'}
               </span>
-              <ThemeToggle />
             </div>
           </div>
           <div className="content content-wide">
