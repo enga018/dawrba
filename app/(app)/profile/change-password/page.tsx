@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { showToast } from '@/lib/toast'
 
@@ -45,15 +44,6 @@ export default function ChangePasswordPage() {
 
   return (
     <>
-      <Link href="/profile">
-        <div className="back-row">
-          <button className="back-btn">
-            <i className="fa-solid fa-arrow-left"></i>
-          </button>
-          <h2>Change Password</h2>
-        </div>
-      </Link>
-
       <form onSubmit={handleSave}>
         <div className="detail-card">
           <div className="field">

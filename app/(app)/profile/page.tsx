@@ -56,15 +56,6 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Link href="/">
-        <div className="back-row">
-          <button className="back-btn">
-            <i className="fa-solid fa-arrow-left"></i>
-          </button>
-          <h2>Profile</h2>
-        </div>
-      </Link>
-
       <div className="profile-header">
         <div className="profile-avatar">
           {getInitials(shopName || 'U')}

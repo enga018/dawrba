@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { showToast } from '@/lib/toast'
 import type { OverdueStrategy } from '@/lib/utils'
@@ -83,15 +82,6 @@ export default function ShopInformationPage() {
 
   return (
     <>
-      <Link href="/profile">
-        <div className="back-row">
-          <button className="back-btn">
-            <i className="fa-solid fa-arrow-left"></i>
-          </button>
-          <h2>Shop Information</h2>
-        </div>
-      </Link>
-
       <form onSubmit={handleSave}>
         <div className="detail-card">
           <div className="field">

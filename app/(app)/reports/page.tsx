@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency, isCustomerOverdue, type OverdueStrategy } from '@/lib/utils'
 
@@ -171,15 +170,6 @@ export default function ReportsPage() {
 
   return (
     <>
-      <Link href="/">
-        <div className="back-row">
-          <button className="back-btn">
-            <i className="fa-solid fa-arrow-left"></i>
-          </button>
-          <h2>Reports</h2>
-        </div>
-      </Link>
-
       <div className="report-period-tabs">
         {(['today', 'week', 'month'] as Period[]).map((p) => (
           <button

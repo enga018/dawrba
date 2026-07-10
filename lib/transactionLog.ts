@@ -1,4 +1,5 @@
 import { formatDate, formatCurrency, formatTime } from './utils'
+import { supabase } from './supabase'
 
 export interface LogEntry {
   id: string
@@ -43,4 +44,39 @@ export function formatLogEntry(entry: LogEntry, withCustomerName = false): strin
   const wasCredit = (entry.previous_amount || 0) > 0
   const label = wasCredit ? 'Credit given' : 'Payment received'
   return `${prefix}${label} on ${dateStr} was deleted (₹${formatCurrency(Math.abs(entry.previous_amount || 0))}) at ${timeStr}`
+}
+
+interface LogActivityParams {
+  transactionId?: string
+  eventType: LogEntry['event_type']
+  amount?: number | null
+  previousAmount?: number | null
+  note?: string | null
+  previousNote?: string | null
+  date?: string | null
+  previousDate?: string | null
+  customerId: string
+  customerName: string
+}
+
+/* Best-effort activity log write (powers the Home "Recent Activity" card
+   and the /log pages). Never throws - a logging failure shouldn't block
+   the transaction/customer action that triggered it. */
+export async function logActivity(params: LogActivityParams): Promise<void> {
+  try {
+    await supabase.from('transaction_logs').insert({
+      transaction_id: params.transactionId ?? null,
+      event_type: params.eventType,
+      amount: params.amount ?? null,
+      previous_amount: params.previousAmount ?? null,
+      note: params.note ?? null,
+      previous_note: params.previousNote ?? null,
+      date: params.date ?? null,
+      previous_date: params.previousDate ?? null,
+      customer_id: params.customerId,
+      customer_name: params.customerName,
+    })
+  } catch {
+    // silent - see comment above
+  }
 }

@@ -7,7 +7,9 @@ import OfflineBanner from '@/app/OfflineBanner'
 import BottomNav from '@/app/BottomNav'
 import Sidebar from '@/app/Sidebar'
 import FloatingAddButton from '@/app/FloatingAddButton'
-import AddModal from '@/app/AddModal'
+import TransactionModal from '@/app/TransactionModal'
+import AddCustomerModal from '@/app/AddCustomerModal'
+import AddTransactionPicker from '@/app/AddTransactionPicker'
 import type { User } from '@supabase/supabase-js'
 
 export default function AppLayout({
@@ -18,7 +20,8 @@ export default function AppLayout({
   const [user, setUser] = useState<User | null>(null)
   const [shopName, setShopName] = useState('')
   const [loading, setLoading] = useState(true)
-  const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
+  const [activeModal, setActiveModal] = useState<'credit' | 'pay' | 'add-customer' | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -93,10 +96,22 @@ export default function AppLayout({
         <div className="content">
           {children}
         </div>
-        <BottomNav onAddClick={() => setShowQuickAdd(true)} />
+        <BottomNav onAddClick={() => setShowPicker(true)} />
       </div>
-      <FloatingAddButton />
-      <AddModal show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
+      <FloatingAddButton
+        onAddSelect={(mode) => setActiveModal(mode === 'payment' ? 'pay' : mode === 'new' ? 'add-customer' : 'credit')}
+      />
+      <AddTransactionPicker
+        show={showPicker}
+        onClose={() => setShowPicker(false)}
+        onSelect={(mode) => {
+          setShowPicker(false)
+          setActiveModal(mode === 'payment' ? 'pay' : mode === 'new' ? 'add-customer' : 'credit')
+        }}
+      />
+      <TransactionModal show={activeModal === 'credit'} mode="credit" onClose={() => setActiveModal(null)} />
+      <TransactionModal show={activeModal === 'pay'} mode="pay" onClose={() => setActiveModal(null)} />
+      <AddCustomerModal show={activeModal === 'add-customer'} onClose={() => setActiveModal(null)} />
     </div>
   )
 }
