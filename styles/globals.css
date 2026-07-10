@@ -277,6 +277,47 @@ input, select, button, textarea {
   justify-content: space-between;
   cursor: pointer;
   transition: box-shadow 0.18s;
+  container-type: inline-size;
+  container-name: customer-card;
+}
+
+/* When fewer cards mean auto-fit stretches each one wider, scale the
+   content up to use the extra room instead of leaving a bare gap. */
+@container customer-card (min-width: 300px) {
+  .customer-card {
+    padding: 18px 20px;
+  }
+  .avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 0.95rem;
+  }
+  .cc-name {
+    font-size: 1.05rem;
+  }
+  .cc-meta {
+    font-size: 0.85rem;
+  }
+  .cc-balance {
+    font-size: 1.15rem;
+  }
+}
+
+@container customer-card (min-width: 380px) {
+  .customer-card {
+    padding: 22px 24px;
+  }
+  .avatar {
+    width: 54px;
+    height: 54px;
+    font-size: 1.05rem;
+  }
+  .cc-name {
+    font-size: 1.15rem;
+  }
+  .cc-balance {
+    font-size: 1.3rem;
+  }
 }
 
 .customer-card:hover {
