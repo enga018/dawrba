@@ -1644,8 +1644,9 @@ input, select, button, textarea {
 /* ─── Transaction history header ────────────────────────────── */
 .tx-history-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
   padding: 16px 16px 0;
 }
 
@@ -1653,6 +1654,20 @@ input, select, button, textarea {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 700;
+}
+
+@media (min-width: 1024px) {
+  .tx-history-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .tx-history-header .tx-tabs {
+    width: 240px;
+    margin-bottom: 0;
+  }
 }
 
 /* ─── Transaction detail modal ─────────────────────────────── */
@@ -1743,6 +1758,10 @@ input, select, button, textarea {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
+}
+
+.customer-toolbar {
+  margin-bottom: 14px;
 }
 
 .customer-count-badge {
@@ -2099,6 +2118,12 @@ input, select, button, textarea {
 
 .bottom-nav-item-add {
   position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .bottom-nav-add-icon {
