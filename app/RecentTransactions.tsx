@@ -3,10 +3,19 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { formatLogEntry, type LogEntry } from '@/lib/transactionLog'
+import { formatDate, formatCurrency } from '@/lib/utils'
+
+interface RecentTx {
+  id: string
+  amount: number
+  note?: string
+  date?: string
+  customer_id: string
+  customer_name: string
+}
 
 export default function RecentTransactions() {
-  const [entries, setEntries] = useState<LogEntry[]>([])
+  const [transactions, setTransactions] = useState<RecentTx[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -18,16 +27,20 @@ export default function RecentTransactions() {
       }
 
       const { data, error } = await supabase
-        .from('transaction_logs')
-        .select('*, customers!inner(name)')
+        .from('transactions')
+        .select('id, amount, note, date, created_at, customer_id, customers!inner(name)')
         .order('created_at', { ascending: false })
         .limit(5)
 
       if (!error) {
-        setEntries(
-          (data || []).map((entry) => ({
-            ...entry,
-            customer_name: (entry.customers as unknown as { name: string }).name,
+        setTransactions(
+          (data || []).map((tx) => ({
+            id: tx.id,
+            amount: tx.amount,
+            note: tx.note,
+            date: tx.date,
+            customer_id: tx.customer_id,
+            customer_name: (tx.customers as unknown as { name: string }).name,
           }))
         )
       }
@@ -41,7 +54,7 @@ export default function RecentTransactions() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
         <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Recent Transactions</h3>
         <Link
-          href="/transactions"
+          href="/log"
           style={{ fontSize: '0.8rem', color: 'var(--blue)', fontWeight: 600, textDecoration: 'none' }}
         >
           Transaction Log
@@ -52,28 +65,38 @@ export default function RecentTransactions() {
         <div style={{ textAlign: 'center', padding: '20px' }}>
           <div className="spinner" style={{ margin: '0 auto' }}></div>
         </div>
-      ) : entries.length === 0 ? (
+      ) : transactions.length === 0 ? (
         <div className="empty">
           <p>No transactions yet.</p>
         </div>
       ) : (
-        <div>
-          {entries.map((entry) => (
-            <Link
-              key={entry.id}
-              href={`/customers/${entry.customer_id}`}
-              style={{
-                display: 'block',
-                padding: '10px 0',
-                borderBottom: '1px solid var(--border)',
-                fontSize: '0.85rem',
-                color: 'var(--text)',
-                textDecoration: 'none',
-              }}
-            >
-              {formatLogEntry(entry, true)}
-            </Link>
-          ))}
+        <div className="tx-list">
+          {transactions.map((tx) => {
+            const isCredit = tx.amount > 0
+            return (
+              <Link
+                key={tx.id}
+                href={`/customers/${tx.customer_id}`}
+                className="tx-item"
+                style={{ textDecoration: 'none' }}
+              >
+                <div className="tx-left">
+                  <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
+                    <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-minus'}`}></i>
+                  </div>
+                  <div>
+                    <div className="tx-note">{tx.customer_name}</div>
+                    <div className="tx-date">
+                      {tx.note || (isCredit ? 'Credit' : 'Payment')} · {formatDate(tx.date)}
+                    </div>
+                  </div>
+                </div>
+                <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
+                  {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
+                </div>
+              </Link>
+            )
+          })}
         </div>
       )}
     </div>

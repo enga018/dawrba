@@ -697,11 +697,11 @@ input, select, button, textarea {
   gap: 10px;
 }
 
-/* Dashboard layout: customer list next to recent transactions */
+/* Dashboard layout: customer list section, then recent transactions section, each full width */
 .dashboard-columns {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .dashboard-recent {
@@ -709,22 +709,6 @@ input, select, button, textarea {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px;
-}
-
-@media (min-width: 1024px) {
-  .dashboard-columns {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  .dashboard-columns > .customer-list {
-    flex: 2;
-    grid-template-columns: repeat(2, 1fr);
-    margin-top: 0;
-  }
-  .dashboard-recent {
-    flex: 1;
-    min-width: 300px;
-  }
 }
 
 /* Add button (floating) */

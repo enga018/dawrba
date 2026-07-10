@@ -89,7 +89,7 @@ export default function Home() {
             <button
               className="header-btn"
               title="Transaction Log"
-              onClick={() => router.push('/transactions')}
+              onClick={() => router.push('/log')}
             >
               <i className="fa-solid fa-receipt"></i>
             </button>
