@@ -8,6 +8,7 @@ import DashboardPage from './DashboardPage'
 import OfflineBanner from './OfflineBanner'
 import ThemeToggle from './ThemeToggle'
 import BottomNav from './BottomNav'
+import Sidebar from './Sidebar'
 import QuickAddSheet from './QuickAddSheet'
 import type { User } from '@supabase/supabase-js'
 
@@ -85,40 +86,43 @@ export default function Home() {
 
   if (user) {
     return (
-      <>
+      <div className="app-layout">
         <OfflineBanner />
-        <div className="header">
-          <div className="header-left">
-            <h1 className="header-greeting">{getGreeting()}</h1>
-            {shopName && <div className="header-shop-label">{shopName}</div>}
+        <Sidebar />
+        <div className="app-main">
+          <div className="header">
+            <div className="header-left">
+              <h1 className="header-greeting">{getGreeting()}</h1>
+              {shopName && <div className="header-shop-label">{shopName}</div>}
+            </div>
+            <div className="header-actions">
+              <span className={`status-dot ${isOnline ? 'online' : 'offline'}`}>
+                <i className={`fa-solid ${isOnline ? 'fa-wifi' : 'fa-wifi'}`}></i>
+                {isOnline ? 'Online' : 'Offline'}
+              </span>
+              <ThemeToggle />
+              <button
+                className="header-btn header-btn-nav"
+                title="Notifications"
+              >
+                <i className="fa-solid fa-bell"></i>
+              </button>
+              <button
+                className="header-btn header-btn-nav"
+                title="Settings"
+                onClick={() => router.push('/settings')}
+              >
+                <i className="fa-solid fa-gear"></i>
+              </button>
+            </div>
           </div>
-          <div className="header-actions">
-            <span className={`status-dot ${isOnline ? 'online' : 'offline'}`}>
-              <i className={`fa-solid ${isOnline ? 'fa-wifi' : 'fa-wifi'}`}></i>
-              {isOnline ? 'Online' : 'Offline'}
-            </span>
-            <ThemeToggle />
-            <button
-              className="header-btn header-btn-nav"
-              title="Notifications"
-            >
-              <i className="fa-solid fa-bell"></i>
-            </button>
-            <button
-              className="header-btn header-btn-nav"
-              title="Settings"
-              onClick={() => router.push('/settings')}
-            >
-              <i className="fa-solid fa-gear"></i>
-            </button>
+          <div className="content content-wide">
+            <DashboardPage />
           </div>
+          <BottomNav onAddClick={() => setShowQuickAdd(true)} />
         </div>
-        <div className="content content-wide">
-          <DashboardPage />
-        </div>
-        <BottomNav onAddClick={() => setShowQuickAdd(true)} />
         <QuickAddSheet show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
-      </>
+      </div>
     )
   }
 

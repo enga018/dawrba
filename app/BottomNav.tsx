@@ -36,8 +36,8 @@ export default function BottomNav({ onAddClick }: BottomNavProps) {
         <span>Reports</span>
       </Link>
       <Link href="/settings" className={`bottom-nav-item ${isActive('/settings') ? 'active' : ''}`}>
-        <i className="fa-solid fa-gear"></i>
-        <span>Settings</span>
+        <i className="fa-solid fa-user"></i>
+        <span>Profile</span>
       </Link>
     </nav>
   )
