@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import Link from 'next/link'
 import { showToast } from '@/lib/toast'
 
 interface ExistingCustomer {
@@ -143,15 +142,6 @@ export default function AddCustomer() {
 
   return (
     <>
-      <Link href="/">
-        <div className="back-row">
-          <button className="back-btn">
-            <i className="fa-solid fa-arrow-left"></i>
-          </button>
-          <h2>{modalMode === 'credit' ? 'Add Credit' : modalMode === 'payment' ? 'Collect Payment' : 'Add Customer'}</h2>
-        </div>
-      </Link>
-
       {(modalMode === 'credit' || modalMode === 'payment') ? (
         <form onSubmit={modalMode === 'credit' ? handleAddCredit : handleAddPayment}>
           <div className="field">

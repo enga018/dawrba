@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import Link from 'next/link'
 import { formatLogEntry, type LogEntry } from '@/lib/transactionLog'
 
 const PAGE_SIZE = 20
@@ -13,7 +12,6 @@ export default function CustomerTransactionLogPage() {
   const router = useRouter()
   const customerId = params.id as string
 
-  const [customerName, setCustomerName] = useState('')
   const [entries, setEntries] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -38,15 +36,6 @@ export default function CustomerTransactionLogPage() {
         router.push('/login')
         return
       }
-
-      const { data: customerData } = await supabase
-        .from('customers')
-        .select('name')
-        .eq('id', customerId)
-        .eq('user_id', user.id)
-        .single()
-
-      if (customerData) setCustomerName(customerData.name)
 
       const page = await loadPage(0)
       setEntries(page)
@@ -74,15 +63,6 @@ export default function CustomerTransactionLogPage() {
 
   return (
     <>
-      <Link href={`/customers/${customerId}`}>
-        <div className="back-row">
-          <button className="back-btn">
-            <i className="fa-solid fa-arrow-left"></i>
-          </button>
-          <h2>{customerName ? `${customerName} — Transaction Log` : 'Transaction Log'}</h2>
-        </div>
-      </Link>
-
       <div className="tx-list">
         {entries.length === 0 ? (
           <div className="empty">

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { showToast } from '@/lib/toast'
 
@@ -38,15 +37,6 @@ export default function ExportDataPage() {
 
   return (
     <>
-      <Link href="/profile">
-        <div className="back-row">
-          <button className="back-btn">
-            <i className="fa-solid fa-arrow-left"></i>
-          </button>
-          <h2>Export Data</h2>
-        </div>
-      </Link>
-
       <div className="detail-card">
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <i className="fa-solid fa-download" style={{ fontSize: '2rem', color: 'var(--blue)', marginBottom: '12px', display: 'block' }}></i>

@@ -64,15 +64,6 @@ export default function TransactionLogPage() {
 
   return (
     <>
-      <Link href="/profile">
-        <div className="back-row">
-          <button className="back-btn">
-            <i className="fa-solid fa-arrow-left"></i>
-          </button>
-          <h2>Activity Log</h2>
-        </div>
-      </Link>
-
       <div className="tx-list">
         {entries.length === 0 ? (
           <div className="empty">
