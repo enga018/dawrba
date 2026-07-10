@@ -20,7 +20,7 @@ export default function SummaryCard({ title, value, icon, color, bg, format = 'c
         .summary-card {
           background: ${bg};
           border-radius: 14px;
-          padding: 12px;
+          padding: 14px;
           border: 1px solid var(--border);
           transition: box-shadow 0.2s ease;
           container-type: inline-size;
@@ -36,7 +36,7 @@ export default function SummaryCard({ title, value, icon, color, bg, format = 'c
           margin-bottom: 6px;
         }
         .summary-card-title {
-          font-size: 0.68rem;
+          font-size: 0.6875rem;
           color: var(--meta);
           font-weight: 600;
           text-transform: uppercase;
@@ -54,7 +54,7 @@ export default function SummaryCard({ title, value, icon, color, bg, format = 'c
           flex-shrink: 0;
         }
         .summary-card-value {
-          font-size: 1.15rem;
+          font-size: 1.375rem;
           font-weight: 700;
           color: var(--text);
           margin-bottom: 2px;
@@ -77,11 +77,11 @@ export default function SummaryCard({ title, value, icon, color, bg, format = 'c
         }
         @container summary-card (min-width: 200px) {
           .summary-card {
-            padding: 16px;
+            padding: 18px;
             border-radius: 16px;
           }
           .summary-card-title {
-            font-size: 0.78rem;
+            font-size: 0.8rem;
           }
           .summary-card-icon {
             width: 32px;
@@ -89,7 +89,7 @@ export default function SummaryCard({ title, value, icon, color, bg, format = 'c
             font-size: 0.95rem;
           }
           .summary-card-value {
-            font-size: 1.45rem;
+            font-size: 1.6rem;
           }
           .summary-card-trend {
             font-size: 0.76rem;

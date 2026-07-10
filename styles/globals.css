@@ -88,7 +88,7 @@ input, select, button, textarea {
 .header {
   background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
   color: white;
-  padding: 16px 20px;
+  padding: 10px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -324,26 +324,24 @@ input, select, button, textarea {
 
 /* Customer card */
 .customer-card {
-  padding: 12px 4px;
-  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: box-shadow 0.18s, transform 0.15s;
   container-type: inline-size;
   container-name: customer-card;
-}
-
-.customer-list > .customer-card:last-child {
-  border-bottom: none;
 }
 
 /* When fewer cards mean auto-fit stretches each one wider, scale the
    content up to use the extra room instead of leaving a bare gap. */
 @container customer-card (min-width: 300px) {
   .customer-card {
-    padding: 16px 4px;
+    padding: 18px 20px;
   }
   .avatar {
     width: 38px;
@@ -363,7 +361,7 @@ input, select, button, textarea {
 
 @container customer-card (min-width: 380px) {
   .customer-card {
-    padding: 20px 4px;
+    padding: 22px 24px;
   }
   .avatar {
     width: 42px;
@@ -379,11 +377,11 @@ input, select, button, textarea {
 }
 
 .customer-card:hover {
-  background: var(--surface-alt);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .customer-card:active {
-  background: var(--border);
+  transform: scale(0.99);
 }
 
 .cc-left {
@@ -407,8 +405,9 @@ input, select, button, textarea {
 }
 
 .cc-name {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.95rem;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -920,13 +919,13 @@ input, select, button, textarea {
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-  gap: 10px;
+  gap: 6px;
   margin-bottom: 18px;
 }
 
 @media (min-width: 900px) {
   .summary-grid {
-    gap: 20px;
+    gap: 14px;
   }
 }
 

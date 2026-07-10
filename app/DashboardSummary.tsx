@@ -105,7 +105,7 @@ export default function DashboardSummary() {
           <div key={i} style={{
             background: 'var(--surface)',
             borderRadius: '14px',
-            padding: '12px',
+            padding: '14px',
             border: '1px solid var(--border)',
           }}>
             <div style={{
