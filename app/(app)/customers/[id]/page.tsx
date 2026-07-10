@@ -289,16 +289,8 @@ export default function CustomerDetail() {
         </div>
       </Link>
 
-      <div className="detail-card" style={{ position: 'relative' }}>
-        <button
-          className="tx-btn"
-          style={{ position: 'absolute', top: '16px', right: '16px' }}
-          onClick={openLogModal}
-          title="Transaction Log"
-        >
-          <i className="fa-solid fa-clock-rotate-left"></i>
-        </button>
-        <h2 style={{ fontSize: '1.15rem', marginBottom: '4px', paddingRight: '32px' }}>{customer.name}</h2>
+      <div className="detail-card">
+        <h2 style={{ fontSize: '1.15rem', marginBottom: '4px' }}>{customer.name}</h2>
         <div className="detail-phone">
           <i className="fa-solid fa-phone"></i>
           <span>{customer.phone || 'No phone'}</span>
@@ -339,7 +331,23 @@ export default function CustomerDetail() {
         </div>
       </div>
 
-      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '8px' }}>Transactions</h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Recent Transactions</h3>
+        <button
+          onClick={openLogModal}
+          style={{
+            fontSize: '0.8rem',
+            color: 'var(--blue)',
+            fontWeight: 600,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          Transaction Log
+        </button>
+      </div>
       <div className="tx-list">
         {transactions.length === 0 && !(customer.opening_balance > 0) ? (
           <div className="empty">

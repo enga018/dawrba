@@ -7,6 +7,7 @@ import { getInitials, formatCurrency, formatRelativeTime } from '@/lib/utils'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import DashboardSummary from './DashboardSummary'
+import RecentTransactions from './RecentTransactions'
 
 interface Customer {
   id: string
@@ -188,31 +189,35 @@ export default function DashboardPage() {
         <>
           <DashboardSummary />
 
-          <div className="customer-list">
-            {filteredList.map((customer) => (
-              <Link
-                key={customer.id}
-                href={`/customers/${customer.id}`}
-                className="customer-card"
-                style={{ textDecoration: 'none' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                  <div className="avatar">{getInitials(customer.name)}</div>
-                  <div>
-                    <div className="cc-name">{customer.name}</div>
-                    <div className="cc-meta">
-                      {customer.phone || (customer.created_at ? formatRelativeTime(customer.created_at) : '')}
-                      {customer.phone && customer.created_at ? ` · ${formatRelativeTime(customer.created_at)}` : ''}
+          <div className="dashboard-columns">
+            <div className="customer-list">
+              {filteredList.map((customer) => (
+                <Link
+                  key={customer.id}
+                  href={`/customers/${customer.id}`}
+                  className="customer-card"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                    <div className="avatar">{getInitials(customer.name)}</div>
+                    <div>
+                      <div className="cc-name">{customer.name}</div>
+                      <div className="cc-meta">
+                        {customer.phone || (customer.created_at ? formatRelativeTime(customer.created_at) : '')}
+                        {customer.phone && customer.created_at ? ` · ${formatRelativeTime(customer.created_at)}` : ''}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
-                  {(customer.balance || 0) <= 0
-                    ? '₹0'
-                    : '₹' + formatCurrency(customer.balance || 0)}
-                </div>
-              </Link>
-            ))}
+                  <div className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
+                    {(customer.balance || 0) <= 0
+                      ? '₹0'
+                      : '₹' + formatCurrency(customer.balance || 0)}
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <RecentTransactions />
           </div>
         </>
       )}
