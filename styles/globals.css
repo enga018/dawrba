@@ -709,12 +709,36 @@ input, select, button, textarea {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px;
+  container-type: inline-size;
+  container-name: dashboard-recent;
+}
+
+/* Reflow the recent-transactions rows to their own box width, not the viewport,
+   so they stay legible whether this panel is a narrow sidebar or full width. */
+@container dashboard-recent (max-width: 360px) {
+  .dashboard-recent .tx-item {
+    padding: 10px 0;
+  }
+  .dashboard-recent .tx-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.68rem;
+  }
+  .dashboard-recent .tx-note {
+    font-size: 0.78rem;
+  }
+  .dashboard-recent .tx-date {
+    font-size: 0.72rem;
+  }
+  .dashboard-recent .tx-amount {
+    font-size: 0.85rem;
+  }
 }
 
 @media (min-width: 900px) {
   .dashboard-columns {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
     align-items: start;
   }
 }
