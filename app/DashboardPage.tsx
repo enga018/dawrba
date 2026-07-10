@@ -6,7 +6,6 @@ import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import DashboardHero from './DashboardHero'
 import DashboardSummary from './DashboardSummary'
-import RecentTransactions from './RecentTransactions'
 import CustomerList from './CustomerList'
 import AmountKeypad from './AmountKeypad'
 
@@ -130,12 +129,8 @@ export default function DashboardPage() {
 
           <DashboardHero />
 
-          <div className="dashboard-columns">
-            <div className="dashboard-customers">
-              <CustomerList key={refreshKey} />
-            </div>
-
-            <RecentTransactions limit={5} />
+          <div className="dashboard-customers">
+            <CustomerList key={refreshKey} />
           </div>
         </>
       )}
