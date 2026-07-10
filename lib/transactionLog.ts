@@ -56,15 +56,16 @@ interface LogActivityParams {
   date?: string | null
   previousDate?: string | null
   customerId: string
-  customerName: string
 }
 
 /* Best-effort activity log write (powers the Home "Recent Activity" card
    and the /log pages). Never throws - a logging failure shouldn't block
-   the transaction/customer action that triggered it. */
+   the transaction/customer action that triggered it. customer_name is
+   NOT a column on transaction_logs (see log/page.tsx, which joins
+   customers!inner(name) to get it) - only customer_id is stored here. */
 export async function logActivity(params: LogActivityParams): Promise<void> {
   try {
-    await supabase.from('transaction_logs').insert({
+    const { error } = await supabase.from('transaction_logs').insert({
       transaction_id: params.transactionId ?? null,
       event_type: params.eventType,
       amount: params.amount ?? null,
@@ -74,9 +75,9 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
       date: params.date ?? null,
       previous_date: params.previousDate ?? null,
       customer_id: params.customerId,
-      customer_name: params.customerName,
     })
-  } catch {
-    // silent - see comment above
+    if (error) console.error('logActivity failed:', error)
+  } catch (err) {
+    console.error('logActivity failed:', err)
   }
 }

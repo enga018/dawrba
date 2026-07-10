@@ -67,21 +67,32 @@ export default function RecentActivity({ limit = 5 }: { limit?: number }) {
       const user = (await supabase.auth.getUser()).data.user
       if (!user) { setLoading(false); return }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('transaction_logs')
-        .select('id, event_type, amount, previous_amount, created_at, customer_id, customer_name')
+        .select('id, event_type, amount, previous_amount, created_at, customer_id, customers!inner(name)')
         .order('created_at', { ascending: false })
         .limit(limit)
 
-      setEntries(data || [])
-    } catch {
-      // silent
+      if (error) throw error
+
+      setEntries((data || []).map((entry) => ({
+        ...entry,
+        customer_name: (entry.customers as unknown as { name: string })?.name,
+      })))
+    } catch (err) {
+      console.error('Failed to load recent activity:', err)
     } finally {
       setLoading(false)
     }
   }, [limit])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    const onRefresh = () => load()
+    window.addEventListener('dawrba:refresh', onRefresh)
+    return () => window.removeEventListener('dawrba:refresh', onRefresh)
+  }, [load])
 
   return (
     <div className="home-section-card">

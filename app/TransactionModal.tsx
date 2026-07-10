@@ -113,7 +113,6 @@ export default function TransactionModal({
     const targetCustomerId = customerId || selectedCustomerId
     if (!targetCustomerId || !amountValue) return
     setSubmitting(true)
-    const targetCustomerName = fixedCustomer ? (customerName || '') : (selectedCustomer?.name || '')
     try {
       if (editingTx) {
         const { error } = await supabase
@@ -130,7 +129,6 @@ export default function TransactionModal({
           note: note || null,
           previousNote: editingTx.note || null,
           customerId: targetCustomerId,
-          customerName: targetCustomerName,
         })
       } else {
         const { data, error } = await supabase.from('transactions').insert({
@@ -145,7 +143,6 @@ export default function TransactionModal({
           eventType: 'insert',
           amount: signedAmount,
           customerId: targetCustomerId,
-          customerName: targetCustomerName,
         })
       }
       close()
