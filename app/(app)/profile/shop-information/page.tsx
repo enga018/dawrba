@@ -65,7 +65,7 @@ export default function ShopInformationPage() {
 
       if (dbError) throw dbError
       showToast('Shop information saved')
-      router.push('/settings')
+      router.push('/profile')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save')
     } finally {
@@ -83,7 +83,7 @@ export default function ShopInformationPage() {
 
   return (
     <>
-      <Link href="/settings">
+      <Link href="/profile">
         <div className="back-row">
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>

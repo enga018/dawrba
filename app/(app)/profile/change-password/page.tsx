@@ -35,7 +35,7 @@ export default function ChangePasswordPage() {
 
       if (updateError) throw updateError
       showToast('Password updated')
-      router.push('/settings')
+      router.push('/profile')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update password')
     } finally {
@@ -45,7 +45,7 @@ export default function ChangePasswordPage() {
 
   return (
     <>
-      <Link href="/settings">
+      <Link href="/profile">
         <div className="back-row">
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>

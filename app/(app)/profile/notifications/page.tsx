@@ -5,7 +5,7 @@ import Link from 'next/link'
 export default function NotificationsPage() {
   return (
     <>
-      <Link href="/settings">
+      <Link href="/profile">
         <div className="back-row">
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>

@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DawrBa - Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+/* ─── Variables ──────────────────────────────────────────────── */
+:root {
+  --bg: #f3f7fb;
+  --blue: #1565ff;
+  --blue-dark: #0d47a1;
+  --text: #111827;
+  --muted: #6b7280;
+  --meta: #9ca3af;
+  --border: #e5e7eb;
+  --surface: #ffffff;
+  --surface-alt: #f8fafc;
+  --red: #dc2626;
+  --green: #16a34a;
+  --orange: #f97316;
+  --tint-red: #fef2f2;
+  --tint-green: #ecfdf5;
+  --tint-blue: #eff6ff;
+  --tint-orange: #fff7ed;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220; --blue: #3b82f6; --blue-dark: #1d4ed8;
+    --text: #e8ecf3; --muted: #9aa4b6; --meta: #6b7686;
+    --border: #232f45; --surface: #131b2c; --surface-alt: #1a2438;
+    --red: #f87171; --green: #4ade80; --orange: #fb923c;
+    --tint-red: #3a1e20; --tint-green: #123324;
+    --tint-blue: #16233d; --tint-orange: #3a2412;
+  }
+}
+
+/* ─── Reset ──────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+/* ─── Page switcher ──────────────────────────────────────────── */
+.page-switcher{display:flex;gap:8px;padding:10px 16px;background:#1e293b;position:sticky;top:0;z-index:99}
+.page-switcher span{color:#94a3b8;font-size:0.78rem;font-weight:600;align-self:center;margin-right:4px}
+.page-switcher button{
+  padding:7px 16px;border-radius:8px;border:1px solid #334155;background:#1e293b;
+  color:#cbd5e1;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all .15s;
+}
+.page-switcher button:hover{background:#334155;color:white}
+.page-switcher button.active{background:var(--blue);color:white;border-color:var(--blue)}
+
+/* ─── Layout ─────────────────────────────────────────────────── */
+.app-layout{display:flex;min-height:100vh}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* ─── Sidebar (desktop only) ─────────────────────────────────── */
+.sidebar{display:none}
+@media(min-width:1024px){
+  .sidebar{display:flex;flex-direction:column;width:220px;background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;z-index:20}
+  .app-main{margin-left:220px}
+}
+.sidebar-brand{padding:16px 20px;border-bottom:1px solid var(--border)}
+.sidebar-logo{font-size:1.3rem;font-weight:800;letter-spacing:-0.03em;color:var(--text)}
+.sidebar-logo .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);margin:0 2px 2px 4px;box-shadow:0 0 0 3px rgba(37,99,235,0.2)}
+.sidebar-nav{display:flex;flex-direction:column;gap:4px;padding:12px 8px;flex:1}
+.sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;color:var(--muted);font-size:0.88rem;font-weight:600;transition:background .15s,color .15s;cursor:pointer}
+.sidebar-item:hover{background:var(--surface-alt);color:var(--text)}
+.sidebar-item.active{background:var(--tint-blue);color:var(--blue)}
+.sidebar-item i{width:20px;text-align:center;font-size:1rem}
+.sidebar-item-add{margin-top:8px;background:var(--blue);color:white}
+.sidebar-item-add:hover{background:var(--blue-dark);color:white}
+
+/* ─── Header ─────────────────────────────────────────────────── */
+.header{background:linear-gradient(135deg,var(--blue) 0%,var(--blue-dark) 100%);color:white;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.header-left{display:flex;flex-direction:column;gap:2px;min-width:0}
+.header-greeting{font-size:1.1rem;font-weight:700;letter-spacing:-0.02em}
+.header-shop-label{font-size:0.78rem;font-weight:600;opacity:0.85}
+.header-page-title{font-size:1.1rem;font-weight:700;letter-spacing:-0.02em}
+.header-actions{display:flex;gap:10px;align-items:center}
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:600;padding:5px 10px;border-radius:999px;white-space:nowrap}
+.status-dot.online{background:rgba(255,255,255,0.18);color:white}
+.status-dot.offline{background:rgba(248,113,113,0.25);color:#fca5a5}
+.header-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:0.9rem;transition:background .15s}
+.header-btn:hover{background:rgba(255,255,255,0.25)}
+.theme-toggle{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:0.9rem}
+.back-row{display:flex;align-items:center;gap:10px;cursor:pointer}
+.back-btn{background:none;border:none;color:white;font-size:1.1rem;cursor:pointer;padding:4px}
+
+/* ─── Content ─────────────────────────────────────────────────── */
+.content{padding:16px 12px 96px;width:100%;max-width:100%}
+@media(min-width:768px){.content{padding:24px 40px}}
+@media(min-width:1024px){.content{padding:24px 40px}}
+@media(min-width:1280px){.content{padding:32px 60px}}
+
+/* ─── Pages ──────────────────────────────────────────────────── */
+.page{display:none}
+.page.active{display:block}
+
+/* ─── Summary grid ───────────────────────────────────────────── */
+.summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px}
+@media(min-width:768px){.summary-grid{grid-template-columns:repeat(4,1fr);gap:16px}}
+.summary-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;display:flex;align-items:center;gap:12px}
+.summary-card-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:1rem;flex-shrink:0}
+.summary-card-green .summary-card-icon{background:var(--tint-green);color:var(--green)}
+.summary-card-blue .summary-card-icon{background:var(--tint-blue);color:var(--blue)}
+.summary-card-orange .summary-card-icon{background:var(--tint-orange);color:var(--orange)}
+.summary-card-red .summary-card-icon{background:var(--tint-red);color:var(--red)}
+.summary-card-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.summary-card-label{font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em}
+.summary-card-value{font-size:1.15rem;font-weight:800;letter-spacing:-0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary-card-value.green{color:var(--green)}
+.summary-card-value.blue{color:var(--blue)}
+.summary-card-value.orange{color:var(--orange)}
+.summary-card-value.red{color:var(--red)}
+
+/* ─── Home grid ──────────────────────────────────────────────── */
+.home-grid{display:flex;flex-direction:column;gap:16px}
+@media(min-width:768px){.home-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}}
+@media(min-width:1024px){.home-grid{grid-template-columns:2fr 1fr}}
+.home-grid-main,.home-grid-side{display:flex;flex-direction:column;gap:16px;min-width:0}
+
+/* ─── Section cards ──────────────────────────────────────────── */
+.home-section-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px}
+.home-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.home-section-header h3{font-size:0.95rem;font-weight:700}
+.home-section-link{font-size:0.8rem;font-weight:600;color:var(--blue)}
+.home-section-link:hover{text-decoration:underline}
+
+/* ─── Attention list ─────────────────────────────────────────── */
+.attention-list{display:flex;flex-direction:column}
+.attention-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);transition:background .12s;cursor:pointer}
+.attention-item:last-child{border-bottom:none}
+.attention-item:hover{background:var(--surface-alt);border-radius:8px;padding-left:8px;padding-right:8px}
+.attention-left{display:flex;align-items:center;gap:10px;min-width:0}
+.avatar-sm{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:0.7rem;color:white;background:linear-gradient(135deg,#60a5fa,#3b82f6);flex-shrink:0}
+.attention-name{font-size:0.88rem;font-weight:700;color:var(--text)}
+.attention-meta{font-size:0.75rem;color:var(--meta);margin-top:1px}
+.attention-amount{font-size:0.92rem;font-weight:700;color:var(--red);white-space:nowrap}
+
+/* ─── Transaction list ───────────────────────────────────────── */
+.tx-list{display:flex;flex-direction:column}
+.tx-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);transition:background .12s;cursor:pointer}
+.tx-item:last-child{border-bottom:none}
+.tx-item:hover{background:var(--surface-alt);border-radius:8px;padding-left:8px;padding-right:8px}
+.tx-left{display:flex;align-items:center;gap:10px;min-width:0}
+.tx-icon{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:0.75rem}
+.tx-icon.credit{background:var(--tint-red);color:var(--red)}
+.tx-icon.pay{background:var(--tint-green);color:var(--green)}
+.tx-note{font-size:0.88rem;font-weight:600;color:var(--text)}
+.tx-date{font-size:0.75rem;color:var(--meta);margin-top:1px}
+.tx-amount{font-weight:700;font-size:0.92rem;white-space:nowrap}
+.tx-amount.credit{color:var(--red)}
+.tx-amount.pay{color:var(--green)}
+.tx-actions{display:flex;align-items:center;gap:8px}
+.tx-history-header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 0}
+.tx-history-header h3{margin:0;font-size:1.1rem;font-weight:700}
+.tx-btns{display:flex;gap:4px}
+.tx-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--meta);cursor:pointer;display:grid;place-items:center;font-size:0.75rem;transition:all 0.15s}
+.tx-btn:hover{border-color:var(--blue);color:var(--blue)}
+.tx-btn:disabled{opacity:0.4;cursor:not-allowed}
+.tx-btn-del:hover{border-color:var(--red);color:var(--red)}
+
+/* ─── Activity list ──────────────────────────────────────────── */
+.activity-list{display:flex;flex-direction:column}
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.activity-item:last-child{border-bottom:none}
+.activity-body{min-width:0}
+.activity-title{font-size:0.85rem;color:var(--text);line-height:1.35}
+.activity-customer{font-weight:700;color:var(--blue)}
+.activity-customer:hover{text-decoration:underline}
+.activity-action{color:var(--muted);font-weight:500}
+.activity-meta{font-size:0.75rem;color:var(--meta);margin-top:2px}
+.activity-amount{font-weight:600}
+
+/* ─── Customer summary strip ─────────────────────────────────── */
+.customer-summary-strip{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;font-size:0.82rem;color:var(--muted)}
+.customer-summary-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.customer-summary-item strong{color:var(--text);font-weight:700}
+.customer-summary-item.overdue{color:var(--red)}
+.customer-summary-item.overdue strong{color:var(--red)}
+
+/* ─── Toolbar (search + sort) ────────────────────────────────── */
+.toolbar{display:flex;gap:10px;margin-bottom:14px}
+.search-wrap{flex:1;position:relative}
+.search-wrap i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--meta);font-size:0.9rem}
+.search-wrap input{width:100%;height:50px;padding:0 14px 0 38px;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;background:var(--surface);outline:none;color:var(--text)}
+.search-wrap input:focus{border-color:var(--blue)}
+.search-wrap input::placeholder{color:var(--meta)}
+.sort-wrap{flex:1}
+.sort-wrap select{width:100%;height:50px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;font-size:0.85rem;background:var(--surface);outline:none;cursor:pointer;color:var(--text)}
+@media(min-width:768px){.toolbar{max-width:520px}}
+
+/* ─── Customer list ──────────────────────────────────────────── */
+.customer-list{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:768px){.customer-list{grid-template-columns:repeat(2,1fr);gap:16px}}
+@media(min-width:1024px){.customer-list{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}}
+.customer-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:box-shadow .18s,transform .15s}
+.customer-card:hover{box-shadow:0 2px 4px rgba(0,0,0,0.06),0 8px 20px rgba(0,0,0,0.1)}
+.customer-card:active{transform:scale(0.99)}
+.cc-left{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:0.76rem;color:white;background:linear-gradient(135deg,#60a5fa,#3b82f6);flex-shrink:0}
+.cc-name{font-weight:700;font-size:0.95rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-meta{font-size:0.75rem;color:var(--meta);margin-top:2px}
+.cc-balance{font-weight:700;font-size:1rem;color:var(--red);white-space:nowrap;margin-left:12px}
+.cc-balance.zero{color:var(--green)}
+
+.customer-page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.customer-page-header h2{margin:0;font-size:1.5rem;font-weight:700}
+.customer-count-badge{font-size:0.82rem;font-weight:600;color:var(--muted);background:var(--surface-alt);padding:6px 12px;border-radius:999px}
+
+.customer-toolbar{margin-bottom:16px}
+
+.filter-chips{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-chip{padding:8px 16px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.15s}
+.filter-chip:hover{background:var(--surface-alt)}
+.filter-chip.active{background:var(--blue);color:white;border-color:var(--blue)}
+.filter-chip-overdue{color:var(--red);border-color:var(--red)}
+.filter-chip-overdue.active{background:var(--red);color:white}
+.filter-chip-due{color:var(--orange);border-color:var(--orange)}
+.filter-chip-due.active{background:var(--orange);color:white}
+.filter-chip-cleared{color:var(--green);border-color:var(--green)}
+.filter-chip-cleared.active{background:var(--green);color:white}
+
+.cc-name-row{display:flex;align-items:center;gap:8px}
+.status-badge{font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:999px}
+.status-badge.overdue{background:var(--tint-red);color:var(--red)}
+.status-badge.due_today{background:var(--tint-orange);color:var(--orange)}
+.status-badge.clear{background:var(--tint-green);color:var(--green)}
+.cc-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.cc-status-text{font-size:0.72rem;font-weight:500}
+.cc-status-text.overdue{color:var(--red)}
+.cc-status-text.due_today{color:var(--orange)}
+.cc-status-text.clear{color:var(--green)}
+.avatar.overdue{background:linear-gradient(135deg,#f87171,#ef4444)}
+.avatar.due_today{background:linear-gradient(135deg,#fb923c,#f97316)}
+.avatar.clear{background:linear-gradient(135deg,#4ade80,#22c55e)}
+
+/* ─── Customer detail page ────────────────────────────────────── */
+.customer-header-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px}
+.customer-header-top{display:flex;align-items:center;gap:14px}
+.customer-header-avatar{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:0.95rem;color:white;background:linear-gradient(135deg,#60a5fa,#3b82f6);flex-shrink:0}
+.customer-header-info{min-width:0;flex:1}
+.customer-header-name{font-size:1.15rem;font-weight:800;margin:0 0 2px;color:var(--text)}
+.customer-header-phone{font-size:0.82rem;color:var(--muted)}
+.overdue-badge{position:absolute;top:16px;right:16px;display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:600;padding:6px 12px;border-radius:999px}
+.overdue-badge.overdue{background:var(--tint-red);color:var(--red)}
+.overdue-badge.clear{background:var(--tint-green);color:var(--green)}
+
+.balance-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
+.balance-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
+.balance-stat-body{display:flex;flex-direction:column;gap:4px}
+.balance-stat-label{font-size:0.75rem;font-weight:500;color:var(--muted)}
+.balance-stat-value{font-size:1.25rem;font-weight:700;color:var(--text)}
+.balance-stat-value.red{color:var(--red)}
+.balance-stat-value.green{color:var(--green)}
+.balance-stat-value.blue{color:var(--blue)}
+
+.action-row{display:flex;gap:12px;margin-bottom:16px}
+.action-row .btn{flex:1;padding:16px;border-radius:12px;font-size:0.95rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-add-credit{background:var(--tint-red);color:var(--red);border:1px solid transparent}
+.btn-collect{background:var(--tint-green);color:var(--green);border:1px solid transparent}
+.btn-remind{background:var(--tint-blue);color:var(--blue);border:1px solid transparent}
+
+.footer-actions{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-top:4px}
+.footer-action-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border:none;background:none;width:100%;text-align:left;color:var(--text);font-size:0.9rem;font-weight:600;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.12s}
+.footer-action-item:last-child{border-bottom:none}
+.footer-action-item:hover{background:var(--surface-alt)}
+.footer-action-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:0.85rem;flex-shrink:0}
+.footer-action-icon.blue{background:var(--tint-blue);color:var(--blue)}
+.footer-action-icon.muted{background:var(--surface-alt);color:var(--muted)}
+.footer-action-arrow{margin-left:auto;font-size:0.7rem;color:var(--meta)}
+.footer-action-item.danger{color:var(--red)}
+.footer-action-item.danger:hover{background:var(--tint-red)}
+@media(min-width:1024px){.footer-actions{display:flex;gap:0}.footer-action-item{flex:1;justify-content:center;border-bottom:none;border-right:1px solid var(--border)}.footer-action-item:last-child{border-right:none}.footer-action-arrow{display:none}}
+
+.tx-detail-body{padding:0}
+.tx-detail-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.tx-detail-row:last-child{border-bottom:none}
+.tx-detail-label{font-size:0.9rem;color:var(--muted)}
+.tx-detail-value{font-size:0.9rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.tx-detail-actions{display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.tx-detail-actions .btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;font-size:0.9rem;font-weight:600}
+.btn-outline{background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer}
+.btn-outline:hover{background:var(--surface-alt)}
+.btn-red{background:var(--tint-red);color:var(--red);border:1px solid transparent;cursor:pointer}
+.btn-red:hover{opacity:0.8}
+
+/* ─── Empty state ────────────────────────────────────────────── */
+.empty{text-align:center;padding:40px 20px;color:var(--meta)}
+.empty i{font-size:2rem;margin-bottom:12px;display:block}
+.empty p{font-size:0.9rem}
+
+/* ─── Bottom nav (mobile) ────────────────────────────────────── */
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;align-items:flex-end;background:var(--surface);border-top:1px solid var(--border);padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:12}
+.bottom-nav-item{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px 8px;color:var(--muted);font-size:0.62rem;font-weight:600;cursor:pointer}
+.bottom-nav-item span{white-space:nowrap}
+.bottom-nav-item i{font-size:1.05rem}
+.bottom-nav-item.active{color:var(--blue)}
+.bottom-nav-item-add{position:relative}
+.bottom-nav-add-icon{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--blue);color:white;margin-top:-24px;box-shadow:0 4px 12px rgba(37,99,235,0.3);transition:transform .15s}
+.bottom-nav-add-icon i{font-size:1.2rem}
+.bottom-nav-item-add:hover .bottom-nav-add-icon{transform:scale(1.08)}
+@media(min-width:1024px){.bottom-nav{display:none}}
+</style>
+</head>
+<body>
+
+<!-- Page Switcher -->
+<div class="page-switcher">
+  <span>PREVIEW:</span>
+  <button class="active" onclick="showPage('home')">Home</button>
+  <button onclick="showPage('customers')">Customers</button>
+  <button onclick="showPage('customer-detail')">Customer Detail</button>
+</div>
+
+<div class="app-layout">
+  <!-- Sidebar (desktop only) -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">DawrBa<span class="dot"></span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="sidebar-item active" href="#"><i class="fa-solid fa-house"></i><span>Home</span></a>
+      <a class="sidebar-item" href="#"><i class="fa-solid fa-users"></i><span>Customers</span></a>
+      <a class="sidebar-item sidebar-item-add" href="#"><i class="fa-solid fa-plus"></i><span>Add</span></a>
+      <a class="sidebar-item" href="#"><i class="fa-solid fa-receipt"></i><span>Transactions</span></a>
+      <a class="sidebar-item" href="#"><i class="fa-solid fa-gear"></i><span>Profile</span></a>
+      <a class="sidebar-item" href="#"><i class="fa-solid fa-chart-line"></i><span>Reports</span></a>
+    </nav>
+  </aside>
+
+  <div class="app-main">
+
+    <!-- ═══════════════ HOME PAGE ═══════════════ -->
+    <div class="page active" id="page-home">
+      <div class="header">
+        <div class="header-left">
+          <h1 class="header-greeting">Good Morning</h1>
+          <div class="header-shop-label">Ahmed's Electronics</div>
+        </div>
+        <div class="header-actions">
+          <span class="status-dot online"><i class="fa-solid fa-wifi"></i> Online</span>
+          <button class="theme-toggle" title="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+          <button class="header-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
+          <button class="header-btn" title="Settings"><i class="fa-solid fa-gear"></i></button>
+        </div>
+      </div>
+      <div class="content">
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+          <div class="summary-card summary-card-green">
+            <div class="summary-card-icon"><i class="fa-solid fa-plus"></i></div>
+            <div class="summary-card-body">
+              <span class="summary-card-label">Today Credit</span>
+              <span class="summary-card-value green">Rs.12,500</span>
+            </div>
+          </div>
+          <div class="summary-card summary-card-blue">
+            <div class="summary-card-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+            <div class="summary-card-body">
+              <span class="summary-card-label">Collected Today</span>
+              <span class="summary-card-value blue">Rs.8,200</span>
+            </div>
+          </div>
+          <div class="summary-card summary-card-orange">
+            <div class="summary-card-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <div class="summary-card-body">
+              <span class="summary-card-label">Outstanding</span>
+              <span class="summary-card-value orange">Rs.1,45,300</span>
+            </div>
+          </div>
+          <div class="summary-card summary-card-red">
+            <div class="summary-card-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="summary-card-body">
+              <span class="summary-card-label">Overdue</span>
+              <span class="summary-card-value red">7 customers</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Home Grid -->
+        <div class="home-grid">
+          <div class="home-grid-main">
+            <!-- Needs Attention -->
+            <div class="home-section-card">
+              <div class="home-section-header"><h3>Needs Attention</h3></div>
+              <div class="attention-list">
+                <a class="attention-item" href="#">
+                  <div class="attention-left"><div class="avatar-sm">FK</div><div><div class="attention-name">Farhan Khan</div><div class="attention-meta">0321-1234567</div></div></div>
+                  <div class="attention-amount">Rs.35,000</div>
+                </a>
+                <a class="attention-item" href="#">
+                  <div class="attention-left"><div class="avatar-sm">SA</div><div><div class="attention-name">Sara Ahmed</div><div class="attention-meta">0300-9876543</div></div></div>
+                  <div class="attention-amount">Rs.22,500</div>
+                </a>
+                <a class="attention-item" href="#">
+                  <div class="attention-left"><div class="avatar-sm">RA</div><div><div class="attention-name">Raza Ali</div><div class="attention-meta">No phone</div></div></div>
+                  <div class="attention-amount">Rs.18,000</div>
+                </a>
+              </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="home-section-card">
+              <div class="home-section-header"><h3>Recent Transactions</h3><a class="home-section-link" href="#">View all</a></div>
+              <div class="tx-list">
+                <a class="tx-item" href="#"><div class="tx-left"><div class="tx-icon credit"><i class="fa-solid fa-plus"></i></div><div><div class="tx-note">Farhan Khan</div><div class="tx-date">Credit · 10 Jul 2026</div></div></div><div class="tx-amount credit">+Rs.5,000</div></a>
+                <a class="tx-item" href="#"><div class="tx-left"><div class="tx-icon pay"><i class="fa-solid fa-minus"></i></div><div><div class="tx-note">Sara Ahmed</div><div class="tx-date">Payment · 10 Jul 2026</div></div></div><div class="tx-amount pay">-Rs.3,200</div></a>
+                <a class="tx-item" href="#"><div class="tx-left"><div class="tx-icon credit"><i class="fa-solid fa-plus"></i></div><div><div class="tx-note">Raza Ali</div><div class="tx-date">Credit · 9 Jul 2026</div></div></div><div class="tx-amount credit">+Rs.7,500</div></a>
+                <a class="tx-item" href="#"><div class="tx-left"><div class="tx-icon pay"><i class="fa-solid fa-minus"></i></div><div><div class="tx-note">Bilal Sharif</div><div class="tx-date">Payment · 9 Jul 2026</div></div></div><div class="tx-amount pay">-Rs.10,000</div></a>
+                <a class="tx-item" href="#"><div class="tx-left"><div class="tx-icon credit"><i class="fa-solid fa-plus"></i></div><div><div class="tx-note">Usman Tariq</div><div class="tx-date">Credit · 8 Jul 2026</div></div></div><div class="tx-amount credit">+Rs.2,800</div></a>
+              </div>
+            </div>
+          </div>
+
+          <div class="home-grid-side">
+            <!-- Recent Activity -->
+            <div class="home-section-card">
+              <div class="home-section-header"><h3>Recent Activity</h3><a class="home-section-link" href="#">View all</a></div>
+              <div class="activity-list">
+                <div class="activity-item"><div class="tx-icon credit"><i class="fa-solid fa-plus"></i></div><div class="activity-body"><div class="activity-title"><a class="activity-customer" href="#">Farhan Khan</a><span class="activity-action"> Credit added</span></div><div class="activity-meta">2h ago · Rs.5,000</div></div></div>
+                <div class="activity-item"><div class="tx-icon pay"><i class="fa-solid fa-minus"></i></div><div class="activity-body"><div class="activity-title"><a class="activity-customer" href="#">Sara Ahmed</a><span class="activity-action"> Payment collected</span></div><div class="activity-meta">4h ago · Rs.3,200</div></div></div>
+                <div class="activity-item"><div class="tx-icon"><i class="fa-solid fa-pen"></i></div><div class="activity-body"><div class="activity-title"><a class="activity-customer" href="#">Raza Ali</a><span class="activity-action"> Transaction edited</span></div><div class="activity-meta">Yesterday</div></div></div>
+                <div class="activity-item"><div class="tx-icon credit"><i class="fa-solid fa-plus"></i></div><div class="activity-body"><div class="activity-title"><a class="activity-customer" href="#">Bilal Sharif</a><span class="activity-action"> Credit added</span></div><div class="activity-meta">Yesterday · Rs.10,000</div></div></div>
+                <div class="activity-item"><div class="tx-icon"><i class="fa-solid fa-trash"></i></div><div class="activity-body"><div class="activity-title"><a class="activity-customer" href="#">Usman Tariq</a><span class="activity-action"> Transaction deleted</span></div><div class="activity-meta">2 days ago</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ CUSTOMERS PAGE ═══════════════ -->
+    <div class="page" id="page-customers">
+      <div class="header">
+        <div class="header-left">
+          <div class="back-row">
+            <button class="back-btn"><i class="fa-solid fa-arrow-left"></i></button>
+            <h1 class="header-page-title">Customers</h1>
+          </div>
+        </div>
+        <div class="header-actions">
+          <span class="status-dot online"><i class="fa-solid fa-wifi"></i> Online</span>
+          <button class="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+          <button class="header-btn" title="Settings"><i class="fa-solid fa-gear"></i></button>
+        </div>
+      </div>
+      <div class="content">
+
+        <!-- Header -->
+        <div class="customer-page-header">
+          <h2>Customers</h2>
+          <span class="customer-count-badge">8 customers</span>
+        </div>
+
+        <!-- Search -->
+        <div class="customer-toolbar">
+          <div class="search-wrap">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" placeholder="Search customers...">
+          </div>
+        </div>
+
+        <!-- Filter chips -->
+        <div class="filter-chips">
+          <button class="filter-chip active">All</button>
+          <button class="filter-chip filter-chip-overdue">Overdue</button>
+          <button class="filter-chip filter-chip-due">Due Today</button>
+          <button class="filter-chip filter-chip-cleared">Cleared</button>
+        </div>
+
+        <!-- Customer Cards -->
+        <div class="customer-list">
+          <a class="customer-card" href="#">
+            <div class="cc-left">
+              <div class="avatar overdue">FK</div>
+              <div>
+                <div class="cc-name-row"><span class="cc-name">Farhan Khan</span><span class="status-badge overdue">Overdue</span></div>
+                <div class="cc-meta">Last: 2 days ago</div>
+              </div>
+            </div>
+            <div class="cc-right">
+              <div class="cc-balance">Rs.35,000</div>
+              <div class="cc-status-text overdue">14 days overdue</div>
+            </div>
+          </a>
+          <a class="customer-card" href="#">
+            <div class="cc-left">
+              <div class="avatar overdue">SA</div>
+              <div>
+                <div class="cc-name-row"><span class="cc-name">Sara Ahmed</span><span class="status-badge overdue">Overdue</span></div>
+                <div class="cc-meta">Last: yesterday</div>
+              </div>
+            </div>
+            <div class="cc-right">
+              <div class="cc-balance">Rs.22,500</div>
+              <div class="cc-status-text overdue">7 days overdue</div>
+            </div>
+          </a>
+          <a class="customer-card" href="#">
+            <div class="cc-left">
+              <div class="avatar due_today">RA</div>
+              <div>
+                <div class="cc-name-row"><span class="cc-name">Raza Ali</span><span class="status-badge due_today">Due today</span></div>
+                <div class="cc-meta">Last: today</div>
+              </div>
+            </div>
+            <div class="cc-right">
+              <div class="cc-balance">Rs.18,000</div>
+              <div class="cc-status-text due_today">Due today</div>
+            </div>
+          </a>
+          <a class="customer-card" href="#">
+            <div class="cc-left">
+              <div class="avatar overdue">BS</div>
+              <div>
+                <div class="cc-name-row"><span class="cc-name">Bilal Sharif</span><span class="status-badge overdue">Overdue</span></div>
+                <div class="cc-meta">Last: 5 days ago</div>
+              </div>
+            </div>
+            <div class="cc-right">
+              <div class="cc-balance">Rs.15,800</div>
+              <div class="cc-status-text overdue">10 days overdue</div>
+            </div>
+          </a>
+          <a class="customer-card" href="#">
+            <div class="cc-left">
+              <div class="avatar clear">UT</div>
+              <div>
+                <div class="cc-name-row"><span class="cc-name">Usman Tariq</span><span class="status-badge clear">Clear</span></div>
+                <div class="cc-meta">Last: 8 Jul 2026</div>
+              </div>
+            </div>
+            <div class="cc-right">
+              <div class="cc-balance">Rs.12,000</div>
+              <div class="cc-status-text clear">No due</div>
+            </div>
+          </a>
+          <a class="customer-card" href="#">
+            <div class="cc-left">
+              <div class="avatar due_today">AH</div>
+              <div>
+                <div class="cc-name-row"><span class="cc-name">Aisha Hussain</span><span class="status-badge due_today">Due today</span></div>
+                <div class="cc-meta">Last: 5 Jul 2026</div>
+              </div>
+            </div>
+            <div class="cc-right">
+              <div class="cc-balance">Rs.8,500</div>
+              <div class="cc-status-text due_today">Due today</div>
+            </div>
+          </a>
+          <a class="customer-card" href="#">
+            <div class="cc-left">
+              <div class="avatar clear">IM</div>
+              <div>
+                <div class="cc-name-row"><span class="cc-name">Imran Malik</span><span class="status-badge clear">Clear</span></div>
+                <div class="cc-meta">Last: 2 Jul 2026</div>
+              </div>
+            </div>
+            <div class="cc-right">
+              <div class="cc-balance">Rs.4,200</div>
+              <div class="cc-status-text clear">No due</div>
+            </div>
+          </a>
+          <a class="customer-card" href="#">
+            <div class="cc-left">
+              <div class="avatar clear">NZ</div>
+              <div>
+                <div class="cc-name-row"><span class="cc-name">Nadia Zafar</span><span class="status-badge clear">Clear</span></div>
+                <div class="cc-meta">No transactions</div>
+              </div>
+            </div>
+            <div class="cc-right">
+              <div class="cc-balance zero">Rs.0</div>
+              <div class="cc-status-text clear">No due</div>
+            </div>
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════ CUSTOMER DETAIL PAGE ═══════════════ -->
+    <div class="page" id="page-customer-detail">
+      <div class="header">
+        <div class="header-left">
+          <div class="back-row">
+            <button class="back-btn"><i class="fa-solid fa-arrow-left"></i></button>
+            <h1 class="header-page-title">Farhan Khan</h1>
+          </div>
+        </div>
+        <div class="header-actions">
+          <span class="status-dot online"><i class="fa-solid fa-wifi"></i> Online</span>
+          <button class="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+        </div>
+      </div>
+      <div class="content">
+
+        <!-- Customer Header Card -->
+        <div class="customer-header-card">
+          <div class="customer-header-top">
+            <div class="customer-header-avatar">FK</div>
+            <div class="customer-header-info">
+              <h2 class="customer-header-name">Farhan Khan</h2>
+              <div class="customer-header-phone">+91 98765 43210</div>
+            </div>
+          </div>
+          <div class="overdue-badge overdue">
+            14 days overdue
+          </div>
+        </div>
+
+        <!-- Balance Stats -->
+        <div class="balance-stats">
+          <div class="balance-stat">
+            <div class="balance-stat-body">
+              <span class="balance-stat-label">Current Balance</span>
+              <span class="balance-stat-value red">Rs.25,000</span>
+            </div>
+          </div>
+          <div class="balance-stat">
+            <div class="balance-stat-body">
+              <span class="balance-stat-label">Total Paid</span>
+              <span class="balance-stat-value green">Rs.8,200</span>
+            </div>
+          </div>
+          <div class="balance-stat">
+            <div class="balance-stat-body">
+              <span class="balance-stat-label">Opening Balance</span>
+              <span class="balance-stat-value">Rs.0</span>
+            </div>
+          </div>
+          <div class="balance-stat">
+            <div class="balance-stat-body">
+              <span class="balance-stat-label">Last Payment</span>
+              <span class="balance-stat-value blue">Rs.3,200</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-row">
+          <button class="btn btn-add-credit"><i class="fa-solid fa-plus"></i> Add Credit</button>
+          <button class="btn btn-collect"><i class="fa-solid fa-check"></i> Collect</button>
+          <button class="btn btn-remind"><i class="fa-solid fa-bell"></i> Remind</button>
+        </div>
+
+        <!-- Transaction History -->
+        <div class="home-section-card">
+          <div class="tx-history-header">
+            <h3>Transaction History</h3>
+            <div class="tx-tabs">
+              <button class="tx-tab active">All</button>
+              <button class="tx-tab">Credit</button>
+              <button class="tx-tab">Payment</button>
+            </div>
+          </div>
+
+          <div class="tx-list">
+            <div class="tx-item">
+              <div class="tx-left">
+                <div class="tx-icon credit"><i class="fa-solid fa-plus"></i></div>
+                <div><div class="tx-note">Credit added</div><div class="tx-date">10 Jul 2026 · Rice & Oil</div></div>
+              </div>
+              <div class="tx-amount credit">+Rs.1,500</div>
+            </div>
+            <div class="tx-item">
+              <div class="tx-left">
+                <div class="tx-icon pay"><i class="fa-solid fa-check"></i></div>
+                <div><div class="tx-note">Payment collected</div><div class="tx-date">8 Jul 2026 · Cash</div></div>
+              </div>
+              <div class="tx-amount pay">-Rs.800</div>
+            </div>
+            <div class="tx-item">
+              <div class="tx-left">
+                <div class="tx-icon credit"><i class="fa-solid fa-plus"></i></div>
+                <div><div class="tx-note">Credit added</div><div class="tx-date">5 Jul 2026 · Groceries</div></div>
+              </div>
+              <div class="tx-amount credit">+Rs.1,200</div>
+            </div>
+            <div class="tx-item">
+              <div class="tx-left">
+                <div class="tx-icon pay"><i class="fa-solid fa-check"></i></div>
+                <div><div class="tx-note">Payment collected</div><div class="tx-date">2 Jul 2026 · Cash</div></div>
+              </div>
+              <div class="tx-amount pay">-Rs.500</div>
+            </div>
+            <div class="tx-item">
+              <div class="tx-left">
+                <div class="tx-icon credit"><i class="fa-solid fa-plus"></i></div>
+                <div><div class="tx-note">Credit added</div><div class="tx-date">28 Jun 2026 · Monthly supplies</div></div>
+              </div>
+              <div class="tx-amount credit">+Rs.3,500</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="footer-actions">
+          <a href="tel:+919876543210" class="footer-action-item">
+            <div class="footer-action-icon blue"><i class="fa-solid fa-phone"></i></div>
+            <span>Call Customer</span>
+            <i class="fa-solid fa-chevron-right footer-action-arrow"></i>
+          </a>
+          <button class="footer-action-item">
+            <div class="footer-action-icon muted"><i class="fa-solid fa-pen"></i></div>
+            <span>Edit Customer</span>
+            <i class="fa-solid fa-chevron-right footer-action-arrow"></i>
+          </button>
+          <button class="footer-action-item danger">
+            <div class="footer-action-icon red"><i class="fa-solid fa-trash"></i></div>
+            <span>Delete Customer</span>
+            <i class="fa-solid fa-chevron-right footer-action-arrow"></i>
+          </button>
+        </div>
+
+        <!-- Transaction Detail Modal -->
+        <div class="modal-backdrop active" style="position:fixed;bottom:0;left:0;right:0;top:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.3)">
+          <div class="modal-sheet modal-tx-detail" style="width:100%;max-width:420px;border-radius:20px 20px 0 0;padding:20px;background:var(--surface)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="tx-icon credit" style="width:28px;height:28px;font-size:0.7rem"><i class="fa-solid fa-plus"></i></div>
+                <h3 style="margin:0;font-size:1.1rem">Transaction Details</h3>
+              </div>
+              <button style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--meta)"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="tx-detail-body">
+              <div class="tx-detail-row">
+                <span class="tx-detail-label">Customer</span>
+                <span class="tx-detail-value">Farhan Khan</span>
+              </div>
+              <div class="tx-detail-row">
+                <span class="tx-detail-label">Type</span>
+                <span class="tx-detail-value">
+                  <span class="tx-icon credit" style="width:20px;height:20px;font-size:0.6rem;display:inline-grid"><i class="fa-solid fa-plus"></i></span>
+                  Credit Added
+                </span>
+              </div>
+              <div class="tx-detail-row">
+                <span class="tx-detail-label">Amount</span>
+                <span class="tx-detail-value">Rs.1,500</span>
+              </div>
+              <div class="tx-detail-row">
+                <span class="tx-detail-label">Description</span>
+                <span class="tx-detail-value">Rice & Oil</span>
+              </div>
+              <div class="tx-detail-row">
+                <span class="tx-detail-label">Date</span>
+                <span class="tx-detail-value">10 Jul 2026</span>
+              </div>
+              <div class="tx-detail-row">
+                <span class="tx-detail-label">Time</span>
+                <span class="tx-detail-value">1:28 PM</span>
+              </div>
+            </div>
+            <div class="tx-detail-actions">
+              <button class="btn btn-outline"><i class="fa-solid fa-pen"></i> Edit</button>
+              <button class="btn btn-red"><i class="fa-solid fa-trash"></i> Delete</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a class="bottom-nav-item active" href="#"><i class="fa-solid fa-house"></i><span>Home</span></a>
+      <a class="bottom-nav-item" href="#"><i class="fa-solid fa-users"></i><span>Customers</span></a>
+      <a class="bottom-nav-item bottom-nav-item-add" href="#"><span class="bottom-nav-add-icon"><i class="fa-solid fa-plus"></i></span><span>Add</span></a>
+      <a class="bottom-nav-item" href="#"><i class="fa-solid fa-receipt"></i><span>Transactions</span></a>
+      <a class="bottom-nav-item" href="#"><i class="fa-solid fa-gear"></i><span>Settings</span></a>
+    </nav>
+
+  </div>
+</div>
+
+<script>
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.page-switcher button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  // Update sidebar active state
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  const sidebarItems = document.querySelectorAll('.sidebar-item');
+  if (page === 'home') sidebarItems[0].classList.add('active');
+  if (page === 'customers') sidebarItems[1].classList.add('active');
+  if (page === 'customer-detail') sidebarItems[1].classList.add('active');
+
+  // Update bottom nav active state
+  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+  const navItems = document.querySelectorAll('.bottom-nav-item:not(.bottom-nav-item-add)');
+  if (page === 'home') navItems[0].classList.add('active');
+  if (page === 'customers') navItems[1].classList.add('active');
+  if (page === 'customer-detail') navItems[1].classList.add('active');
+}
+</script>
+
+</body>
+</html>

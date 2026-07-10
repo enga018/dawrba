@@ -110,7 +110,7 @@ export default function Home() {
               <button
                 className="header-btn header-btn-nav"
                 title="Settings"
-                onClick={() => router.push('/settings')}
+                onClick={() => router.push('/profile')}
               >
                 <i className="fa-solid fa-gear"></i>
               </button>

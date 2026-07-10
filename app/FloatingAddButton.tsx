@@ -17,7 +17,7 @@ export default function FloatingAddButton() {
   // Add Credit modal targeted at that customer.
   if (pathname.startsWith('/customers/')) return null
   // Settings and the activity log aren't places to add a transaction.
-  if (pathname.startsWith('/settings') || pathname.startsWith('/log')) return null
+  if (pathname.startsWith('/profile') || pathname.startsWith('/log')) return null
 
   return (
     <Link href="/add-customer" className="add-btn add-btn-nav" title="Add credit or customer">

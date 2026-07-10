@@ -64,7 +64,7 @@ export default function TransactionLogPage() {
 
   return (
     <>
-      <Link href="/settings">
+      <Link href="/profile">
         <div className="back-row">
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>
