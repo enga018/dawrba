@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { percentTrend } from '@/lib/utils'
 import SummaryCard from './SummaryCard'
 
 interface SummaryData {
@@ -11,11 +12,6 @@ interface SummaryData {
   overdueCount: number
   todayCreditTrend?: number
   todayCollectedTrend?: number
-}
-
-function percentTrend(today: number, yesterday: number): number | undefined {
-  if (yesterday === 0) return undefined
-  return Math.round(((today - yesterday) / yesterday) * 100)
 }
 
 export default function DashboardSummary() {

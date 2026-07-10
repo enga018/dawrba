@@ -38,6 +38,11 @@ export function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-IN')
 }
 
+export function percentTrend(today: number, yesterday: number): number | undefined {
+  if (yesterday === 0) return undefined
+  return Math.round(((today - yesterday) / yesterday) * 100)
+}
+
 export function getInitials(name: string): string {
   return name
     .split(' ')
