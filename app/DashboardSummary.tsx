@@ -106,32 +106,31 @@ export default function DashboardSummary() {
     return (
       <div className="summary-grid">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} style={{ 
-            background: 'white', 
-            borderRadius: '18px', 
-            padding: '20px', 
+          <div key={i} style={{
+            background: 'white',
+            borderRadius: '14px',
+            padding: '12px',
             border: '1px solid var(--border)',
-            boxShadow: '0 12px 32px rgba(15, 23, 42, 0.08)'
           }}>
-            <div style={{ 
-              height: '16px', 
-              background: '#f3f7fb', 
-              borderRadius: '4px', 
-              marginBottom: '12px',
-              animation: 'pulse 1.5s ease-in-out infinite'
-            }} />
-            <div style={{ 
-              height: '32px', 
-              background: '#f3f7fb', 
-              borderRadius: '4px', 
-              width: '60%',
+            <div style={{
+              height: '12px',
+              background: '#f3f7fb',
+              borderRadius: '4px',
               marginBottom: '8px',
               animation: 'pulse 1.5s ease-in-out infinite'
             }} />
-            <div style={{ 
-              height: '20px', 
-              background: '#f3f7fb', 
-              borderRadius: '4px', 
+            <div style={{
+              height: '22px',
+              background: '#f3f7fb',
+              borderRadius: '4px',
+              width: '60%',
+              marginBottom: '6px',
+              animation: 'pulse 1.5s ease-in-out infinite'
+            }} />
+            <div style={{
+              height: '14px',
+              background: '#f3f7fb',
+              borderRadius: '4px',
               width: '40%',
               animation: 'pulse 1.5s ease-in-out infinite'
             }} />
@@ -150,22 +149,25 @@ export default function DashboardSummary() {
         value={summary.todayCredit}
         icon={<i className="fa-solid fa-plus"></i>}
         color="var(--red)"
+        bg="#fef2f2"
         trend={summary.todayCreditTrend ? { value: summary.todayCreditTrend, label: 'from yesterday' } : undefined}
       />
-      
+
       <SummaryCard
         title="Collected Today"
         value={summary.todayCollected}
         icon={<i className="fa-solid fa-arrow-right"></i>}
         color="var(--green)"
+        bg="#ecfdf5"
         trend={summary.todayCollectedTrend ? { value: summary.todayCollectedTrend, label: 'from yesterday' } : undefined}
       />
-      
+
       <SummaryCard
         title="Outstanding"
         value={summary.outstanding}
         icon={<i className="fa-solid fa-clock"></i>}
         color="var(--blue)"
+        bg="#eff6ff"
       />
 
       <SummaryCard
@@ -173,6 +175,7 @@ export default function DashboardSummary() {
         value={summary.overdueCount}
         icon={<i className="fa-solid fa-user-slash"></i>}
         color="#f97316"
+        bg="#fff7ed"
         format="count"
       />
       
