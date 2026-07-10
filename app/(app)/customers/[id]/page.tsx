@@ -156,7 +156,6 @@ export default function CustomerDetail() {
           previousAmount: deletedTx.amount,
           previousNote: deletedTx.note || null,
           customerId: customer.id,
-          customerName: customer.name,
         })
       }
       await loadData()
@@ -188,7 +187,6 @@ export default function CustomerDetail() {
           amount: value,
           previousAmount: customer.opening_balance,
           customerId: customer.id,
-          customerName: customer.name,
         })
       }
       setShowOpeningBalanceModal(false)

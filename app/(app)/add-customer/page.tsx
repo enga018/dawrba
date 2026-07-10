@@ -75,7 +75,6 @@ export default function AddCustomer() {
         amount: parseFloat(amount),
         note: note || null,
         customerId: selectedCustomerId,
-        customerName: existingCustomers.find((c) => c.id === selectedCustomerId)?.name || '',
       })
       router.push('/')
     } catch (err) {
@@ -106,7 +105,6 @@ export default function AddCustomer() {
         amount: -parseFloat(amount),
         note: note || null,
         customerId: selectedCustomerId,
-        customerName: existingCustomers.find((c) => c.id === selectedCustomerId)?.name || '',
       })
       router.push('/')
     } catch (err) {
@@ -144,7 +142,6 @@ export default function AddCustomer() {
           eventType: 'opening_balance',
           amount: ob,
           customerId: customer.id,
-          customerName: formData.name,
         })
       }
 
@@ -161,7 +158,6 @@ export default function AddCustomer() {
           amount: parseFloat(formData.amount),
           note: formData.note || null,
           customerId: customer.id,
-          customerName: formData.name,
         })
       }
 

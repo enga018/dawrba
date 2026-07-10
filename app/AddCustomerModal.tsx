@@ -54,7 +54,6 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
           eventType: 'opening_balance',
           amount: ob,
           customerId: customer.id,
-          customerName: trimmedName,
         })
       }
 
@@ -71,7 +70,6 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
           amount: parseFloat(extraAmount),
           note: extraNote || null,
           customerId: customer.id,
-          customerName: trimmedName,
         })
       }
 
