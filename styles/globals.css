@@ -274,24 +274,26 @@ input, select, button, textarea {
 
 /* Customer card */
 .customer-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 14px 16px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: box-shadow 0.18s;
+  transition: background 0.15s;
   container-type: inline-size;
   container-name: customer-card;
+}
+
+.customer-list > .customer-card:last-child {
+  border-bottom: none;
 }
 
 /* When fewer cards mean auto-fit stretches each one wider, scale the
    content up to use the extra room instead of leaving a bare gap. */
 @container customer-card (min-width: 300px) {
   .customer-card {
-    padding: 18px 20px;
+    padding: 16px 4px;
   }
   .avatar {
     width: 48px;
@@ -311,7 +313,7 @@ input, select, button, textarea {
 
 @container customer-card (min-width: 380px) {
   .customer-card {
-    padding: 22px 24px;
+    padding: 20px 4px;
   }
   .avatar {
     width: 54px;
@@ -327,11 +329,11 @@ input, select, button, textarea {
 }
 
 .customer-card:hover {
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  background: #f8fafc;
 }
 
 .customer-card:active {
-  transform: scale(0.99);
+  background: var(--border);
 }
 
 .cc-left {
@@ -779,7 +781,12 @@ input, select, button, textarea {
   border-color: var(--blue);
 }
 
+.sort-wrap {
+  flex: 1;
+}
+
 .sort-wrap select {
+  width: 100%;
   padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
