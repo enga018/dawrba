@@ -794,16 +794,46 @@ input, select, button, textarea {
   font-size: 1.9rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: var(--text);
+  color: var(--green);
   line-height: 1.15;
   margin-top: 2px;
 }
 
-.hero-sub {
+.hero-subvalue {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--red);
+  margin-top: 2px;
+}
+
+.hero-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   font-size: 0.72rem;
-  color: var(--meta);
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.hero-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
+}
+
+.hero-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+
+.hero-dot.credit {
+  background: var(--red);
+}
+
+.hero-dot.collected {
+  background: var(--green);
 }
 
 .hero-chart {
@@ -826,16 +856,28 @@ input, select, button, textarea {
   align-items: flex-end;
 }
 
-.hero-bar {
+.hero-bar-pair {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
   width: 100%;
-  min-height: 4px;
-  background: var(--tint-blue);
-  border-radius: 8px 8px 4px 4px;
+  height: 100%;
+}
+
+.hero-bar {
+  flex: 1;
+  min-width: 0;
+  min-height: 3px;
+  border-radius: 5px 5px 3px 3px;
   transition: height 0.3s ease;
 }
 
-.hero-bar[data-active='true'] {
-  background: var(--blue);
+.hero-bar.credit {
+  background: var(--red);
+}
+
+.hero-bar.collected {
+  background: var(--green);
 }
 
 .hero-bar-label {
