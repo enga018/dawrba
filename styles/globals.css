@@ -820,7 +820,7 @@ input, select, button, textarea {
 @media (min-width: 900px) {
   .dashboard-columns {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
     align-items: start;
   }
 }
