@@ -7,7 +7,8 @@ interface MonthBucket {
   label: string
   year: number
   month: number
-  total: number
+  credit: number
+  collected: number
 }
 
 export default function DashboardHero() {
@@ -35,7 +36,8 @@ export default function DashboardHero() {
             label: d.toLocaleString('en-US', { month: 'short' }),
             year: d.getFullYear(),
             month: d.getMonth(),
-            total: 0,
+            credit: 0,
+            collected: 0,
           })
         }
 
@@ -46,11 +48,13 @@ export default function DashboardHero() {
             .in('customer_id', ids)
 
           for (const t of txData || []) {
-            // Collections = payments received (negative transactions).
-            if (t.amount >= 0) continue
             const d = new Date(t.created_at)
             const b = buckets.find((m) => m.year === d.getFullYear() && m.month === d.getMonth())
-            if (b) b.total += Math.abs(t.amount)
+            if (!b) continue
+            // Same bucketing rule as the reports page: positive = credit
+            // given, negative = payment collected.
+            if (t.amount > 0) b.credit += t.amount
+            else b.collected += Math.abs(t.amount)
           }
         }
 
@@ -71,28 +75,42 @@ export default function DashboardHero() {
   }
 
   const current = months[months.length - 1]
-  const max = Math.max(...months.map((m) => m.total), 1)
+  const max = Math.max(...months.flatMap((m) => [m.credit, m.collected]), 1)
+  const fmt = (n: number) => n.toLocaleString('en-IN')
 
   return (
     <div className="hero-card">
       <div className="hero-top">
         <div>
-          <div className="hero-label">Collected in {current.label}</div>
-          <div className="hero-value">₹{current.total.toLocaleString('en-IN')}</div>
+          <div className="hero-label">This month</div>
+          <div className="hero-value">₹{fmt(current.collected)}</div>
+          <div className="hero-subvalue">
+            <i className="fa-solid fa-plus" style={{ fontSize: '0.7rem' }}></i>{' '}
+            ₹{fmt(current.credit)} credit given
+          </div>
         </div>
-        <div className="hero-sub">Last 6 months</div>
+        <div className="hero-legend">
+          <span><span className="hero-dot collected"></span>Collected</span>
+          <span><span className="hero-dot credit"></span>Credit</span>
+        </div>
       </div>
 
       <div className="hero-chart">
         {months.map((m, i) => (
           <div key={i} className="hero-bar-wrap">
             <div className="hero-bar-track">
-              <div
-                className="hero-bar"
-                data-active={i === months.length - 1}
-                style={{ height: `${Math.round((m.total / max) * 100)}%` }}
-                title={`${m.label}: ₹${m.total.toLocaleString('en-IN')}`}
-              />
+              <div className="hero-bar-pair">
+                <div
+                  className="hero-bar credit"
+                  style={{ height: `${Math.round((m.credit / max) * 100)}%` }}
+                  title={`${m.label} credit given: ₹${fmt(m.credit)}`}
+                />
+                <div
+                  className="hero-bar collected"
+                  style={{ height: `${Math.round((m.collected / max) * 100)}%` }}
+                  title={`${m.label} collected: ₹${fmt(m.collected)}`}
+                />
+              </div>
             </div>
             <span className="hero-bar-label">{m.label}</span>
           </div>
