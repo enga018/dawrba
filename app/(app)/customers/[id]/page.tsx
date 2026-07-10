@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { formatDate, formatCurrency, getInitials, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
+import { logActivity } from '@/lib/transactionLog'
 import TransactionModal from '@/app/TransactionModal'
 
 interface Customer {
@@ -141,12 +142,23 @@ export default function CustomerDetail() {
   }
 
   const handleDelete = async (txId: string) => {
+    const deletedTx = transactions.find((t) => t.id === txId)
     setDeleting(true)
     try {
       const { error } = await supabase.from('transactions').delete().eq('id', txId)
       if (error) throw error
       setDeleteConfirm(null)
       showToast('Transaction deleted')
+      if (deletedTx && customer) {
+        logActivity({
+          transactionId: txId,
+          eventType: 'delete',
+          previousAmount: deletedTx.amount,
+          previousNote: deletedTx.note || null,
+          customerId: customer.id,
+          customerName: customer.name,
+        })
+      }
       await loadData()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to delete transaction'
@@ -170,6 +182,15 @@ export default function CustomerDetail() {
       const { error } = await supabase.from('customers').update({ opening_balance: value }).eq('id', customerId)
       if (error) throw error
       showToast('Opening balance updated')
+      if (customer) {
+        logActivity({
+          eventType: 'opening_balance_update',
+          amount: value,
+          previousAmount: customer.opening_balance,
+          customerId: customer.id,
+          customerName: customer.name,
+        })
+      }
       setShowOpeningBalanceModal(false)
       await loadData()
     } catch (err) {

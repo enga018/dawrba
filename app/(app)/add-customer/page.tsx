@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { showToast } from '@/lib/toast'
+import { logActivity } from '@/lib/transactionLog'
 
 interface ExistingCustomer {
   id: string
@@ -60,14 +61,22 @@ export default function AddCustomer() {
     setError('')
     setLoading(true)
     try {
-      const { error: txError } = await supabase.from('transactions').insert({
+      const { data: tx, error: txError } = await supabase.from('transactions').insert({
         customer_id: selectedCustomerId,
         amount: parseFloat(amount),
         note: note || null,
-      })
+      }).select().single()
       if (txError) throw txError
 
       showToast('Credit added')
+      logActivity({
+        transactionId: tx?.id,
+        eventType: 'insert',
+        amount: parseFloat(amount),
+        note: note || null,
+        customerId: selectedCustomerId,
+        customerName: existingCustomers.find((c) => c.id === selectedCustomerId)?.name || '',
+      })
       router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add credit')
@@ -83,14 +92,22 @@ export default function AddCustomer() {
     setError('')
     setLoading(true)
     try {
-      const { error: txError } = await supabase.from('transactions').insert({
+      const { data: tx, error: txError } = await supabase.from('transactions').insert({
         customer_id: selectedCustomerId,
         amount: -parseFloat(amount),
         note: note || null,
-      })
+      }).select().single()
       if (txError) throw txError
 
       showToast('Payment recorded')
+      logActivity({
+        transactionId: tx?.id,
+        eventType: 'insert',
+        amount: -parseFloat(amount),
+        note: note || null,
+        customerId: selectedCustomerId,
+        customerName: existingCustomers.find((c) => c.id === selectedCustomerId)?.name || '',
+      })
       router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to record payment')
@@ -122,13 +139,30 @@ export default function AddCustomer() {
 
       if (customerError) throw customerError
 
+      if (ob > 0) {
+        logActivity({
+          eventType: 'opening_balance',
+          amount: ob,
+          customerId: customer.id,
+          customerName: formData.name,
+        })
+      }
+
       if (formData.amount && parseFloat(formData.amount) > 0) {
-        const { error: txError } = await supabase.from('transactions').insert({
+        const { data: tx, error: txError } = await supabase.from('transactions').insert({
           customer_id: customer.id,
           amount: parseFloat(formData.amount),
           note: formData.note || null,
-        })
+        }).select().single()
         if (txError) throw txError
+        logActivity({
+          transactionId: tx?.id,
+          eventType: 'insert',
+          amount: parseFloat(formData.amount),
+          note: formData.note || null,
+          customerId: customer.id,
+          customerName: formData.name,
+        })
       }
 
       showToast('Customer added')

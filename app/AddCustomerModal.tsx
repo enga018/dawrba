@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { showToast } from '@/lib/toast'
+import { logActivity } from '@/lib/transactionLog'
 
 interface AddCustomerModalProps {
   show: boolean
@@ -38,21 +39,40 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
     try {
       const user = (await supabase.auth.getUser()).data.user
       if (!user) throw new Error('Not authenticated')
+      const trimmedName = name.trim()
+      const ob = parseFloat(openingBalance) || 0
       const { data: customer, error } = await supabase.from('customers').insert({
         user_id: user.id,
-        name: name.trim(),
+        name: trimmedName,
         phone: phone.trim() || null,
-        opening_balance: parseFloat(openingBalance) || 0,
+        opening_balance: ob,
       }).select().single()
       if (error) throw error
 
+      if (ob > 0) {
+        logActivity({
+          eventType: 'opening_balance',
+          amount: ob,
+          customerId: customer.id,
+          customerName: trimmedName,
+        })
+      }
+
       if (extraAmount && parseFloat(extraAmount) > 0) {
-        const { error: txError } = await supabase.from('transactions').insert({
+        const { data: tx, error: txError } = await supabase.from('transactions').insert({
           customer_id: customer.id,
           amount: parseFloat(extraAmount),
           note: extraNote || null,
-        })
+        }).select().single()
         if (txError) throw txError
+        logActivity({
+          transactionId: tx?.id,
+          eventType: 'insert',
+          amount: parseFloat(extraAmount),
+          note: extraNote || null,
+          customerId: customer.id,
+          customerName: trimmedName,
+        })
       }
 
       showToast('Customer added')

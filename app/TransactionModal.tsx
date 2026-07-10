@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
+import { logActivity } from '@/lib/transactionLog'
 import AmountKeypad from './AmountKeypad'
 
 interface EditingTx {
@@ -112,6 +113,7 @@ export default function TransactionModal({
     const targetCustomerId = customerId || selectedCustomerId
     if (!targetCustomerId || !amountValue) return
     setSubmitting(true)
+    const targetCustomerName = fixedCustomer ? (customerName || '') : (selectedCustomer?.name || '')
     try {
       if (editingTx) {
         const { error } = await supabase
@@ -120,14 +122,31 @@ export default function TransactionModal({
           .eq('id', editingTx.id)
         if (error) throw error
         showToast('Transaction updated')
+        logActivity({
+          transactionId: editingTx.id,
+          eventType: 'update',
+          amount: signedAmount,
+          previousAmount: editingTx.amount,
+          note: note || null,
+          previousNote: editingTx.note || null,
+          customerId: targetCustomerId,
+          customerName: targetCustomerName,
+        })
       } else {
-        const { error } = await supabase.from('transactions').insert({
+        const { data, error } = await supabase.from('transactions').insert({
           customer_id: targetCustomerId,
           amount: signedAmount,
           note: note || null,
-        })
+        }).select().single()
         if (error) throw error
         showToast(mode === 'pay' ? 'Payment recorded' : 'Credit added')
+        logActivity({
+          transactionId: data?.id,
+          eventType: 'insert',
+          amount: signedAmount,
+          customerId: targetCustomerId,
+          customerName: targetCustomerName,
+        })
       }
       close()
       refresh()
