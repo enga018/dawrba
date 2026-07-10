@@ -8,7 +8,6 @@ import BottomNav from '@/app/BottomNav'
 import Sidebar from '@/app/Sidebar'
 import FloatingAddButton from '@/app/FloatingAddButton'
 import AddModal from '@/app/AddModal'
-import QuickAddSheet from '@/app/QuickAddSheet'
 import type { User } from '@supabase/supabase-js'
 
 export default function AppLayout({
@@ -20,7 +19,6 @@ export default function AppLayout({
   const [shopName, setShopName] = useState('')
   const [loading, setLoading] = useState(true)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
-  const [showSheet, setShowSheet] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -97,9 +95,8 @@ export default function AppLayout({
         </div>
         <BottomNav onAddClick={() => setShowQuickAdd(true)} />
       </div>
-      <FloatingAddButton onClick={() => setShowSheet(true)} />
+      <FloatingAddButton />
       <AddModal show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
-      <QuickAddSheet show={showSheet} onClose={() => setShowSheet(false)} />
     </div>
   )
 }

@@ -10,7 +10,7 @@ import ThemeToggle from './ThemeToggle'
 import BottomNav from './BottomNav'
 import Sidebar from './Sidebar'
 import AddModal from './AddModal'
-import QuickAddSheet from './QuickAddSheet'
+import FabMenu from './FabMenu'
 import type { User } from '@supabase/supabase-js'
 
 function getGreeting(): string {
@@ -26,7 +26,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const [isOnline, setIsOnline] = useState(true)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
-  const [showSheet, setShowSheet] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -110,13 +109,10 @@ export default function Home() {
           <div className="content content-wide">
             <DashboardPage />
           </div>
-          <button className="add-btn" title="Add credit or customer" onClick={() => setShowSheet(true)}>
-            <i className="fa-solid fa-plus"></i>
-          </button>
+          <FabMenu />
           <BottomNav onAddClick={() => setShowQuickAdd(true)} />
         </div>
         <AddModal show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
-        <QuickAddSheet show={showSheet} onClose={() => setShowSheet(false)} />
       </div>
     )
   }
