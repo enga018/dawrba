@@ -157,7 +157,7 @@ input, select, button, textarea {
 
 /* Content area */
 .content {
-  padding: 16px 20px 24px;
+  padding: 16px 20px 96px;
   max-width: 640px;
   margin: 0 auto;
 }
@@ -344,9 +344,9 @@ input, select, button, textarea {
     padding: 18px 20px;
   }
   .avatar {
-    width: 38px;
-    height: 38px;
-    font-size: 0.78rem;
+    width: 44px;
+    height: 44px;
+    font-size: 0.82rem;
   }
   .cc-name {
     font-size: 1.05rem;
@@ -364,9 +364,9 @@ input, select, button, textarea {
     padding: 22px 24px;
   }
   .avatar {
-    width: 42px;
-    height: 42px;
-    font-size: 0.85rem;
+    width: 50px;
+    height: 50px;
+    font-size: 0.92rem;
   }
   .cc-name {
     font-size: 1.15rem;
@@ -387,18 +387,18 @@ input, select, button, textarea {
 .cc-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
   min-width: 0;
 }
 
 .avatar {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-weight: 700;
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   color: white;
   background: linear-gradient(135deg, #60a5fa, #3b82f6);
   flex-shrink: 0;
