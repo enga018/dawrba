@@ -112,7 +112,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 20px' }}>
           <div className="spinner" style={{ margin: '0 auto' }}></div>

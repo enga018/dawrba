@@ -994,12 +994,6 @@ input, select, button, textarea {
   }
 }
 
-@media (max-width: 899px) {
-  .content {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
-  }
-}
-
 /* Summary cards grid: auto-fit divides the row evenly among however
    many cards actually fit -- 2 per row on a phone, up to all 4 in a
    single row once there's enough width, same auto-fit/1fr pattern as
@@ -1041,6 +1035,23 @@ input, select, button, textarea {
 
   .customer-list {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile overrides. Declared after the min-width:768px block on purpose:
+   these longhand properties must win over that block's `padding`
+   shorthand in the 768-899px band (where the bottom nav is still shown). */
+@media (max-width: 899px) {
+  .content {
+    /* Clear the fixed bottom nav when scrolled to the bottom. */
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  /* Give the home dashboard more horizontal room on mobile so the
+     summary cards and lists use the full width of small screens. */
+  .content-wide {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 }
 
