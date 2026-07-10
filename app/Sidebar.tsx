@@ -1,15 +1,22 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
 
   if (pathname === '/setup') return null
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href)
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
   return (
     <aside className="sidebar">
@@ -40,6 +47,12 @@ export default function Sidebar() {
           <span>Profile</span>
         </Link>
       </nav>
+      <div className="sidebar-footer">
+        <button className="sidebar-item sidebar-logout" onClick={handleLogout}>
+          <i className="fa-solid fa-right-from-bracket"></i>
+          <span>Logout</span>
+        </button>
+      </div>
     </aside>
   )
 }

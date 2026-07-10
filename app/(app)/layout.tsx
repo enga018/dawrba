@@ -69,11 +69,6 @@ export default function AppLayout({
     )
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
   return (
     <div className="app-layout">
       <OfflineBanner />
@@ -91,13 +86,6 @@ export default function AppLayout({
               </button>
             )}
             <ThemeToggle />
-            <button
-              className="header-btn header-btn-nav"
-              title="Logout"
-              onClick={handleLogout}
-            >
-              <i className="fa-solid fa-right-from-bracket"></i>
-            </button>
           </div>
         </div>
         <div className="content">
@@ -109,3 +97,4 @@ export default function AppLayout({
     </div>
   )
 }
+

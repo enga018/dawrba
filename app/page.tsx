@@ -101,19 +101,6 @@ export default function Home() {
                 {isOnline ? 'Online' : 'Offline'}
               </span>
               <ThemeToggle />
-              <button
-                className="header-btn header-btn-nav"
-                title="Notifications"
-              >
-                <i className="fa-solid fa-bell"></i>
-              </button>
-              <button
-                className="header-btn header-btn-nav"
-                title="Settings"
-                onClick={() => router.push('/profile')}
-              >
-                <i className="fa-solid fa-gear"></i>
-              </button>
             </div>
           </div>
           <div className="content content-wide">

@@ -193,6 +193,25 @@ input, select, button, textarea {
   color: white;
 }
 
+.sidebar-footer {
+  padding: 12px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-logout {
+  width: 100%;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+}
+
+.sidebar-logout:hover {
+  background: var(--tint-red);
+  color: var(--red);
+}
+
 /* Hide mobile header title on desktop */
 @media (min-width: 1024px) {
   .header-mobile-title {
