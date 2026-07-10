@@ -3,7 +3,11 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-export default function BottomNav() {
+interface BottomNavProps {
+  onAddClick?: () => void
+}
+
+export default function BottomNav({ onAddClick }: BottomNavProps) {
   const pathname = usePathname()
 
   if (pathname === '/setup') return null
@@ -21,9 +25,15 @@ export default function BottomNav() {
         <i className="fa-solid fa-users"></i>
         <span>Customers</span>
       </Link>
-      <Link href="/transactions" className={`bottom-nav-item ${isActive('/transactions') ? 'active' : ''}`}>
-        <i className="fa-solid fa-receipt"></i>
-        <span>Transactions</span>
+      <button className={`bottom-nav-item bottom-nav-item-add ${isActive('/add-customer') ? 'active' : ''}`} onClick={onAddClick}>
+        <span className="bottom-nav-add-icon">
+          <i className="fa-solid fa-plus"></i>
+        </span>
+        <span>Add</span>
+      </button>
+      <Link href="/reports" className={`bottom-nav-item ${isActive('/reports') ? 'active' : ''}`}>
+        <i className="fa-solid fa-chart-pie"></i>
+        <span>Reports</span>
       </Link>
       <Link href="/settings" className={`bottom-nav-item ${isActive('/settings') ? 'active' : ''}`}>
         <i className="fa-solid fa-gear"></i>

@@ -2,17 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { showToast } from '@/lib/toast'
+import { supabase } from '@/lib/supabase'
+import { getInitials } from '@/lib/utils'
 
 export default function SettingsPage() {
   const [shopName, setShopName] = useState('')
-  const [email, setEmail] = useState('')
-  const [weeklyReportDay, setWeeklyReportDay] = useState('sunday')
+  const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
+  const [isDark, setIsDark] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -22,47 +20,30 @@ export default function SettingsPage() {
         router.push('/login')
         return
       }
-      setEmail(user.email || '')
 
       const { data } = await supabase
         .from('profiles')
-        .select('shop_name, weekly_report_day')
+        .select('shop_name, phone')
         .eq('id', user.id)
         .single()
 
-      if (data?.shop_name) {
-        setShopName(data.shop_name)
-      }
-      if (data?.weekly_report_day) setWeeklyReportDay(data.weekly_report_day)
+      if (data?.shop_name) setShopName(data.shop_name)
+      if (data?.phone) setPhone(data.phone)
+
+      const stored = localStorage.getItem('theme')
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      setIsDark(stored === 'dark' || (stored !== 'light' && systemDark))
+
       setLoading(false)
     }
     loadProfile()
   }, [router])
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setSaving(true)
-
-    try {
-      const user = (await supabase.auth.getUser()).data.user
-      if (!user) throw new Error('Not authenticated')
-
-      const { error: dbError } = await supabase.from('profiles').upsert({
-        id: user.id,
-        shop_name: shopName,
-        report_time: '00:00',
-        weekly_report_day: weeklyReportDay,
-      })
-
-      if (dbError) throw dbError
-      showToast('Settings saved')
-      router.push('/')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save settings')
-    } finally {
-      setSaving(false)
-    }
+  const toggleTheme = () => {
+    const next = !isDark
+    setIsDark(next)
+    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
+    localStorage.setItem('theme', next ? 'dark' : 'light')
   }
 
   const handleLogout = async () => {
@@ -85,77 +66,103 @@ export default function SettingsPage() {
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>
           </button>
-          <h2>Settings</h2>
+          <h2>Profile</h2>
         </div>
       </Link>
 
-      <form onSubmit={handleSave}>
-        <div className="detail-card">
-          <div className="field">
-            <label htmlFor="shopName">Shop name</label>
-            <input
-              type="text"
-              id="shopName"
-              placeholder="e.g. Shahid's Tea Stall"
-              value={shopName}
-              onChange={(e) => setShopName(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="field">
-            <label>Email</label>
-            <input
-              type="email"
-              value={email}
-              disabled
-              style={{ background: 'var(--surface-alt)', color: 'var(--meta)' }}
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="weeklyReportDay">Week ends on</label>
-            <select
-              id="weeklyReportDay"
-              value={weeklyReportDay}
-              onChange={(e) => setWeeklyReportDay(e.target.value)}
-            >
-              <option value="saturday">Saturday</option>
-              <option value="sunday">Sunday</option>
-            </select>
-          </div>
-
-          <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
-            {saving ? <span className="spinner"></span> : 'Save Settings'}
-          </button>
-          {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
+      <div className="profile-header">
+        <div className="profile-avatar">
+          {getInitials(shopName || 'U')}
         </div>
-      </form>
-
-      <Link
-        href="/log"
-        className="detail-card"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          textDecoration: 'none',
-          color: 'var(--text)',
-          marginTop: '16px',
-        }}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
-          <i className="fa-solid fa-clock-rotate-left" style={{ color: 'var(--blue)' }}></i>
-          Activity Log
-        </span>
-        <i className="fa-solid fa-chevron-right" style={{ color: 'var(--meta)' }}></i>
-      </Link>
-
-      <div style={{ marginTop: '24px' }}>
-        <button className="btn btn-secondary btn-block" onClick={handleLogout}>
-          <i className="fa-solid fa-right-from-bracket"></i> Sign Out
-        </button>
+        <div className="profile-info">
+          <div className="profile-name">{shopName || 'My Shop'}</div>
+          {phone && <div className="profile-phone">{phone}</div>}
+        </div>
       </div>
+
+      <div className="profile-menu">
+        <Link href="/settings/shop-information" className="profile-menu-item">
+          <div className="profile-menu-icon" style={{ background: 'var(--tint-blue)', color: 'var(--blue)' }}>
+            <i className="fa-solid fa-store"></i>
+          </div>
+          <div className="profile-menu-text">
+            <div className="profile-menu-title">Shop Information</div>
+            <div className="profile-menu-sub">Name, owner, phone</div>
+          </div>
+          <i className="fa-solid fa-chevron-right profile-menu-chevron"></i>
+        </Link>
+
+        <Link href="/settings/notifications" className="profile-menu-item">
+          <div className="profile-menu-icon" style={{ background: 'var(--tint-orange)', color: 'var(--orange)' }}>
+            <i className="fa-solid fa-bell"></i>
+          </div>
+          <div className="profile-menu-text">
+            <div className="profile-menu-title">Notifications</div>
+            <div className="profile-menu-sub">Reminders and alerts</div>
+          </div>
+          <i className="fa-solid fa-chevron-right profile-menu-chevron"></i>
+        </Link>
+
+        <div className="profile-menu-item" onClick={toggleTheme} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleTheme() }}>
+          <div className="profile-menu-icon" style={{ background: 'var(--tint-blue)', color: 'var(--blue)' }}>
+            <i className="fa-solid fa-moon"></i>
+          </div>
+          <div className="profile-menu-text">
+            <div className="profile-menu-title">Dark Mode</div>
+            <div className="profile-menu-sub">Appearance settings</div>
+          </div>
+          <div className="profile-toggle">
+            <span className="profile-toggle-label">{isDark ? 'On' : 'Off'}</span>
+            <div className={`profile-toggle-switch ${isDark ? 'active' : ''}`}>
+              <div className="profile-toggle-knob"></div>
+            </div>
+          </div>
+        </div>
+
+        <Link href="/settings/change-password" className="profile-menu-item">
+          <div className="profile-menu-icon" style={{ background: 'var(--tint-green)', color: 'var(--green)' }}>
+            <i className="fa-solid fa-key"></i>
+          </div>
+          <div className="profile-menu-text">
+            <div className="profile-menu-title">Change Password</div>
+            <div className="profile-menu-sub">Update account security</div>
+          </div>
+          <i className="fa-solid fa-chevron-right profile-menu-chevron"></i>
+        </Link>
+
+        <Link href="/settings/export-data" className="profile-menu-item">
+          <div className="profile-menu-icon" style={{ background: 'var(--tint-blue)', color: 'var(--blue)' }}>
+            <i className="fa-solid fa-download"></i>
+          </div>
+          <div className="profile-menu-text">
+            <div className="profile-menu-title">Export Data</div>
+            <div className="profile-menu-sub">Download backup</div>
+          </div>
+          <i className="fa-solid fa-chevron-right profile-menu-chevron"></i>
+        </Link>
+
+        <div className="profile-menu-item">
+          <div className="profile-menu-icon" style={{ background: 'var(--surface-alt)', color: 'var(--muted)' }}>
+            <i className="fa-solid fa-circle-info"></i>
+          </div>
+          <div className="profile-menu-text">
+            <div className="profile-menu-title">App Version</div>
+            <div className="profile-menu-sub">DawrBa v1.0.0</div>
+          </div>
+          <span className="profile-version-text">v1.0.0</span>
+        </div>
+      </div>
+
+      <button className="profile-logout" onClick={handleLogout}>
+        <div className="profile-logout-icon">
+          <i className="fa-solid fa-right-from-bracket"></i>
+        </div>
+        <div className="profile-logout-text">
+          <div className="profile-logout-title">Logout</div>
+          <div className="profile-logout-sub">Sign out from this device</div>
+        </div>
+        <i className="fa-solid fa-chevron-right profile-menu-chevron"></i>
+      </button>
     </>
   )
 }

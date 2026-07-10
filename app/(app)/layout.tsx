@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase'
 import OfflineBanner from '@/app/OfflineBanner'
 import ThemeToggle from '@/app/ThemeToggle'
 import BottomNav from '@/app/BottomNav'
-import FloatingAddButton from '@/app/FloatingAddButton'
+import Sidebar from '@/app/Sidebar'
+import QuickAddSheet from '@/app/QuickAddSheet'
 import type { User } from '@supabase/supabase-js'
 
 export default function AppLayout({
@@ -17,6 +18,7 @@ export default function AppLayout({
   const [user, setUser] = useState<User | null>(null)
   const [shopName, setShopName] = useState('')
   const [loading, setLoading] = useState(true)
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -73,41 +75,37 @@ export default function AppLayout({
   }
 
   return (
-    <>
+    <div className="app-layout">
       <OfflineBanner />
-      <div className="header">
-        <h1>DawrBa<span className="dot"></span></h1>
-        <div className="header-actions">
-          {shopName && (
+      <Sidebar />
+      <div className="app-main">
+        <div className="header">
+          <h1 className="header-mobile-title">DawrBa<span className="dot"></span></h1>
+          <div className="header-actions">
+            {shopName && (
+              <button
+                className="header-shop-name"
+                title={shopName}
+              >
+                {shopName}
+              </button>
+            )}
+            <ThemeToggle />
             <button
-              className="header-shop-name"
-              title={shopName}
+              className="header-btn header-btn-nav"
+              title="Logout"
+              onClick={handleLogout}
             >
-              {shopName}
+              <i className="fa-solid fa-right-from-bracket"></i>
             </button>
-          )}
-          <ThemeToggle />
-          <button
-            className="header-btn header-btn-nav"
-            title="Settings"
-            onClick={() => router.push('/settings')}
-          >
-            <i className="fa-solid fa-gear"></i>
-          </button>
-          <button
-            className="header-btn header-btn-nav"
-            title="Logout"
-            onClick={handleLogout}
-          >
-            <i className="fa-solid fa-right-from-bracket"></i>
-          </button>
+          </div>
         </div>
+        <div className="content">
+          {children}
+        </div>
+        <BottomNav onAddClick={() => setShowQuickAdd(true)} />
       </div>
-      <div className="content">
-        {children}
-      </div>
-      <FloatingAddButton />
-      <BottomNav />
-    </>
+      <QuickAddSheet show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
+    </div>
   )
 }

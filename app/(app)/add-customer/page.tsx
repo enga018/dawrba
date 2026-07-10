@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { showToast } from '@/lib/toast'
@@ -13,7 +13,11 @@ interface ExistingCustomer {
 }
 
 export default function AddCustomer() {
-  const [modalMode, setModalMode] = useState<'credit' | 'add-customer'>('credit')
+  const searchParams = useSearchParams()
+  const initialMode = searchParams.get('mode')
+  const [modalMode, setModalMode] = useState<'credit' | 'payment' | 'add-customer'>(
+    initialMode === 'payment' ? 'payment' : initialMode === 'new' ? 'add-customer' : 'credit'
+  )
   const [existingCustomers, setExistingCustomers] = useState<ExistingCustomer[]>([])
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [amount, setAmount] = useState('')
@@ -73,6 +77,29 @@ export default function AddCustomer() {
     }
   }
 
+  const handleAddPayment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedCustomerId || !amount || parseFloat(amount) <= 0) return
+
+    setError('')
+    setLoading(true)
+    try {
+      const { error: txError } = await supabase.from('transactions').insert({
+        customer_id: selectedCustomerId,
+        amount: -parseFloat(amount),
+        note: note || null,
+      })
+      if (txError) throw txError
+
+      showToast('Payment recorded')
+      router.push('/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to record payment')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -121,12 +148,12 @@ export default function AddCustomer() {
           <button className="back-btn">
             <i className="fa-solid fa-arrow-left"></i>
           </button>
-          <h2>{modalMode === 'credit' ? 'Add Credit' : 'Add Customer'}</h2>
+          <h2>{modalMode === 'credit' ? 'Add Credit' : modalMode === 'payment' ? 'Collect Payment' : 'Add Customer'}</h2>
         </div>
       </Link>
 
-      {modalMode === 'credit' ? (
-        <form onSubmit={handleAddCredit}>
+      {(modalMode === 'credit' || modalMode === 'payment') ? (
+        <form onSubmit={modalMode === 'credit' ? handleAddCredit : handleAddPayment}>
           <div className="field">
             <label htmlFor="selectedCustomer">Select customer</label>
             <select
@@ -161,7 +188,7 @@ export default function AddCustomer() {
             <input
               type="text"
               id="note"
-              placeholder="e.g. Milk supply"
+              placeholder={modalMode === 'credit' ? 'e.g. Milk supply' : 'e.g. Cash payment'}
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
@@ -171,7 +198,7 @@ export default function AddCustomer() {
             className="btn btn-primary btn-block"
             disabled={!selectedCustomerId || !amount || loading}
           >
-            {loading ? <span className="spinner"></span> : 'Add Credit'}
+            {loading ? <span className="spinner"></span> : modalMode === 'credit' ? 'Add Credit' : 'Record Payment'}
           </button>
           {error && <div className="auth-error" style={{ display: 'block' }}>{error}</div>}
           <button

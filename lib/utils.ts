@@ -69,3 +69,57 @@ export function formatRelativeTime(dateStr: string | null | undefined): string {
   if (diffMonths < 12) return `${diffMonths}mo ago`
   return `${Math.floor(diffMonths / 12)}y ago`
 }
+
+export function daysSince(dateStr: string): number {
+  const then = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - then.getTime()
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24))
+}
+
+export type OverdueStrategy = 'oldest_credit' | 'fixed_period'
+
+interface Transaction {
+  amount: number
+  date?: string
+  created_at: string
+}
+
+export function calculateOverdueDays(
+  balance: number,
+  transactions: Transaction[],
+  strategy: OverdueStrategy = 'oldest_credit',
+  thresholdDays: number = 7
+): number {
+  if (balance <= 0) return 0
+
+  if (strategy === 'fixed_period') {
+    const lastTx = [...transactions].sort((a, b) => {
+      const dateA = new Date(a.date || a.created_at).getTime()
+      const dateB = new Date(b.date || b.created_at).getTime()
+      return dateB - dateA
+    })[0]
+    if (!lastTx) return 0
+    const lastDate = lastTx.date || lastTx.created_at
+    const days = daysSince(lastDate)
+    return days > thresholdDays ? days - thresholdDays : 0
+  }
+
+  const credits = transactions.filter((t) => t.amount > 0)
+  if (credits.length === 0) return 0
+  const oldest = credits.reduce((min, t) => {
+    const d = new Date(t.date || t.created_at).getTime()
+    return d < min ? d : min
+  }, Infinity)
+  const days = daysSince(new Date(oldest).toISOString())
+  return days > thresholdDays ? days - thresholdDays : 0
+}
+
+export function isCustomerOverdue(
+  balance: number,
+  transactions: Transaction[],
+  strategy: OverdueStrategy = 'oldest_credit',
+  thresholdDays: number = 7
+): boolean {
+  return calculateOverdueDays(balance, transactions, strategy, thresholdDays) > 0
+}

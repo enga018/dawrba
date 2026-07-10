@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { formatDate, formatCurrency, getInitials, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import AmountKeypad from '@/app/AmountKeypad'
@@ -26,6 +26,8 @@ interface Transaction {
   created_at: string
   updated_at?: string
 }
+
+type TxFilter = 'all' | 'credit' | 'payment'
 
 export default function CustomerDetail() {
   const params = useParams()
@@ -50,6 +52,16 @@ export default function CustomerDetail() {
   const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false)
   const [openingBalanceInput, setOpeningBalanceInput] = useState('')
   const [savingOpeningBalance, setSavingOpeningBalance] = useState(false)
+  const [txFilter, setTxFilter] = useState<TxFilter>('all')
+  const [deleteCustomerConfirm, setDeleteCustomerConfirm] = useState(false)
+  const [deletingCustomer, setDeletingCustomer] = useState(false)
+  const [showEditCustomerModal, setShowEditCustomerModal] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editPhone, setEditPhone] = useState('')
+  const [savingCustomer, setSavingCustomer] = useState(false)
+  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('oldest_credit')
+  const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
 
   useEffect(() => {
     setOffline(!navigator.onLine)
@@ -74,10 +86,16 @@ export default function CustomerDetail() {
   const loadData = useCallback(async () => {
     try {
       const user = (await supabase.auth.getUser()).data.user
-      if (!user) {
-        router.push('/login')
-        return
-      }
+      if (!user) { router.push('/login'); return }
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('overdue_strategy, overdue_threshold_days')
+        .eq('id', user.id)
+        .single()
+
+      if (profileData?.overdue_strategy) setOverdueStrategy(profileData.overdue_strategy)
+      if (profileData?.overdue_threshold_days) setOverdueThresholdDays(profileData.overdue_threshold_days)
 
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
@@ -125,11 +143,9 @@ export default function CustomerDetail() {
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!txAmount || parseFloat(txAmount) <= 0) return
-
     setSubmitting(true)
     try {
       const amount = modalMode === 'pay' ? -parseFloat(txAmount) : parseFloat(txAmount)
-
       if (editingTx) {
         const { error } = await supabase
           .from('transactions')
@@ -139,14 +155,11 @@ export default function CustomerDetail() {
         showToast('Transaction updated')
       } else {
         const { error } = await supabase.from('transactions').insert({
-          customer_id: customerId,
-          amount,
-          note: txNote || null,
+          customer_id: customerId, amount, note: txNote || null,
         })
         if (error) throw error
         showToast(modalMode === 'credit' ? 'Credit added' : 'Payment recorded')
       }
-
       setShowModal(false)
       setTxAmount('')
       setTxNote('')
@@ -194,35 +207,18 @@ export default function CustomerDetail() {
   const handleSaveOpeningBalance = async () => {
     const value = parseFloat(openingBalanceInput)
     if (isNaN(value) || value < 0) return
-
     setSavingOpeningBalance(true)
     try {
-      const { error } = await supabase
-        .from('customers')
-        .update({ opening_balance: value })
-        .eq('id', customerId)
+      const { error } = await supabase.from('customers').update({ opening_balance: value }).eq('id', customerId)
       if (error) throw error
-
       showToast('Opening balance updated')
       setShowOpeningBalanceModal(false)
       await loadData()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to update opening balance'
-      showToast(msg, 'error')
+      showToast(err instanceof Error ? err.message : 'Failed to update', 'error')
     } finally {
       setSavingOpeningBalance(false)
     }
-  }
-
-  const handleWhatsApp = () => {
-    if (!customer || !customer.phone) {
-      alert('No phone number for this customer')
-      return
-    }
-    const phone = customer.phone.replace(/[^0-9]/g, '')
-    const balance = customer.balance.toLocaleString('en-IN')
-    const msg = `Hi ${customer.name}, this is a friendly reminder about your pending balance of ₹${balance}. Please clear it at your earliest convenience.`
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
   const openAddModal = (mode: 'credit' | 'pay') => {
@@ -231,6 +227,48 @@ export default function CustomerDetail() {
     setTxNote('')
     setModalMode(mode)
     setShowModal(true)
+  }
+
+  const handleDeleteCustomer = async () => {
+    setDeletingCustomer(true)
+    try {
+      await supabase.from('transactions').delete().eq('customer_id', customerId)
+      const { error } = await supabase.from('customers').delete().eq('id', customerId)
+      if (error) throw error
+      showToast('Customer deleted')
+      router.push('/customers')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete customer', 'error')
+    } finally {
+      setDeletingCustomer(false)
+      setDeleteCustomerConfirm(false)
+    }
+  }
+
+  const handleSaveCustomer = async () => {
+    if (!editName.trim()) return
+    setSavingCustomer(true)
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update({ name: editName.trim(), phone: editPhone.trim() || null })
+        .eq('id', customerId)
+      if (error) throw error
+      showToast('Customer updated')
+      setShowEditCustomerModal(false)
+      await loadData()
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to update customer', 'error')
+    } finally {
+      setSavingCustomer(false)
+    }
+  }
+
+  const openEditCustomer = () => {
+    if (!customer) return
+    setEditName(customer.name)
+    setEditPhone(customer.phone || '')
+    setShowEditCustomerModal(true)
   }
 
   if (loading) {
@@ -245,211 +283,289 @@ export default function CustomerDetail() {
     return <div className="auth-error" style={{ display: 'block' }}>Customer not found</div>
   }
 
+  const totalPaid = transactions.filter((t) => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0)
+  const lastPaymentTx = transactions.find((t) => t.amount < 0)
+  const lastPayment = lastPaymentTx ? Math.abs(lastPaymentTx.amount) : 0
+  const lastPaymentDate = lastPaymentTx ? lastPaymentTx.date || lastPaymentTx.created_at : null
+
+  const overdueDays = calculateOverdueDays(
+    customer.balance,
+    transactions,
+    overdueStrategy,
+    overdueThresholdDays
+  )
+
+  const filteredTransactions = transactions.filter((tx) => {
+    if (txFilter === 'credit') return tx.amount > 0
+    if (txFilter === 'payment') return tx.amount < 0
+    return true
+  })
+
   return (
     <>
-      <Link href="/">
-        <div className="back-row">
-          <button className="back-btn">
-            <i className="fa-solid fa-arrow-left"></i>
-          </button>
-          <h2>Customer</h2>
-        </div>
-      </Link>
-
-      <div className="detail-card">
-        <h2 style={{ fontSize: '1.15rem', marginBottom: '4px' }}>{customer.name}</h2>
-        <div className="detail-phone">
-          <i className="fa-solid fa-phone"></i>
-          <span>{customer.phone || 'No phone'}</span>
-        </div>
-        <div className={`detail-balance ${customer.balance <= 0 ? 'zero' : ''}`}>
-          ₹{formatCurrency(customer.balance)}
-        </div>
-        {customer.opening_balance > 0 && (
-          <div style={{ fontSize: '0.82rem', color: 'var(--meta)', marginTop: '4px' }}>
-            Opening balance: ₹{formatCurrency(customer.opening_balance)}
+      {/* Customer Header Card */}
+      <div className="customer-header-card">
+        <div className="customer-header-top">
+          <div className="customer-header-avatar">{getInitials(customer.name)}</div>
+          <div className="customer-header-info">
+            <h2 className="customer-header-name">{customer.name}</h2>
+            <div className="customer-header-phone">
+              {customer.phone || 'No phone'}
+            </div>
           </div>
-        )}
-        {customer.created_at && (
-          <div style={{ fontSize: '0.75rem', color: 'var(--meta)', marginTop: '8px' }}>
-            Customer since {formatDate(customer.created_at)}
-          </div>
-        )}
-        <div className="detail-actions">
-          <button
-            className="btn btn-red btn-sm"
-            disabled={offline}
-            onClick={() => openAddModal('credit')}
-            title={offline ? 'Unavailable offline' : 'Add Credit'}
-          >
-            <i className="fa-solid fa-plus"></i> Add Credit
-          </button>
-          <button
-            className="btn btn-green btn-sm"
-            disabled={offline}
-            onClick={() => openAddModal('pay')}
-            title={offline ? 'Unavailable offline' : 'Collect Payment'}
-          >
-            <i className="fa-solid fa-arrow-right"></i> Collect
-          </button>
-          <button className="btn btn-secondary btn-sm" onClick={handleWhatsApp}>
-            <i className="fa-brands fa-whatsapp"></i> Remind
-          </button>
+        </div>
+        <div className={`overdue-badge ${overdueDays > 0 ? 'overdue' : 'clear'}`}>
+          {overdueDays > 0 ? `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue` : 'All clear'}
         </div>
       </div>
 
-      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '8px' }}>Recent Transactions</h3>
-      <div className="tx-list">
-        {transactions.length === 0 && !(customer.opening_balance > 0) ? (
-          <div className="empty">
-            <p>No transactions yet.</p>
+      {/* Balance Stats */}
+      <div className="balance-stats">
+        <div className="balance-stat">
+          <div className="balance-stat-body">
+            <span className="balance-stat-label">Current Balance</span>
+            <span className={`balance-stat-value ${customer.balance <= 0 ? 'green' : 'red'}`}>
+              Rs.{formatCurrency(customer.balance)}
+            </span>
           </div>
-        ) : (
-          <>
-          {transactions.slice(0, visibleCount).map((tx) => {
-            const isCredit = tx.amount > 0
-            return (
-              <div key={tx.id} className="tx-item">
-                <div className="tx-left">
-                  <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
-                    <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-minus'}`}></i>
-                  </div>
-                  <div>
-                    <div className="tx-note">
-                      {tx.note || (isCredit ? 'Credit' : 'Payment')}
+        </div>
+        <div className="balance-stat">
+          <div className="balance-stat-body">
+            <span className="balance-stat-label">Total Paid</span>
+            <span className="balance-stat-value green">Rs.{formatCurrency(totalPaid)}</span>
+          </div>
+        </div>
+        <div className="balance-stat" onClick={openOpeningBalanceModal} style={{ cursor: 'pointer' }}>
+          <div className="balance-stat-body">
+            <span className="balance-stat-label">Opening Balance</span>
+            <span className="balance-stat-value">Rs.{formatCurrency(customer.opening_balance)}</span>
+          </div>
+        </div>
+        <div className="balance-stat">
+          <div className="balance-stat-body">
+            <span className="balance-stat-label">Last Payment</span>
+            <span className="balance-stat-value blue">
+              {lastPayment > 0 ? `Rs.${formatCurrency(lastPayment)}` : 'Never'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="action-row">
+        <button
+          className="btn btn-add-credit"
+          disabled={offline}
+          onClick={() => openAddModal('credit')}
+        >
+          <i className="fa-solid fa-plus"></i> Add Credit
+        </button>
+        <button
+          className="btn btn-collect"
+          disabled={offline}
+          onClick={() => openAddModal('pay')}
+        >
+          <i className="fa-solid fa-check"></i> Collect
+        </button>
+        <button
+          className="btn btn-remind"
+          disabled={offline || !customer.phone}
+          onClick={() => {
+            const msg = encodeURIComponent(`Hi ${customer.name}, this is a reminder about your pending balance of Rs.${formatCurrency(customer.balance)}. Please pay at your earliest convenience.`)
+            window.open(`https://wa.me/${customer.phone?.replace(/[^0-9]/g, '')}?text=${msg}`, '_blank')
+          }}
+        >
+          <i className="fa-solid fa-bell"></i> Remind
+        </button>
+      </div>
+
+      {/* Transaction History */}
+      <div className="home-section-card">
+        <div className="tx-history-header">
+          <h3>Transaction History</h3>
+          <div className="tx-tabs">
+            <button className={`tx-tab ${txFilter === 'all' ? 'active' : ''}`} onClick={() => setTxFilter('all')}>
+              All
+            </button>
+            <button className={`tx-tab ${txFilter === 'credit' ? 'active' : ''}`} onClick={() => setTxFilter('credit')}>
+              Credit
+            </button>
+            <button className={`tx-tab ${txFilter === 'payment' ? 'active' : ''}`} onClick={() => setTxFilter('payment')}>
+              Payment
+            </button>
+          </div>
+        </div>
+
+        <div className="tx-list">
+          {filteredTransactions.length === 0 ? (
+            <div className="empty"><p>No {txFilter === 'all' ? '' : txFilter} transactions yet.</p></div>
+          ) : (
+            <>
+              {filteredTransactions.slice(0, visibleCount).map((tx) => {
+                const isCredit = tx.amount > 0
+                return (
+                  <div key={tx.id} className="tx-item" style={{ cursor: 'pointer' }} onClick={() => setSelectedTx(tx)}>
+                    <div className="tx-left">
+                      <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
+                        <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-check'}`}></i>
+                      </div>
+                      <div>
+                        <div className="tx-note">{isCredit ? 'Credit added' : 'Payment collected'}</div>
+                        <div className="tx-date">{formatDate(tx.date)}{tx.note ? ` · ${tx.note}` : ''}</div>
+                      </div>
                     </div>
-                    <div className="tx-date">{formatDate(tx.date)}</div>
+                    <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
+                      {isCredit ? '+' : '-'}Rs.{formatCurrency(Math.abs(tx.amount))}
+                    </div>
                   </div>
+                )
+              })}
+            </>
+          )}
+        </div>
+
+        {filteredTransactions.length > visibleCount && (
+          <button className="btn btn-secondary btn-sm btn-block" style={{ marginTop: '12px' }}
+            onClick={() => setVisibleCount((prev) => prev + 10)}>
+            See more
+          </button>
+        )}
+      </div>
+
+      {/* Footer Actions */}
+      <div className="footer-actions">
+        <a href={customer.phone ? `tel:${customer.phone}` : undefined}
+          className={`footer-action-item ${!customer.phone ? 'disabled' : ''}`}
+          onClick={(e) => { if (!customer.phone) e.preventDefault() }}>
+          <div className="footer-action-icon blue"><i className="fa-solid fa-phone"></i></div>
+          <span>Call Customer</span>
+          <i className="fa-solid fa-chevron-right footer-action-arrow"></i>
+        </a>
+        <button className="footer-action-item" onClick={openEditCustomer}>
+          <div className="footer-action-icon muted"><i className="fa-solid fa-pen"></i></div>
+          <span>Edit Customer</span>
+          <i className="fa-solid fa-chevron-right footer-action-arrow"></i>
+        </button>
+        <button className="footer-action-item danger" onClick={() => setDeleteCustomerConfirm(true)}>
+          <div className="footer-action-icon red"><i className="fa-solid fa-trash"></i></div>
+          <span>Delete Customer</span>
+          <i className="fa-solid fa-chevron-right footer-action-arrow"></i>
+        </button>
+      </div>
+
+      {/* ═══ Modals ═══ */}
+
+      {/* Transaction Detail Modal */}
+      {selectedTx && (
+        <div className="modal-backdrop active" onClick={() => setSelectedTx(null)}>
+          <div className="modal-sheet modal-tx-detail" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <div className="modal-tx-detail-title">
+                <div className="tx-icon credit" style={{ width: '28px', height: '28px', fontSize: '0.7rem' }}>
+                  <i className={`fa-solid ${selectedTx.amount > 0 ? 'fa-plus' : 'fa-minus'}`}></i>
                 </div>
-                <div className="tx-actions">
-                  <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
-                    {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
-                  </div>
-                  <div className="tx-btns">
-                    <button
-                      className="tx-btn"
-                      disabled={offline}
-                      onClick={() => handleEdit(tx)}
-                      title="Edit"
-                    >
-                      <i className="fa-solid fa-pen"></i>
-                    </button>
-                    <button
-                      className="tx-btn tx-btn-del"
-                      disabled={offline}
-                      onClick={() => setDeleteConfirm(tx.id)}
-                      title="Delete"
-                    >
-                      <i className="fa-solid fa-trash-can"></i>
-                    </button>
-                  </div>
-                </div>
+                <h3>Transaction Details</h3>
               </div>
-            )
-          })}
-          {customer.opening_balance > 0 && (
-            <div className="tx-item">
-              <div className="tx-left">
-                <div className="tx-icon" style={{ background: 'var(--surface-alt)', color: 'var(--muted)' }}>
-                  <i className="fa-solid fa-flag"></i>
-                </div>
-                <div>
-                  <div className="tx-note">Opening Balance</div>
-                  <div className="tx-date">{formatDate(customer.created_at)}</div>
-                </div>
+              <button className="modal-close" onClick={() => setSelectedTx(null)}><i className="fa-solid fa-xmark"></i></button>
+            </div>
+            <div className="tx-detail-body">
+              <div className="tx-detail-row">
+                <span className="tx-detail-label">Customer</span>
+                <span className="tx-detail-value">{customer?.name}</span>
               </div>
-              <div className="tx-actions">
-                <div className="tx-amount" style={{ color: 'var(--muted)' }}>
-                  ₹{formatCurrency(customer.opening_balance)}
-                </div>
-                <div className="tx-btns">
-                  <button
-                    className="tx-btn"
-                    disabled={offline}
-                    onClick={openOpeningBalanceModal}
-                    title="Edit"
-                  >
-                    <i className="fa-solid fa-pen"></i>
-                  </button>
-                </div>
+              <div className="tx-detail-row">
+                <span className="tx-detail-label">Type</span>
+                <span className="tx-detail-value">
+                  <span className={`tx-icon ${selectedTx.amount > 0 ? 'credit' : 'pay'}`} style={{ width: '20px', height: '20px', fontSize: '0.6rem', display: 'inline-grid' }}>
+                    <i className={`fa-solid ${selectedTx.amount > 0 ? 'fa-plus' : 'fa-minus'}`}></i>
+                  </span>
+                  {selectedTx.amount > 0 ? 'Credit Added' : 'Payment Collected'}
+                </span>
+              </div>
+              <div className="tx-detail-row">
+                <span className="tx-detail-label">Amount</span>
+                <span className="tx-detail-value">Rs.{formatCurrency(Math.abs(selectedTx.amount))}</span>
+              </div>
+              <div className="tx-detail-row">
+                <span className="tx-detail-label">Description</span>
+                <span className="tx-detail-value">{selectedTx.note || '-'}</span>
+              </div>
+              <div className="tx-detail-row">
+                <span className="tx-detail-label">Date</span>
+                <span className="tx-detail-value">{formatDate(selectedTx.date || selectedTx.created_at)}</span>
+              </div>
+              <div className="tx-detail-row">
+                <span className="tx-detail-label">Time</span>
+                <span className="tx-detail-value">{new Date(selectedTx.date || selectedTx.created_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
               </div>
             </div>
-          )}
-          </>
-        )}
-      </div>
-
-      {transactions.length > visibleCount && (
-        <button
-          className="btn btn-secondary btn-sm btn-block"
-          style={{ marginTop: '12px' }}
-          onClick={() => setVisibleCount((prev) => prev + 10)}
-        >
-          See more
-        </button>
+            <div className="tx-detail-actions">
+              <button className="btn btn-outline" onClick={() => { setSelectedTx(null); handleEdit(selectedTx) }}>
+                <i className="fa-solid fa-pen"></i> Edit
+              </button>
+              <button className="btn btn-red" onClick={() => { setSelectedTx(null); setDeleteConfirm(selectedTx.id) }}>
+                <i className="fa-solid fa-trash"></i> Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Edit Opening Balance modal */}
+      {/* Edit Opening Balance */}
       <div className={`modal-backdrop ${showOpeningBalanceModal ? 'active' : ''}`} onClick={() => setShowOpeningBalanceModal(false)}>
         <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
             <h3>Edit Opening Balance</h3>
-            <button className="modal-close" onClick={() => setShowOpeningBalanceModal(false)}>
-              <i className="fa-solid fa-xmark"></i>
-            </button>
+            <button className="modal-close" onClick={() => setShowOpeningBalanceModal(false)}><i className="fa-solid fa-xmark"></i></button>
           </div>
           <div className="field">
-            <label htmlFor="openingBalance">Amount (₹)</label>
-            <input
-              type="number"
-              id="openingBalance"
-              placeholder="0"
-              min="0"
-              step="1"
-              value={openingBalanceInput}
-              onChange={(e) => setOpeningBalanceInput(e.target.value)}
-            />
+            <label>Amount (Rs.)</label>
+            <input type="number" placeholder="0" min="0" step="1" value={openingBalanceInput}
+              onChange={(e) => setOpeningBalanceInput(e.target.value)} />
           </div>
-          <button
-            className="btn btn-primary btn-block"
-            disabled={savingOpeningBalance}
-            onClick={handleSaveOpeningBalance}
-          >
+          <button className="btn btn-primary btn-block" disabled={savingOpeningBalance} onClick={handleSaveOpeningBalance}>
             {savingOpeningBalance ? <span className="spinner"></span> : 'Save'}
           </button>
         </div>
       </div>
 
-      {/* Delete confirmation */}
+      {/* Edit Customer */}
+      <div className={`modal-backdrop ${showEditCustomerModal ? 'active' : ''}`} onClick={() => setShowEditCustomerModal(false)}>
+        <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-head">
+            <h3>Edit Customer</h3>
+            <button className="modal-close" onClick={() => setShowEditCustomerModal(false)}><i className="fa-solid fa-xmark"></i></button>
+          </div>
+          <div className="field">
+            <label>Name</label>
+            <input type="text" placeholder="Customer name" value={editName}
+              onChange={(e) => setEditName(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Phone</label>
+            <input type="tel" placeholder="Phone number" value={editPhone}
+              onChange={(e) => setEditPhone(e.target.value)} />
+          </div>
+          <button className="btn btn-primary btn-block" disabled={!editName.trim() || savingCustomer} onClick={handleSaveCustomer}>
+            {savingCustomer ? <span className="spinner"></span> : 'Save'}
+          </button>
+        </div>
+      </div>
+
+      {/* Delete Transaction Confirm */}
       {deleteConfirm && (
         <div className="modal-backdrop active" onClick={() => !deleting && setDeleteConfirm(null)}>
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
               <h3>Delete transaction?</h3>
-              <button
-                className="modal-close"
-                onClick={() => setDeleteConfirm(null)}
-                disabled={deleting}
-              >
-                <i className="fa-solid fa-xmark"></i>
-              </button>
+              <button className="modal-close" onClick={() => setDeleteConfirm(null)} disabled={deleting}><i className="fa-solid fa-xmark"></i></button>
             </div>
             <p style={{ margin: '16px 0', color: 'var(--muted)', fontSize: '0.9rem' }}>
               This action cannot be undone. The customer balance will be recalculated.
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                className="btn btn-secondary btn-block"
-                onClick={() => setDeleteConfirm(null)}
-                disabled={deleting}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-red btn-block"
-                onClick={() => handleDelete(deleteConfirm)}
-                disabled={deleting}
-              >
+              <button className="btn btn-secondary btn-block" onClick={() => setDeleteConfirm(null)} disabled={deleting}>Cancel</button>
+              <button className="btn btn-red btn-block" onClick={() => handleDelete(deleteConfirm)} disabled={deleting}>
                 {deleting ? <span className="spinner"></span> : 'Delete'}
               </button>
             </div>
@@ -457,44 +573,46 @@ export default function CustomerDetail() {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* Delete Customer Confirm */}
+      {deleteCustomerConfirm && (
+        <div className="modal-backdrop active" onClick={() => !deletingCustomer && setDeleteCustomerConfirm(false)}>
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>Delete customer?</h3>
+              <button className="modal-close" onClick={() => setDeleteCustomerConfirm(false)} disabled={deletingCustomer}><i className="fa-solid fa-xmark"></i></button>
+            </div>
+            <p style={{ margin: '16px 0', color: 'var(--muted)', fontSize: '0.9rem' }}>
+              This will permanently delete <strong>{customer.name}</strong> and all their transactions. This cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary btn-block" onClick={() => setDeleteCustomerConfirm(false)} disabled={deletingCustomer}>Cancel</button>
+              <button className="btn btn-red btn-block" onClick={handleDeleteCustomer} disabled={deletingCustomer}>
+                {deletingCustomer ? <span className="spinner"></span> : 'Delete Customer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Transaction Modal */}
       <div className={`modal-backdrop ${showModal ? 'active' : ''}`} onClick={() => setShowModal(false)}>
         <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
           <div className="modal-head">
             <h3>{editingTx ? 'Edit Transaction' : modalMode === 'credit' ? 'Add Credit' : 'Collect Payment'}</h3>
-            <button
-              className="modal-close"
-              onClick={() => setShowModal(false)}
-            >
-              <i className="fa-solid fa-xmark"></i>
-            </button>
+            <button className="modal-close" onClick={() => setShowModal(false)}><i className="fa-solid fa-xmark"></i></button>
           </div>
           <form onSubmit={handleAddTransaction}>
             <div className="amount-entry">
-              <div className="amount-display">
-                ₹{txAmount ? Number(txAmount).toLocaleString('en-IN') : '0'}
-              </div>
+              <div className="amount-display">Rs.{txAmount ? Number(txAmount).toLocaleString('en-IN') : '0'}</div>
               <div className="amount-target">
-                <span className="amount-target-label">
-                  {modalMode === 'credit' ? 'Adding credit to' : 'Collecting from'}
-                </span>
+                <span className="amount-target-label">{modalMode === 'credit' ? 'Adding credit to' : 'Collecting from'}</span>
                 <span className="amount-target-name">{customer.name}</span>
               </div>
             </div>
-
             <AmountKeypad value={txAmount} onChange={setTxAmount} />
-
             <div className="field">
-              <label htmlFor="txNote">
-                Note <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span>
-              </label>
-              <input
-                type="text"
-                id="txNote"
-                placeholder="e.g. Weekly payment"
-                value={txNote}
-                onChange={(e) => setTxNote(e.target.value)}
-              />
+              <label>Note <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span></label>
+              <input type="text" placeholder="e.g. Weekly payment" value={txNote} onChange={(e) => setTxNote(e.target.value)} />
             </div>
             <button type="submit" className="btn btn-primary btn-block" disabled={!txAmount || submitting}>
               {submitting ? <span className="spinner"></span> : editingTx ? 'Update' : modalMode === 'credit' ? 'Add Credit' : 'Collect Payment'}
@@ -504,52 +622,6 @@ export default function CustomerDetail() {
         </div>
       </div>
 
-      <button
-        className="add-btn"
-        title={offline ? 'Unavailable offline' : 'Add credit'}
-        disabled={offline}
-        onClick={() => openAddModal('credit')}
-        style={{ opacity: offline ? 0.5 : 1, cursor: offline ? 'not-allowed' : 'pointer' }}
-      >
-        <i className="fa-solid fa-plus"></i>
-      </button>
-
-      <style>{`
-        .tx-actions {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .tx-btns {
-          display: flex;
-          gap: 4px;
-        }
-        .tx-btn {
-          width: 28px;
-          height: 28px;
-          border-radius: 6px;
-          border: 1px solid var(--border);
-          background: var(--surface);
-          color: var(--meta);
-          cursor: pointer;
-          display: grid;
-          place-items: center;
-          font-size: 0.75rem;
-          transition: all 0.15s ease;
-        }
-        .tx-btn:hover {
-          border-color: var(--blue);
-          color: var(--blue);
-        }
-        .tx-btn:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
-        .tx-btn-del:hover {
-          border-color: var(--red);
-          color: var(--red);
-        }
-      `}</style>
     </>
   )
 }

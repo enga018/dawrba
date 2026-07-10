@@ -8,13 +8,35 @@ import DashboardPage from './DashboardPage'
 import OfflineBanner from './OfflineBanner'
 import ThemeToggle from './ThemeToggle'
 import BottomNav from './BottomNav'
+import QuickAddSheet from './QuickAddSheet'
 import type { User } from '@supabase/supabase-js'
+
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good Morning'
+  if (hour < 17) return 'Good Afternoon'
+  return 'Good Evening'
+}
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [shopName, setShopName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [isOnline, setIsOnline] = useState(true)
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine)
+    const handleOffline = () => setIsOnline(false)
+    const handleOnline = () => setIsOnline(true)
+    window.addEventListener('offline', handleOffline)
+    window.addEventListener('online', handleOnline)
+    return () => {
+      window.removeEventListener('offline', handleOffline)
+      window.removeEventListener('online', handleOnline)
+    }
+  }, [])
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -37,7 +59,7 @@ export default function Home() {
           }
         }
         setIsLoading(false)
-      } catch (error) {
+      } catch {
         setIsLoading(false)
       }
     }
@@ -53,11 +75,6 @@ export default function Home() {
     return () => subscription?.unsubscribe()
   }, [])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-  }
-
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -71,17 +88,22 @@ export default function Home() {
       <>
         <OfflineBanner />
         <div className="header">
-          <h1>DawrBa<span className="dot"></span></h1>
+          <div className="header-left">
+            <h1 className="header-greeting">{getGreeting()}</h1>
+            {shopName && <div className="header-shop-label">{shopName}</div>}
+          </div>
           <div className="header-actions">
-            {shopName && (
-              <button
-                className="header-shop-name"
-                title={shopName}
-              >
-                {shopName}
-              </button>
-            )}
+            <span className={`status-dot ${isOnline ? 'online' : 'offline'}`}>
+              <i className={`fa-solid ${isOnline ? 'fa-wifi' : 'fa-wifi'}`}></i>
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
             <ThemeToggle />
+            <button
+              className="header-btn header-btn-nav"
+              title="Notifications"
+            >
+              <i className="fa-solid fa-bell"></i>
+            </button>
             <button
               className="header-btn header-btn-nav"
               title="Settings"
@@ -89,19 +111,13 @@ export default function Home() {
             >
               <i className="fa-solid fa-gear"></i>
             </button>
-            <button
-              className="header-btn header-btn-nav"
-              title="Logout"
-              onClick={handleLogout}
-            >
-              <i className="fa-solid fa-right-from-bracket"></i>
-            </button>
           </div>
         </div>
         <div className="content content-wide">
           <DashboardPage />
         </div>
-        <BottomNav />
+        <BottomNav onAddClick={() => setShowQuickAdd(true)} />
+        <QuickAddSheet show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
       </>
     )
   }

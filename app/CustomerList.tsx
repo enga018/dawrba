@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { getInitials, formatCurrency, formatRelativeTime } from '@/lib/utils'
+import { getInitials, formatCurrency, formatDate, isCustomerOverdue, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
+import { formatRelativeTime } from '@/lib/utils'
 
 interface Customer {
   id: string
@@ -12,22 +13,34 @@ interface Customer {
   phone?: string
   created_at: string
   balance?: number
+  lastTxDate?: string
+  transactions: Array<{ amount: number; date?: string; created_at: string }>
 }
+
+type FilterType = 'all' | 'overdue' | 'due_today' | 'cleared'
 
 export default function CustomerList() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortValue, setSortValue] = useState('name-asc')
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [visibleCount, setVisibleCount] = useState(20)
+  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('oldest_credit')
+  const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
 
   const loadData = useCallback(async () => {
     try {
       const user = (await supabase.auth.getUser()).data.user
-      if (!user) {
-        setLoading(false)
-        return
-      }
+      if (!user) { setLoading(false); return }
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('overdue_strategy, overdue_threshold_days')
+        .eq('id', user.id)
+        .single()
+
+      if (profileData?.overdue_strategy) setOverdueStrategy(profileData.overdue_strategy)
+      if (profileData?.overdue_threshold_days) setOverdueThresholdDays(profileData.overdue_threshold_days)
 
       const { data: customersData, error: customersError } = await supabase
         .from('customers')
@@ -38,40 +51,43 @@ export default function CustomerList() {
 
       const ids = (customersData || []).map((c) => c.id)
       const balances: Record<string, number> = {}
+      const lastTx: Record<string, string> = {}
+      const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
 
       if (ids.length > 0) {
-        const { data: txData, error: txError } = await supabase
+        const { data: txData } = await supabase
           .from('transactions')
-          .select('customer_id, amount')
+          .select('customer_id, amount, date, created_at')
           .in('customer_id', ids)
-
-        if (txError) throw txError
 
         for (const t of txData || []) {
           balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
+          if (!lastTx[t.customer_id] || t.created_at > lastTx[t.customer_id]) {
+            lastTx[t.customer_id] = t.created_at
+          }
+          if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
+          txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
         }
       }
 
       const withBalance = (customersData || []).map((c) => ({
         ...c,
         balance: (c.opening_balance || 0) + (balances[c.id] || 0),
+        lastTxDate: lastTx[c.id] || undefined,
+        transactions: txByCustomer[c.id] || [],
       }))
 
       setCustomers(withBalance)
       cacheCustomers(withBalance)
     } catch {
       const cached = getCachedCustomers<Customer>()
-      if (cached && cached.length > 0) {
-        setCustomers(cached)
-      }
+      if (cached && cached.length > 0) setCustomers(cached)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => {
-    loadData()
-  }, [loadData])
+  useEffect(() => { loadData() }, [loadData])
 
   useEffect(() => {
     const handleOnline = () => loadData()
@@ -79,44 +95,53 @@ export default function CustomerList() {
     return () => window.removeEventListener('online', handleOnline)
   }, [loadData])
 
+  const getCustomerStatus = (c: Customer): { label: string; type: 'overdue' | 'due_today' | 'clear'; overdueDays: number } => {
+    const overdueDays = calculateOverdueDays(c.balance || 0, c.transactions, overdueStrategy, overdueThresholdDays)
+    if (overdueDays > 0) return { label: 'Overdue', type: 'overdue', overdueDays }
+    if ((c.balance || 0) > 0) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
+    return { label: 'Clear', type: 'clear', overdueDays: 0 }
+  }
+
   const getFilteredSorted = () => {
     let list = [...customers]
 
     if (searchQuery) {
+      const q = searchQuery.toLowerCase()
       list = list.filter((c) =>
-        c.name.toLowerCase().includes(searchQuery.toLowerCase())
+        c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q))
       )
     }
 
-    switch (sortValue) {
-      case 'name-asc':
-        list.sort((a, b) => a.name.localeCompare(b.name))
-        break
-      case 'name-desc':
-        list.sort((a, b) => b.name.localeCompare(a.name))
-        break
-      case 'balance-desc':
-        list.sort((a, b) => (b.balance || 0) - (a.balance || 0))
-        break
-      case 'balance-asc':
-        list.sort((a, b) => (a.balance || 0) - (b.balance || 0))
-        break
-      case 'newest':
-        list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        break
-      case 'oldest':
-        list.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-        break
-    }
+    list = list.filter((c) => {
+      if (activeFilter === 'all') return true
+      const status = getCustomerStatus(c)
+      if (activeFilter === 'overdue') return status.type === 'overdue'
+      if (activeFilter === 'due_today') return status.type === 'due_today'
+      if (activeFilter === 'cleared') return status.type === 'clear'
+      return true
+    })
+
+    list.sort((a, b) => {
+      const aStatus = getCustomerStatus(a)
+      const bStatus = getCustomerStatus(b)
+      if (aStatus.type === 'overdue' && bStatus.type !== 'overdue') return -1
+      if (aStatus.type !== 'overdue' && bStatus.type === 'overdue') return 1
+      if (aStatus.type === 'due_today' && bStatus.type === 'clear') return -1
+      if (aStatus.type === 'clear' && bStatus.type === 'due_today') return 1
+      return (b.balance || 0) - (a.balance || 0)
+    })
 
     return list
   }
 
   const filteredList = getFilteredSorted()
+  const overdueCount = customers.filter((c) => getCustomerStatus(c).type === 'overdue').length
+  const dueTodayCount = customers.filter((c) => getCustomerStatus(c).type === 'due_today').length
+  const clearedCount = customers.filter((c) => getCustomerStatus(c).type === 'clear').length
 
   useEffect(() => {
     setVisibleCount(20)
-  }, [searchQuery, sortValue])
+  }, [searchQuery, activeFilter])
 
   if (loading) {
     return (
@@ -137,7 +162,14 @@ export default function CustomerList() {
 
   return (
     <>
-      <div className="toolbar">
+      {/* Header */}
+      <div className="customer-page-header">
+        <h2>Customers</h2>
+        <span className="customer-count-badge">{customers.length} customers</span>
+      </div>
+
+      {/* Search + Filter */}
+      <div className="customer-toolbar">
         <div className="search-wrap">
           <i className="fa-solid fa-search"></i>
           <input
@@ -147,18 +179,25 @@ export default function CustomerList() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="sort-wrap">
-          <select value={sortValue} onChange={(e) => setSortValue(e.target.value)}>
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="balance-desc">Balance (High-Low)</option>
-            <option value="balance-asc">Balance (Low-High)</option>
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-          </select>
-        </div>
       </div>
 
+      {/* Filter chips */}
+      <div className="filter-chips">
+        <button className={`filter-chip ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => setActiveFilter('all')}>
+          All
+        </button>
+        <button className={`filter-chip filter-chip-overdue ${activeFilter === 'overdue' ? 'active' : ''}`} onClick={() => setActiveFilter('overdue')}>
+          Overdue
+        </button>
+        <button className={`filter-chip filter-chip-due ${activeFilter === 'due_today' ? 'active' : ''}`} onClick={() => setActiveFilter('due_today')}>
+          Due Today
+        </button>
+        <button className={`filter-chip filter-chip-cleared ${activeFilter === 'cleared' ? 'active' : ''}`} onClick={() => setActiveFilter('cleared')}>
+          Cleared
+        </button>
+      </div>
+
+      {/* List */}
       {filteredList.length === 0 ? (
         <div className="empty">
           <p>No customers match your search.</p>
@@ -166,30 +205,45 @@ export default function CustomerList() {
       ) : (
         <>
           <div className="customer-list">
-            {filteredList.slice(0, visibleCount).map((customer) => (
-              <Link
-                key={customer.id}
-                href={`/customers/${customer.id}`}
-                className="customer-card"
-                style={{ textDecoration: 'none' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                  <div className="avatar">{getInitials(customer.name)}</div>
-                  <div>
-                    <div className="cc-name">{customer.name}</div>
-                    <div className="cc-meta">
-                      {customer.phone || (customer.created_at ? formatRelativeTime(customer.created_at) : '')}
-                      {customer.phone && customer.created_at ? ` · ${formatRelativeTime(customer.created_at)}` : ''}
+            {filteredList.slice(0, visibleCount).map((customer) => {
+              const status = getCustomerStatus(customer)
+              return (
+                <Link
+                  key={customer.id}
+                  href={`/customers/${customer.id}`}
+                  className="customer-card"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <div className="cc-left">
+                    <div className={`avatar ${status.type}`}>{getInitials(customer.name)}</div>
+                    <div>
+                      <div className="cc-name-row">
+                        <span className="cc-name">{customer.name}</span>
+                        <span className={`status-badge ${status.type}`}>{status.label}</span>
+                      </div>
+                      <div className="cc-meta">
+                        {customer.lastTxDate
+                          ? <span>Last: {formatRelativeTime(customer.lastTxDate)}</span>
+                          : <span>No transactions</span>
+                        }
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
-                  {(customer.balance || 0) <= 0
-                    ? '₹0'
-                    : '₹' + formatCurrency(customer.balance || 0)}
-                </div>
-              </Link>
-            ))}
+                  <div className="cc-right">
+                    <div className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
+                      {(customer.balance || 0) <= 0
+                        ? 'Rs.0'
+                        : 'Rs.' + formatCurrency(customer.balance || 0)}
+                    </div>
+                    <div className={`cc-status-text ${status.type}`}>
+                      {status.type === 'overdue' && `${status.overdueDays} day${status.overdueDays === 1 ? '' : 's'} overdue`}
+                      {status.type === 'due_today' && 'Due today'}
+                      {status.type === 'clear' && 'No due'}
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
 
           {filteredList.length > visibleCount && (
@@ -198,7 +252,7 @@ export default function CustomerList() {
               style={{ marginTop: '12px' }}
               onClick={() => setVisibleCount((prev) => prev + 20)}
             >
-              See more
+              See more ({filteredList.length - visibleCount} remaining)
             </button>
           )}
         </>
