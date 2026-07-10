@@ -1,10 +1,18 @@
 import { supabase } from './supabase'
 import { percentTrend } from './utils'
 
+export interface LargestTx {
+  amount: number
+  customerName: string
+  customerId: string
+}
+
 export interface PeriodTotals {
   credit: number
   collected: number
   count: number
+  largestCredit?: LargestTx
+  largestCollection?: LargestTx
 }
 
 export interface ReportData {
@@ -24,6 +32,26 @@ function bucket(totals: PeriodTotals, amount: number) {
   if (amount > 0) totals.credit += amount
   else totals.collected += Math.abs(amount)
   totals.count += 1
+}
+
+function bucketWithLargest(
+  totals: PeriodTotals,
+  amount: number,
+  customerId: string,
+  customerName: string
+) {
+  bucket(totals, amount)
+
+  if (amount > 0) {
+    if (!totals.largestCredit || amount > totals.largestCredit.amount) {
+      totals.largestCredit = { amount, customerId, customerName }
+    }
+  } else {
+    const absAmount = Math.abs(amount)
+    if (!totals.largestCollection || absAmount > totals.largestCollection.amount) {
+      totals.largestCollection = { amount: absAmount, customerId, customerName }
+    }
+  }
 }
 
 export async function loadReportData(): Promise<ReportData | null> {
@@ -67,21 +95,22 @@ export async function loadReportData(): Promise<ReportData | null> {
   if (ids.length > 0) {
     const { data: txData } = await supabase
       .from('transactions')
-      .select('amount, created_at, customer_id')
+      .select('amount, created_at, customer_id, customers!inner(name)')
       .in('customer_id', ids)
       .gte('created_at', earliestNeeded.toISOString())
 
     for (const t of txData || []) {
       const createdAt = new Date(t.created_at)
       const amount = t.amount || 0
+      const customerName = (t.customers as unknown as { name: string }).name
 
-      if (createdAt >= todayStart) bucket(daily, amount)
+      if (createdAt >= todayStart) bucketWithLargest(daily, amount, t.customer_id, customerName)
       else if (createdAt >= yesterdayStart) bucket(yesterday, amount)
 
-      if (createdAt >= thisWeekStart) bucket(weekly, amount)
+      if (createdAt >= thisWeekStart) bucketWithLargest(weekly, amount, t.customer_id, customerName)
       else if (createdAt >= lastWeekStart) bucket(lastWeek, amount)
 
-      if (createdAt >= thisMonthStart) bucket(monthly, amount)
+      if (createdAt >= thisMonthStart) bucketWithLargest(monthly, amount, t.customer_id, customerName)
       else if (createdAt >= lastMonthStart) bucket(lastMonth, amount)
     }
   }

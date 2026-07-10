@@ -199,6 +199,56 @@ export default function ReportsPage() {
           {view.vs} · {view.totals.count} transaction{view.totals.count === 1 ? '' : 's'}
         </div>
       </div>
+
+      {(view.totals.largestCredit || view.totals.largestCollection) && (
+        <>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '20px 0 8px' }}>
+            Largest Single Transaction
+          </h3>
+          <div className="tx-list">
+            {view.totals.largestCredit && (
+              <Link
+                href={`/customers/${view.totals.largestCredit.customerId}`}
+                className="tx-item"
+                style={{ textDecoration: 'none' }}
+              >
+                <div className="tx-left">
+                  <div className="tx-icon credit">
+                    <i className="fa-solid fa-plus"></i>
+                  </div>
+                  <div>
+                    <div className="tx-note">{view.totals.largestCredit.customerName}</div>
+                    <div className="tx-date">Largest credit given</div>
+                  </div>
+                </div>
+                <div className="tx-amount credit">
+                  +₹{formatCurrency(view.totals.largestCredit.amount)}
+                </div>
+              </Link>
+            )}
+            {view.totals.largestCollection && (
+              <Link
+                href={`/customers/${view.totals.largestCollection.customerId}`}
+                className="tx-item"
+                style={{ textDecoration: 'none' }}
+              >
+                <div className="tx-left">
+                  <div className="tx-icon pay">
+                    <i className="fa-solid fa-minus"></i>
+                  </div>
+                  <div>
+                    <div className="tx-note">{view.totals.largestCollection.customerName}</div>
+                    <div className="tx-date">Largest collection</div>
+                  </div>
+                </div>
+                <div className="tx-amount pay">
+                  -₹{formatCurrency(view.totals.largestCollection.amount)}
+                </div>
+              </Link>
+            )}
+          </div>
+        </>
+      )}
     </>
   )
 }
