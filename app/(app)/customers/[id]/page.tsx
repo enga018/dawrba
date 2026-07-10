@@ -7,7 +7,6 @@ import Link from 'next/link'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
-import { formatLogEntry, type LogEntry } from '@/lib/transactionLog'
 
 interface Customer {
   id: string
@@ -35,10 +34,6 @@ export default function CustomerDetail() {
 
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [logEntries, setLogEntries] = useState<LogEntry[]>([])
-  const [logLoading, setLogLoading] = useState(false)
-  const [logLoaded, setLogLoaded] = useState(false)
-  const [showLogModal, setShowLogModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -119,38 +114,11 @@ export default function CustomerDetail() {
     }
   }, [customerId, router])
 
-  const loadLog = useCallback(async () => {
-    setLogLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('transaction_logs')
-        .select('*')
-        .eq('customer_id', customerId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setLogEntries(data || [])
-      setLogLoaded(true)
-    } catch (err) {
-      console.error('Error loading transaction log:', err)
-    } finally {
-      setLogLoading(false)
-    }
-  }, [customerId])
-
-  const openLogModal = () => {
-    setShowLogModal(true)
-    if (!logLoaded) loadLog()
-  }
-
   useEffect(() => {
-    const handleOnline = () => {
-      loadData()
-      if (logLoaded) loadLog()
-    }
+    const handleOnline = () => loadData()
     window.addEventListener('online', handleOnline)
     return () => window.removeEventListener('online', handleOnline)
-  }, [loadData, loadLog, logLoaded])
+  }, [loadData])
 
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -182,7 +150,6 @@ export default function CustomerDetail() {
       setTxNote('')
       setEditingTx(null)
       await loadData()
-      if (logLoaded) await loadLog()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save transaction'
       setError(msg)
@@ -208,7 +175,6 @@ export default function CustomerDetail() {
       setDeleteConfirm(null)
       showToast('Transaction deleted')
       await loadData()
-      if (logLoaded) await loadLog()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to delete transaction'
       setError(msg)
@@ -238,7 +204,6 @@ export default function CustomerDetail() {
       showToast('Opening balance updated')
       setShowOpeningBalanceModal(false)
       await loadData()
-      if (logLoaded) await loadLog()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to update opening balance'
       showToast(msg, 'error')
@@ -333,20 +298,17 @@ export default function CustomerDetail() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
         <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Recent Transactions</h3>
-        <button
-          onClick={openLogModal}
+        <Link
+          href={`/log/${customerId}`}
           style={{
             fontSize: '0.8rem',
             color: 'var(--blue)',
             fontWeight: 600,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
+            textDecoration: 'none',
           }}
         >
           Transaction Log
-        </button>
+        </Link>
       </div>
       <div className="tx-list">
         {transactions.length === 0 && !(customer.opening_balance > 0) ? (
@@ -456,43 +418,6 @@ export default function CustomerDetail() {
           >
             {savingOpeningBalance ? <span className="spinner"></span> : 'Save'}
           </button>
-        </div>
-      </div>
-
-      {/* Transaction Log modal */}
-      <div className={`modal-backdrop ${showLogModal ? 'active' : ''}`} onClick={() => setShowLogModal(false)}>
-        <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-head">
-            <h3>Transaction Log</h3>
-            <button className="modal-close" onClick={() => setShowLogModal(false)}>
-              <i className="fa-solid fa-xmark"></i>
-            </button>
-          </div>
-          {logLoading ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <div className="spinner" style={{ margin: '0 auto' }}></div>
-            </div>
-          ) : logEntries.length === 0 ? (
-            <div className="empty">
-              <p>No activity yet.</p>
-            </div>
-          ) : (
-            <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-              {logEntries.map((entry) => (
-                <div
-                  key={entry.id}
-                  style={{
-                    padding: '10px 0',
-                    borderBottom: '1px solid var(--border)',
-                    fontSize: '0.88rem',
-                    color: 'var(--text)',
-                  }}
-                >
-                  {formatLogEntry(entry)}
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
