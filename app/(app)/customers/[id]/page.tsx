@@ -34,6 +34,7 @@ export default function CustomerDetail() {
 
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [visibleCount, setVisibleCount] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -313,7 +314,7 @@ export default function CustomerDetail() {
           </div>
         ) : (
           <>
-          {transactions.map((tx) => {
+          {transactions.slice(0, visibleCount).map((tx) => {
             const isCredit = tx.amount > 0
             return (
               <div key={tx.id} className="tx-item">
@@ -385,6 +386,16 @@ export default function CustomerDetail() {
           </>
         )}
       </div>
+
+      {transactions.length > visibleCount && (
+        <button
+          className="btn btn-secondary btn-sm btn-block"
+          style={{ marginTop: '12px' }}
+          onClick={() => setVisibleCount((prev) => prev + 10)}
+        >
+          See more
+        </button>
+      )}
 
       {/* Edit Opening Balance modal */}
       <div className={`modal-backdrop ${showOpeningBalanceModal ? 'active' : ''}`} onClick={() => setShowOpeningBalanceModal(false)}>
