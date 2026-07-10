@@ -799,11 +799,35 @@ input, select, button, textarea {
   margin-top: 2px;
 }
 
+.hero-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 2px;
+}
+
 .hero-subvalue {
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--red);
-  margin-top: 2px;
+}
+
+.hero-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.hero-trend.up { color: var(--green); }
+.hero-trend.down { color: var(--red); }
+.hero-trend.flat { color: var(--meta); }
+
+.hero-vs {
+  font-size: 0.68rem;
+  color: var(--meta);
+  margin-top: 4px;
 }
 
 .hero-legend {

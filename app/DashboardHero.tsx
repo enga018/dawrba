@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { percentTrend } from '@/lib/utils'
 
 type Period = 'daily' | 'weekly' | 'monthly'
 
@@ -22,15 +23,16 @@ function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
 
-// Monday-based start of week.
-function startOfWeek(d: Date): Date {
-  const s = startOfDay(d)
-  const offset = (s.getDay() + 6) % 7
-  s.setDate(s.getDate() - offset)
+// Start of the week that `now` falls in, given the day the week ends on
+// (0 = Sunday ... 6 = Saturday). Weeks are 7 days ending on `endDay`.
+function currentWeekStart(now: Date, endDay: number): Date {
+  const s = startOfDay(now)
+  const daysUntilEnd = (endDay - s.getDay() + 7) % 7
+  s.setDate(s.getDate() + daysUntilEnd - 6)
   return s
 }
 
-function buildBuckets(period: Period): Bucket[] {
+function buildBuckets(period: Period, endDay: number): Bucket[] {
   const now = new Date()
   const buckets: Bucket[] = []
 
@@ -49,7 +51,7 @@ function buildBuckets(period: Period): Bucket[] {
       })
     }
   } else if (period === 'weekly') {
-    const thisWeek = startOfWeek(now)
+    const thisWeek = currentWeekStart(now, endDay)
     for (let i = 5; i >= 0; i--) {
       const start = new Date(thisWeek)
       start.setDate(start.getDate() - i * 7)
@@ -80,8 +82,21 @@ function buildBuckets(period: Period): Bucket[] {
   return buckets
 }
 
+function Trend({ value }: { value?: number }) {
+  if (value === undefined) return null
+  const dir = value > 0 ? 'up' : value < 0 ? 'down' : 'flat'
+  const icon = value > 0 ? 'fa-arrow-up' : value < 0 ? 'fa-arrow-down' : 'fa-minus'
+  return (
+    <span className={`hero-trend ${dir}`}>
+      <i className={`fa-solid ${icon}`}></i>
+      {Math.abs(value)}%
+    </span>
+  )
+}
+
 export default function DashboardHero() {
   const [txns, setTxns] = useState<Tx[] | null>(null)
+  const [endDay, setEndDay] = useState(0) // 0 = Sunday
   const [period, setPeriod] = useState<Period>('monthly')
 
   useEffect(() => {
@@ -90,10 +105,12 @@ export default function DashboardHero() {
         const user = (await supabase.auth.getUser()).data.user
         if (!user) return
 
-        const { data: customers } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('user_id', user.id)
+        const [{ data: customers }, { data: profile }] = await Promise.all([
+          supabase.from('customers').select('id').eq('user_id', user.id),
+          supabase.from('profiles').select('weekly_report_day').eq('id', user.id).single(),
+        ])
+
+        setEndDay(profile?.weekly_report_day === 'saturday' ? 6 : 0)
 
         const ids = (customers || []).map((c) => c.id)
         if (ids.length === 0) {
@@ -116,7 +133,7 @@ export default function DashboardHero() {
 
   const buckets = useMemo(() => {
     if (!txns) return null
-    const bs = buildBuckets(period)
+    const bs = buildBuckets(period, endDay)
     for (const t of txns) {
       // Same bucketing rule as the reports page: positive = credit given,
       // negative = payment collected.
@@ -127,7 +144,7 @@ export default function DashboardHero() {
       else b.collected += Math.abs(t.amount)
     }
     return bs
-  }, [txns, period])
+  }, [txns, period, endDay])
 
   if (!buckets) {
     return (
@@ -138,9 +155,11 @@ export default function DashboardHero() {
   }
 
   const current = buckets[buckets.length - 1]
+  const previous = buckets[buckets.length - 2]
   const max = Math.max(...buckets.flatMap((m) => [m.credit, m.collected]), 1)
   const fmt = (n: number) => n.toLocaleString('en-IN')
   const headline = period === 'daily' ? 'Today' : period === 'weekly' ? 'This week' : 'This month'
+  const vsLabel = period === 'daily' ? 'yesterday' : period === 'weekly' ? 'last week' : 'last month'
 
   return (
     <div className="hero-card">
@@ -160,11 +179,17 @@ export default function DashboardHero() {
       <div className="hero-top">
         <div>
           <div className="hero-label">{headline}</div>
-          <div className="hero-value">₹{fmt(current.collected)}</div>
-          <div className="hero-subvalue">
-            <i className="fa-solid fa-plus" style={{ fontSize: '0.7rem' }}></i>{' '}
-            ₹{fmt(current.credit)} credit given
+          <div className="hero-figure">
+            <span className="hero-value">₹{fmt(current.collected)}</span>
+            <Trend value={percentTrend(current.collected, previous.collected)} />
           </div>
+          <div className="hero-figure">
+            <span className="hero-subvalue">
+              <i className="fa-solid fa-plus" style={{ fontSize: '0.7rem' }}></i> ₹{fmt(current.credit)} credit
+            </span>
+            <Trend value={percentTrend(current.credit, previous.credit)} />
+          </div>
+          <div className="hero-vs">vs {vsLabel}</div>
         </div>
         <div className="hero-legend">
           <span><span className="hero-dot collected"></span>Collected</span>

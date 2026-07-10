@@ -9,7 +9,6 @@ import { showToast } from '@/lib/toast'
 export default function SettingsPage() {
   const [shopName, setShopName] = useState('')
   const [email, setEmail] = useState('')
-  const [reportTime, setReportTime] = useState('21:00')
   const [weeklyReportDay, setWeeklyReportDay] = useState('sunday')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -27,14 +26,13 @@ export default function SettingsPage() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('shop_name, report_time, weekly_report_day')
+        .select('shop_name, weekly_report_day')
         .eq('id', user.id)
         .single()
 
       if (data?.shop_name) {
         setShopName(data.shop_name)
       }
-      if (data?.report_time) setReportTime(data.report_time.slice(0, 5))
       if (data?.weekly_report_day) setWeeklyReportDay(data.weekly_report_day)
       setLoading(false)
     }
@@ -53,7 +51,7 @@ export default function SettingsPage() {
       const { error: dbError } = await supabase.from('profiles').upsert({
         id: user.id,
         shop_name: shopName,
-        report_time: reportTime,
+        report_time: '00:00',
         weekly_report_day: weeklyReportDay,
       })
 
@@ -127,17 +125,6 @@ export default function SettingsPage() {
       </h3>
       <div className="detail-card">
         <form onSubmit={handleSave}>
-          <div className="field">
-            <label htmlFor="reportTime">Report time</label>
-            <input
-              type="time"
-              id="reportTime"
-              value={reportTime}
-              onChange={(e) => setReportTime(e.target.value)}
-              required
-            />
-          </div>
-
           <div className="field">
             <label htmlFor="weeklyReportDay">Week ends on</label>
             <select
