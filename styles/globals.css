@@ -1043,15 +1043,12 @@ input, select, button, textarea {
    shorthand in the 768-899px band (where the bottom nav is still shown). */
 @media (max-width: 899px) {
   .content {
-    /* Clear the fixed bottom nav when scrolled to the bottom. */
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
-  }
-
-  /* Give the home dashboard more horizontal room on mobile so the
-     summary cards and lists use the full width of small screens. */
-  .content-wide {
+    /* Give every page more horizontal room on mobile so cards, lists
+       and forms use the full width of small screens. */
     padding-left: 12px;
     padding-right: 12px;
+    /* Clear the fixed bottom nav when scrolled to the bottom. */
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
   }
 }
 
