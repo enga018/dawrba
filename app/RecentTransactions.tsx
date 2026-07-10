@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { formatDate, formatCurrency } from '@/lib/utils'
+
+const PAGE_SIZE = 10
 
 interface RecentTx {
   id: string
@@ -17,37 +19,48 @@ interface RecentTx {
 export default function RecentTransactions() {
   const [transactions, setTransactions] = useState<RecentTx[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+
+  const loadPage = useCallback(async (offset: number) => {
+    const user = (await supabase.auth.getUser()).data.user
+    if (!user) return []
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('id, amount, note, date, created_at, customer_id, customers!inner(name)')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1)
+
+    if (error || !data) return []
+
+    return data.map((tx) => ({
+      id: tx.id,
+      amount: tx.amount,
+      note: tx.note,
+      date: tx.date,
+      customer_id: tx.customer_id,
+      customer_name: (tx.customers as unknown as { name: string }).name,
+    }))
+  }, [])
 
   useEffect(() => {
     const load = async () => {
-      const user = (await supabase.auth.getUser()).data.user
-      if (!user) {
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('id, amount, note, date, created_at, customer_id, customers!inner(name)')
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      if (!error) {
-        setTransactions(
-          (data || []).map((tx) => ({
-            id: tx.id,
-            amount: tx.amount,
-            note: tx.note,
-            date: tx.date,
-            customer_id: tx.customer_id,
-            customer_name: (tx.customers as unknown as { name: string }).name,
-          }))
-        )
-      }
+      const page = await loadPage(0)
+      setTransactions(page)
+      setHasMore(page.length === PAGE_SIZE)
       setLoading(false)
     }
     load()
-  }, [])
+  }, [loadPage])
+
+  const handleSeeMore = async () => {
+    setLoadingMore(true)
+    const page = await loadPage(transactions.length)
+    setTransactions((prev) => [...prev, ...page])
+    setHasMore(page.length === PAGE_SIZE)
+    setLoadingMore(false)
+  }
 
   return (
     <div className="dashboard-recent">
@@ -71,34 +84,47 @@ export default function RecentTransactions() {
           <p>No transactions yet.</p>
         </div>
       ) : (
-        <div className="tx-list">
-          {transactions.map((tx) => {
-            const isCredit = tx.amount > 0
-            return (
-              <Link
-                key={tx.id}
-                href={`/customers/${tx.customer_id}`}
-                className="tx-item"
-                style={{ textDecoration: 'none' }}
-              >
-                <div className="tx-left">
-                  <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
-                    <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-minus'}`}></i>
-                  </div>
-                  <div>
-                    <div className="tx-note">{tx.customer_name}</div>
-                    <div className="tx-date">
-                      {tx.note || (isCredit ? 'Credit' : 'Payment')} · {formatDate(tx.date)}
+        <>
+          <div className="tx-list">
+            {transactions.map((tx) => {
+              const isCredit = tx.amount > 0
+              return (
+                <Link
+                  key={tx.id}
+                  href={`/customers/${tx.customer_id}`}
+                  className="tx-item"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <div className="tx-left">
+                    <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
+                      <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-minus'}`}></i>
+                    </div>
+                    <div>
+                      <div className="tx-note">{tx.customer_name}</div>
+                      <div className="tx-date">
+                        {tx.note || (isCredit ? 'Credit' : 'Payment')} · {formatDate(tx.date)}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
-                  {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+                  <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
+                    {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+
+          {hasMore && (
+            <button
+              className="btn btn-secondary btn-sm btn-block"
+              style={{ marginTop: '12px' }}
+              disabled={loadingMore}
+              onClick={handleSeeMore}
+            >
+              {loadingMore ? <span className="spinner"></span> : 'See more'}
+            </button>
+          )}
+        </>
       )}
     </div>
   )

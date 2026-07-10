@@ -313,7 +313,7 @@ export default function CustomerDetail() {
           </div>
         ) : (
           <>
-          {transactions.slice(0, 5).map((tx) => {
+          {transactions.map((tx) => {
             const isCredit = tx.amount > 0
             return (
               <div key={tx.id} className="tx-item">
