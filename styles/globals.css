@@ -928,10 +928,18 @@ input, select, button, textarea {
   transform: scale(0.95);
 }
 
-/* On small screens the bottom nav's center Add tab takes over from the
-   floating button, so it doesn't overlap the full-width bar. */
+/* On small screens the bottom nav occupies the bottom edge, so lift the
+   floating button above it instead of hiding it. */
 @media (max-width: 899px) {
   .add-btn {
+    bottom: calc(70px + env(safe-area-inset-bottom));
+  }
+}
+
+/* The (app) layout's floating add button is a mobile-only stand-in for the
+   old center nav tab; hide it on desktop where those pages had no FAB. */
+@media (min-width: 900px) {
+  .add-btn-nav {
     display: none;
   }
 }
@@ -970,22 +978,6 @@ input, select, button, textarea {
 
 .bottom-nav-item.active {
   color: var(--blue);
-}
-
-.bottom-nav-add {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--blue);
-  color: white;
-  font-size: 1.3rem;
-  text-decoration: none;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
-  transform: translateY(-10px);
 }
 
 @media (min-width: 900px) {
