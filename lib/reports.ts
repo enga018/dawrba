@@ -16,10 +16,8 @@ export interface PeriodTotals {
 }
 
 export interface Schedule {
-  dailyTime: string
+  time: string
   weeklyDay: string
-  weeklyTime: string
-  monthlyTime: string
 }
 
 export interface ReportData {
@@ -74,23 +72,23 @@ function applyTime(date: Date, time: string): Date {
   return result
 }
 
-function getDayBoundaries(now: Date, dailyTime: string) {
+function getDayBoundaries(now: Date, time: string) {
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
 
   const yesterdayStart = new Date(todayStart)
   yesterdayStart.setDate(yesterdayStart.getDate() - 1)
 
-  const todayCompleteAt = applyTime(now, dailyTime)
+  const todayCompleteAt = applyTime(now, time)
 
   return { todayStart, yesterdayStart, todayCompleteAt }
 }
 
-function getWeekBoundaries(now: Date, weeklyDay: string, weeklyTime: string) {
+function getWeekBoundaries(now: Date, weeklyDay: string, time: string) {
   const targetEndDay = weeklyDay === 'saturday' ? 6 : 0 // Date.getDay(): 0 = Sunday, 6 = Saturday
   const daysUntilEnd = (targetEndDay - now.getDay() + 7) % 7
 
-  const thisWeekCompleteAt = applyTime(now, weeklyTime)
+  const thisWeekCompleteAt = applyTime(now, time)
   thisWeekCompleteAt.setDate(thisWeekCompleteAt.getDate() + daysUntilEnd)
 
   const thisWeekStart = new Date(thisWeekCompleteAt)
@@ -103,12 +101,12 @@ function getWeekBoundaries(now: Date, weeklyDay: string, weeklyTime: string) {
   return { thisWeekStart, lastWeekStart, thisWeekCompleteAt }
 }
 
-function getMonthBoundaries(now: Date, monthlyTime: string) {
+function getMonthBoundaries(now: Date, time: string) {
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
 
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  const thisMonthCompleteAt = applyTime(lastDayOfMonth, monthlyTime)
+  const thisMonthCompleteAt = applyTime(lastDayOfMonth, time)
 
   return { thisMonthStart, lastMonthStart, thisMonthCompleteAt }
 }
@@ -119,16 +117,13 @@ export async function loadReportData(schedule: Schedule): Promise<ReportData | n
 
   const now = new Date()
 
-  const { todayStart, yesterdayStart, todayCompleteAt } = getDayBoundaries(now, schedule.dailyTime)
+  const { todayStart, yesterdayStart, todayCompleteAt } = getDayBoundaries(now, schedule.time)
   const { thisWeekStart, lastWeekStart, thisWeekCompleteAt } = getWeekBoundaries(
     now,
     schedule.weeklyDay,
-    schedule.weeklyTime
+    schedule.time
   )
-  const { thisMonthStart, lastMonthStart, thisMonthCompleteAt } = getMonthBoundaries(
-    now,
-    schedule.monthlyTime
-  )
+  const { thisMonthStart, lastMonthStart, thisMonthCompleteAt } = getMonthBoundaries(now, schedule.time)
 
   const earliestNeeded = new Date(
     Math.min(yesterdayStart.getTime(), lastWeekStart.getTime(), lastMonthStart.getTime())

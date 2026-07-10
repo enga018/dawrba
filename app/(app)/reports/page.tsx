@@ -60,15 +60,13 @@ export default function ReportsPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('daily_report_time, weekly_report_day, weekly_report_time, monthly_report_time')
+        .select('report_time, weekly_report_day')
         .eq('id', user.id)
         .single()
 
       const sched: Schedule = {
-        dailyTime: profile?.daily_report_time?.slice(0, 5) || '21:00',
+        time: profile?.report_time?.slice(0, 5) || '21:00',
         weeklyDay: profile?.weekly_report_day || 'sunday',
-        weeklyTime: profile?.weekly_report_time?.slice(0, 5) || '21:00',
-        monthlyTime: profile?.monthly_report_time?.slice(0, 5) || '21:00',
       }
       setSchedule(sched)
 
@@ -87,30 +85,17 @@ export default function ReportsPage() {
       const now = new Date()
       const hhmm = now.toTimeString().slice(0, 5)
       const dateKey = now.toISOString().slice(0, 10)
-      const dayName = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
 
-      if (schedule.dailyTime === hhmm) {
-        const key = `daily-${dateKey}`
-        if (!triggeredRef.current.has(key)) {
-          triggeredRef.current.add(key)
-          load(schedule)
-        }
-      }
-      if (schedule.weeklyTime === hhmm && dayName === schedule.weeklyDay) {
-        const key = `weekly-${dateKey}`
-        if (!triggeredRef.current.has(key)) {
-          triggeredRef.current.add(key)
-          load(schedule)
-        }
-      }
-      const isLastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() === now.getDate()
-      if (schedule.monthlyTime === hhmm && isLastDayOfMonth) {
-        const key = `monthly-${dateKey}`
-        if (!triggeredRef.current.has(key)) {
-          triggeredRef.current.add(key)
-          load(schedule)
-        }
-      }
+      // The daily boundary crosses every day at this time, so a single
+      // refetch here keeps all three periods (daily/weekly/monthly) in
+      // sync -- weekly/monthly just happen to also flip on their
+      // respective boundary days.
+      if (schedule.time !== hhmm) return
+
+      const key = `tick-${dateKey}-${hhmm}`
+      if (triggeredRef.current.has(key)) return
+      triggeredRef.current.add(key)
+      load(schedule)
     }
 
     const interval = setInterval(checkSchedule, 60000)
@@ -155,10 +140,10 @@ export default function ReportsPage() {
 
   const scheduleLabel =
     period === 'daily'
-      ? `Updates daily around ${timeLabel(schedule.dailyTime)}`
+      ? `Complete daily around ${timeLabel(schedule.time)}`
       : period === 'weekly'
-        ? `Updates every ${schedule.weeklyDay === 'saturday' ? 'Saturday' : 'Sunday'} around ${timeLabel(schedule.weeklyTime)}`
-        : `Updates on the last day of the month around ${timeLabel(schedule.monthlyTime)}`
+        ? `Week ends ${schedule.weeklyDay === 'saturday' ? 'Saturday' : 'Sunday'} around ${timeLabel(schedule.time)}`
+        : `Complete on the last day of the month around ${timeLabel(schedule.time)}`
 
   return (
     <>
