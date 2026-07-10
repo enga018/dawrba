@@ -796,7 +796,8 @@ input, select, button, textarea {
   font-weight: 500;
 }
 
-.amount-target select {
+.amount-target select,
+.amount-target-name {
   appearance: none;
   text-align: center;
   text-align-last: center;
@@ -807,8 +808,11 @@ input, select, button, textarea {
   border: none;
   border-radius: 999px;
   padding: 8px 18px;
-  cursor: pointer;
   max-width: 100%;
+}
+
+.amount-target select {
+  cursor: pointer;
 }
 
 .keypad {

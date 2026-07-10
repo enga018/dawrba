@@ -13,6 +13,9 @@ export default function FloatingAddButton() {
 
   // Not on the first-run setup flow, nor on the add page itself.
   if (pathname === '/setup' || pathname.startsWith('/add-customer')) return null
+  // Customer detail pages render their own FAB that opens an in-page
+  // Add Credit modal targeted at that customer.
+  if (pathname.startsWith('/customers/')) return null
 
   return (
     <Link href="/add-customer" className="add-btn add-btn-nav" title="Add credit or customer">
