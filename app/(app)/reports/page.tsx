@@ -37,7 +37,7 @@ function rateLabel(rate: number): string {
 }
 
 export default function ReportsPage() {
-  const [period, setPeriod] = useState<Period>('month')
+  const [period, setPeriod] = useState<Period>('today')
   const [data, setData] = useState<ReportData | null>(null)
 
   useEffect(() => {
@@ -154,67 +154,69 @@ export default function ReportsPage() {
         </div>
       ) : (
         <>
-          <div className="report-stats-grid">
-            <div className="report-stat-card">
-              <div className="report-stat-header">
-                <span className="report-stat-label">Credit Given</span>
-                <span className="report-stat-icon report-stat-icon-blue">
-                  <i className="fa-solid fa-arrow-trend-up"></i>
-                </span>
-              </div>
-              <div className="report-stat-value">Rs.{formatCurrency(data.creditGiven)}</div>
-              <div className="report-stat-sub">{getPeriodLabel(period)}</div>
-            </div>
-
-            <div className="report-stat-card">
-              <div className="report-stat-header">
-                <span className="report-stat-label">Collected</span>
-                <span className="report-stat-icon report-stat-icon-green">
-                  <i className="fa-solid fa-circle-check"></i>
-                </span>
-              </div>
-              <div className="report-stat-value">Rs.{formatCurrency(data.collected)}</div>
-              <div className="report-stat-sub">{getPeriodLabel(period)}</div>
-            </div>
-
-            <div className="report-stat-card">
-              <div className="report-stat-header">
-                <span className="report-stat-label">Outstanding</span>
-                <span className="report-stat-icon report-stat-icon-orange">
-                  <i className="fa-regular fa-calendar"></i>
-                </span>
-              </div>
-              <div className="report-stat-value">Rs.{formatCurrency(data.outstanding)}</div>
-              <div className="report-stat-sub">Still pending</div>
-            </div>
-
-            <div className="report-stat-card">
-              <div className="report-stat-header">
-                <span className="report-stat-label">Collection Rate</span>
-                <span className="report-stat-icon report-stat-icon-blue">
-                  <i className="fa-solid fa-chart-column"></i>
-                </span>
-              </div>
-              <div className="report-stat-value">{data.collectionRate}%</div>
-              <div className="report-stat-sub">{rateLabel(data.collectionRate)}</div>
-            </div>
-          </div>
-
-          <div className="report-section">
-            <h3 className="report-section-title">Top Overdue Customers</h3>
-            {data.overdueCustomers.length === 0 ? (
-              <div className="empty" style={{ padding: '20px 0' }}>
-                <i className="fa-solid fa-face-smile"></i>
-                <p>No overdue customers</p>
-              </div>
-            ) : (
-              data.overdueCustomers.map((c) => (
-                <div key={c.name} className="report-overdue-row">
-                  <span className="report-overdue-name">{c.name}</span>
-                  <span className="report-overdue-amount">Rs.{formatCurrency(c.balance)}</span>
+          <div className="report-body">
+            <div className="report-stats-grid">
+              <div className="report-stat-card">
+                <div className="report-stat-header">
+                  <span className="report-stat-label">Credit Given</span>
+                  <span className="report-stat-icon report-stat-icon-blue">
+                    <i className="fa-solid fa-arrow-trend-up"></i>
+                  </span>
                 </div>
-              ))
-            )}
+                <div className="report-stat-value">Rs.{formatCurrency(data.creditGiven)}</div>
+                <div className="report-stat-sub">{getPeriodLabel(period)}</div>
+              </div>
+
+              <div className="report-stat-card">
+                <div className="report-stat-header">
+                  <span className="report-stat-label">Collected</span>
+                  <span className="report-stat-icon report-stat-icon-green">
+                    <i className="fa-solid fa-circle-check"></i>
+                  </span>
+                </div>
+                <div className="report-stat-value">Rs.{formatCurrency(data.collected)}</div>
+                <div className="report-stat-sub">{getPeriodLabel(period)}</div>
+              </div>
+
+              <div className="report-stat-card">
+                <div className="report-stat-header">
+                  <span className="report-stat-label">Outstanding</span>
+                  <span className="report-stat-icon report-stat-icon-orange">
+                    <i className="fa-regular fa-calendar"></i>
+                  </span>
+                </div>
+                <div className="report-stat-value">Rs.{formatCurrency(data.outstanding)}</div>
+                <div className="report-stat-sub">Still pending</div>
+              </div>
+
+              <div className="report-stat-card">
+                <div className="report-stat-header">
+                  <span className="report-stat-label">Collection Rate</span>
+                  <span className="report-stat-icon report-stat-icon-blue">
+                    <i className="fa-solid fa-chart-column"></i>
+                  </span>
+                </div>
+                <div className="report-stat-value">{data.collectionRate}%</div>
+                <div className="report-stat-sub">{rateLabel(data.collectionRate)}</div>
+              </div>
+            </div>
+
+            <div className="report-section">
+              <h3 className="report-section-title">Top Overdue Customers</h3>
+              {data.overdueCustomers.length === 0 ? (
+                <div className="empty" style={{ padding: '20px 0' }}>
+                  <i className="fa-solid fa-face-smile"></i>
+                  <p>No overdue customers</p>
+                </div>
+              ) : (
+                data.overdueCustomers.map((c) => (
+                  <div key={c.name} className="report-overdue-row">
+                    <span className="report-overdue-name">{c.name}</span>
+                    <span className="report-overdue-amount">Rs.{formatCurrency(c.balance)}</span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </>
       )}

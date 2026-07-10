@@ -2389,6 +2389,30 @@ input, select, button, textarea {
   margin-bottom: 16px;
 }
 
+.report-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 1024px) {
+  .report-body {
+    flex-direction: row;
+    gap: 20px;
+  }
+
+  .report-body .report-stats-grid {
+    flex: 2;
+    min-width: 0;
+  }
+
+  .report-body .report-section {
+    flex: 1;
+    min-width: 220px;
+    align-self: flex-start;
+  }
+}
+
 .report-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
