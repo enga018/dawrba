@@ -272,7 +272,6 @@ input, select, button, textarea {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 14px 16px;
-  margin-bottom: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -693,6 +692,9 @@ input, select, button, textarea {
 /* Customer list */
 .customer-list {
   margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 /* Add button (floating) */
@@ -760,5 +762,15 @@ input, select, button, textarea {
 
   .modal-sheet {
     border-radius: 20px;
+  }
+
+  .customer-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .customer-list {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
