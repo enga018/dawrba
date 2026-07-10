@@ -81,13 +81,6 @@ export default function Home() {
                 {shopName}
               </button>
             )}
-            <button
-              className="header-btn header-btn-nav"
-              title="Reports"
-              onClick={() => router.push('/reports')}
-            >
-              <i className="fa-solid fa-calendar-day"></i>
-            </button>
             <ThemeToggle />
             <button
               className="header-btn header-btn-nav"

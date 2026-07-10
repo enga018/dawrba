@@ -21,10 +21,6 @@ export default function BottomNav() {
         <i className="fa-solid fa-users"></i>
         <span>Customers</span>
       </Link>
-      <Link href="/reports" className={`bottom-nav-item ${isActive('/reports') ? 'active' : ''}`}>
-        <i className="fa-solid fa-calendar-day"></i>
-        <span>Reports</span>
-      </Link>
       <Link href="/settings" className={`bottom-nav-item ${isActive('/settings') ? 'active' : ''}`}>
         <i className="fa-solid fa-gear"></i>
         <span>Settings</span>
