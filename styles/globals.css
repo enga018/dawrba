@@ -810,7 +810,8 @@ input, select, button, textarea {
   gap: 24px;
 }
 
-.dashboard-recent {
+.dashboard-recent,
+.dashboard-customers {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;

@@ -155,82 +155,86 @@ export default function DashboardPage() {
   return (
     <>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-        <div className="toolbar">
-          <div className="search-wrap">
-            <i className="fa-solid fa-search"></i>
-            <input
-              type="text"
-              placeholder="Search customers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="sort-wrap">
-            <select value={sortValue} onChange={(e) => setSortValue(e.target.value)}>
-              <option value="name-asc">Name (A-Z)</option>
-              <option value="name-desc">Name (Z-A)</option>
-              <option value="balance-desc">Balance (High-Low)</option>
-              <option value="balance-asc">Balance (Low-High)</option>
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-            </select>
-          </div>
-        </div>
-
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 20px' }}>
           <div className="spinner" style={{ margin: '0 auto' }}></div>
         </div>
-      ) : filteredList.length === 0 ? (
+      ) : customers.length === 0 ? (
         <div className="empty">
           <i className="fa-solid fa-users-slash"></i>
-          <p>
-            {searchQuery
-              ? 'No customers match your search.'
-              : 'No customers yet.'}
-          </p>
+          <p>No customers yet.</p>
         </div>
       ) : (
         <>
           <DashboardSummary />
 
           <div className="dashboard-columns">
-            <div>
-              <div className="customer-list">
-                {filteredList.slice(0, visibleCount).map((customer) => (
-                  <Link
-                    key={customer.id}
-                    href={`/customers/${customer.id}`}
-                    className="customer-card"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                      <div className="avatar">{getInitials(customer.name)}</div>
-                      <div>
-                        <div className="cc-name">{customer.name}</div>
-                        <div className="cc-meta">
-                          {customer.phone || (customer.created_at ? formatRelativeTime(customer.created_at) : '')}
-                          {customer.phone && customer.created_at ? ` · ${formatRelativeTime(customer.created_at)}` : ''}
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
-                      {(customer.balance || 0) <= 0
-                        ? '₹0'
-                        : '₹' + formatCurrency(customer.balance || 0)}
-                    </div>
-                  </Link>
-                ))}
+            <div className="dashboard-customers">
+              <div className="toolbar">
+                <div className="search-wrap">
+                  <i className="fa-solid fa-search"></i>
+                  <input
+                    type="text"
+                    placeholder="Search customers..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="sort-wrap">
+                  <select value={sortValue} onChange={(e) => setSortValue(e.target.value)}>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="balance-desc">Balance (High-Low)</option>
+                    <option value="balance-asc">Balance (Low-High)</option>
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                  </select>
+                </div>
               </div>
 
-              {filteredList.length > visibleCount && (
-                <button
-                  className="btn btn-secondary btn-sm btn-block"
-                  style={{ marginTop: '12px' }}
-                  onClick={() => setVisibleCount((prev) => prev + 20)}
-                >
-                  See more
-                </button>
+              {filteredList.length === 0 ? (
+                <div className="empty">
+                  <p>No customers match your search.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="customer-list">
+                    {filteredList.slice(0, visibleCount).map((customer) => (
+                      <Link
+                        key={customer.id}
+                        href={`/customers/${customer.id}`}
+                        className="customer-card"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                          <div className="avatar">{getInitials(customer.name)}</div>
+                          <div>
+                            <div className="cc-name">{customer.name}</div>
+                            <div className="cc-meta">
+                              {customer.phone || (customer.created_at ? formatRelativeTime(customer.created_at) : '')}
+                              {customer.phone && customer.created_at ? ` · ${formatRelativeTime(customer.created_at)}` : ''}
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
+                          {(customer.balance || 0) <= 0
+                            ? '₹0'
+                            : '₹' + formatCurrency(customer.balance || 0)}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {filteredList.length > visibleCount && (
+                    <button
+                      className="btn btn-secondary btn-sm btn-block"
+                      style={{ marginTop: '12px' }}
+                      onClick={() => setVisibleCount((prev) => prev + 20)}
+                    >
+                      See more
+                    </button>
+                  )}
+                </>
               )}
             </div>
 
