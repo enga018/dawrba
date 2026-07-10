@@ -16,11 +16,13 @@ interface RecentTx {
   customer_name: string
 }
 
-export default function RecentTransactions() {
+export default function RecentTransactions({ limit }: { limit?: number }) {
   const [transactions, setTransactions] = useState<RecentTx[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
+
+  const pageSize = limit ?? PAGE_SIZE
 
   const loadPage = useCallback(async (offset: number) => {
     const user = (await supabase.auth.getUser()).data.user
@@ -30,7 +32,7 @@ export default function RecentTransactions() {
       .from('transactions')
       .select('id, amount, note, date, created_at, customer_id, customers!inner(name)')
       .order('created_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1)
+      .range(offset, offset + pageSize - 1)
 
     if (error || !data) return []
 
@@ -42,17 +44,19 @@ export default function RecentTransactions() {
       customer_id: tx.customer_id,
       customer_name: (tx.customers as unknown as { name: string }).name,
     }))
-  }, [])
+  }, [pageSize])
 
   useEffect(() => {
     const load = async () => {
       const page = await loadPage(0)
       setTransactions(page)
-      setHasMore(page.length === PAGE_SIZE)
+      // In compact (limited) mode there is no in-place pagination; the
+      // header links out to the full /log instead.
+      setHasMore(limit ? false : page.length === pageSize)
       setLoading(false)
     }
     load()
-  }, [loadPage])
+  }, [loadPage, limit, pageSize])
 
   const handleSeeMore = async () => {
     setLoadingMore(true)

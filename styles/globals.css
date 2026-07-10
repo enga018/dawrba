@@ -768,6 +768,97 @@ input, select, button, textarea {
   color: var(--muted);
 }
 
+/* Dashboard hero card (collections chart) */
+.hero-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+
+.hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.hero-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.15;
+  margin-top: 2px;
+}
+
+.hero-sub {
+  font-size: 0.72rem;
+  color: var(--meta);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.hero-chart {
+  display: flex;
+  gap: 8px;
+  height: 130px;
+  margin-top: 16px;
+}
+
+.hero-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hero-bar-track {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+}
+
+.hero-bar {
+  width: 100%;
+  min-height: 4px;
+  background: var(--tint-blue);
+  border-radius: 8px 8px 4px 4px;
+  transition: height 0.3s ease;
+}
+
+.hero-bar[data-active='true'] {
+  background: var(--blue);
+}
+
+.hero-bar-label {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  color: var(--meta);
+  font-weight: 500;
+}
+
+.hero-skeleton {
+  height: 176px;
+  border-radius: 12px;
+  background: var(--surface-alt);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
 /* Segmented toggle (Give Credit / Collect Payment) */
 .segmented {
   display: flex;

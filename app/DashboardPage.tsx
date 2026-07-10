@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
+import DashboardHero from './DashboardHero'
 import DashboardSummary from './DashboardSummary'
 import RecentTransactions from './RecentTransactions'
 import CustomerList from './CustomerList'
@@ -125,6 +126,8 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
+          <DashboardHero />
+
           <DashboardSummary />
 
           <div className="dashboard-columns">
@@ -132,7 +135,7 @@ export default function DashboardPage() {
               <CustomerList key={refreshKey} />
             </div>
 
-            <RecentTransactions />
+            <RecentTransactions limit={5} />
           </div>
         </>
       )}
