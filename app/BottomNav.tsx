@@ -17,9 +17,9 @@ export default function BottomNav() {
         <i className="fa-solid fa-house"></i>
         <span>Home</span>
       </Link>
-      <Link href="/log" className={`bottom-nav-item ${isActive('/log') ? 'active' : ''}`}>
-        <i className="fa-solid fa-list-ul"></i>
-        <span>Log</span>
+      <Link href="/customers" className={`bottom-nav-item ${isActive('/customers') ? 'active' : ''}`}>
+        <i className="fa-solid fa-users"></i>
+        <span>Customers</span>
       </Link>
       <Link href="/add-customer" className="bottom-nav-add" title="Add">
         <i className="fa-solid fa-plus"></i>

@@ -86,7 +86,7 @@ export default function AppLayout({
             </button>
           )}
           <button
-            className="header-btn"
+            className="header-btn header-btn-nav"
             title="Reports"
             onClick={() => router.push('/reports')}
           >
@@ -94,14 +94,14 @@ export default function AppLayout({
           </button>
           <ThemeToggle />
           <button
-            className="header-btn"
+            className="header-btn header-btn-nav"
             title="Settings"
             onClick={() => router.push('/settings')}
           >
             <i className="fa-solid fa-gear"></i>
           </button>
           <button
-            className="header-btn"
+            className="header-btn header-btn-nav"
             title="Logout"
             onClick={handleLogout}
           >
