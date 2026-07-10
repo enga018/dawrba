@@ -55,9 +55,10 @@ export default function RecentTransactions() {
         <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Recent Transactions</h3>
         <Link
           href="/log"
-          style={{ fontSize: '0.8rem', color: 'var(--blue)', fontWeight: 600, textDecoration: 'none' }}
+          title="Transaction Log"
+          style={{ color: 'var(--blue)', fontSize: '1rem', lineHeight: 1 }}
         >
-          Transaction Log
+          <i className="fa-solid fa-clock-rotate-left"></i>
         </Link>
       </div>
 
