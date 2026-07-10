@@ -85,6 +85,9 @@ export default function AppLayout({
                 {shopName}
               </button>
             )}
+            <button className="header-logout-btn" onClick={async () => { await supabase.auth.signOut(); router.push('/'); }}>
+              <i className="fa-solid fa-right-from-bracket"></i>
+            </button>
           </div>
         </div>
         <div className="content">

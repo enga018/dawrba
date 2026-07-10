@@ -46,11 +46,6 @@ export default function SettingsPage() {
     localStorage.setItem('theme', next ? 'dark' : 'light')
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '40px 20px' }}>
@@ -152,17 +147,6 @@ export default function SettingsPage() {
           <span className="profile-version-text">v1.0.0</span>
         </div>
       </div>
-
-      <button className="profile-logout" onClick={handleLogout}>
-        <div className="profile-logout-icon">
-          <i className="fa-solid fa-right-from-bracket"></i>
-        </div>
-        <div className="profile-logout-text">
-          <div className="profile-logout-title">Logout</div>
-          <div className="profile-logout-sub">Sign out from this device</div>
-        </div>
-        <i className="fa-solid fa-chevron-right profile-menu-chevron"></i>
-      </button>
     </>
   )
 }

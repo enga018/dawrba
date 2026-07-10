@@ -100,6 +100,9 @@ export default function Home() {
                 <i className={`fa-solid ${isOnline ? 'fa-wifi' : 'fa-wifi'}`}></i>
                 {isOnline ? 'Online' : 'Offline'}
               </span>
+              <button className="header-logout-btn" onClick={async () => { await supabase.auth.signOut(); router.push('/'); }}>
+                <i className="fa-solid fa-right-from-bracket"></i>
+              </button>
             </div>
           </div>
           <div className="content content-wide">
