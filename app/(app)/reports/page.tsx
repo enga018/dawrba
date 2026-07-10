@@ -12,11 +12,15 @@ interface OverdueCustomer {
   balance: number
 }
 
-interface ReportData {
+interface PeriodStats {
   creditGiven: number
   collected: number
   outstanding: number
   collectionRate: number
+}
+
+interface ReportData extends PeriodStats {
+  prev: PeriodStats
   overdueCustomers: OverdueCustomer[]
 }
 
@@ -34,6 +38,19 @@ function rateLabel(rate: number): string {
   if (rate >= 75) return 'Good'
   if (rate >= 50) return 'Fair'
   return 'Low'
+}
+
+function percentChange(current: number, previous: number): number | null {
+  if (previous === 0 && current === 0) return null
+  if (previous === 0) return 100
+  return Math.round(((current - previous) / previous) * 100)
+}
+
+function formatChange(pct: number | null): { text: string; className: string } | null {
+  if (pct === null) return null
+  if (pct === 0) return { text: 'No change', className: 'neutral' }
+  if (pct > 0) return { text: `+${pct}%`, className: 'up' }
+  return { text: `${pct}%`, className: 'down' }
 }
 
 export default function ReportsPage() {
@@ -62,7 +79,11 @@ export default function ReportsPage() {
 
         const ids = (customers || []).map((c) => c.id)
         if (ids.length === 0) {
-          setData({ creditGiven: 0, collected: 0, outstanding: 0, collectionRate: 0, overdueCustomers: [] })
+          setData({
+            creditGiven: 0, collected: 0, outstanding: 0, collectionRate: 0,
+            prev: { creditGiven: 0, collected: 0, outstanding: 0, collectionRate: 0 },
+            overdueCustomers: [],
+          })
           return
         }
 
@@ -77,9 +98,16 @@ export default function ReportsPage() {
           if (period === 'week') return now.getTime() - 7 * 24 * 60 * 60 * 1000
           return new Date(now.getFullYear(), now.getMonth(), 1).getTime()
         })()
+        const prevEnd = periodStart - 1
+        const prevStart = (() => {
+          if (period === 'today') return startOfDay(new Date(now.getTime() - 24 * 60 * 60 * 1000)).getTime()
+          if (period === 'week') return now.getTime() - 14 * 24 * 60 * 60 * 1000
+          const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+          return prevMonth.getTime()
+        })()
 
-        let creditGiven = 0
-        let collected = 0
+        let creditGiven = 0, collected = 0
+        let prevCredit = 0, prevCollected = 0
         const balances: Record<string, number> = {}
         const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
 
@@ -91,6 +119,9 @@ export default function ReportsPage() {
           if (ts >= periodStart) {
             if (t.amount > 0) creditGiven += t.amount
             else collected += Math.abs(t.amount)
+          } else if (ts >= prevStart && ts <= prevEnd) {
+            if (t.amount > 0) prevCredit += t.amount
+            else prevCollected += Math.abs(t.amount)
           }
         }
 
@@ -110,12 +141,15 @@ export default function ReportsPage() {
 
         const total = collected + outstanding
         const collectionRate = total > 0 ? Math.round((collected / total) * 100) : 0
+        const prevTotal = prevCollected + outstanding
+        const prevRate = prevTotal > 0 ? Math.round((prevCollected / prevTotal) * 100) : 0
 
         setData({
           creditGiven,
           collected,
           outstanding,
           collectionRate,
+          prev: { creditGiven: prevCredit, collected: prevCollected, outstanding, collectionRate: prevRate },
           overdueCustomers: overdueList.slice(0, 3),
         })
       } catch {
@@ -124,6 +158,16 @@ export default function ReportsPage() {
     }
     fetchReport()
   }, [period])
+
+  const renderChange = (current: number, previous: number, invert?: boolean) => {
+    const pct = percentChange(current, previous)
+    const change = formatChange(pct)
+    if (!change) return null
+    const cls = invert
+      ? change.className === 'up' ? 'down' : change.className === 'down' ? 'up' : 'neutral'
+      : change.className
+    return <span className={`report-change ${cls}`}>{change.text}</span>
+  }
 
   return (
     <>
@@ -164,7 +208,10 @@ export default function ReportsPage() {
                   </span>
                 </div>
                 <div className="report-stat-value">Rs.{formatCurrency(data.creditGiven)}</div>
-                <div className="report-stat-sub">{getPeriodLabel(period)}</div>
+                <div className="report-stat-sub">
+                  {getPeriodLabel(period)}
+                  {renderChange(data.creditGiven, data.prev.creditGiven)}
+                </div>
               </div>
 
               <div className="report-stat-card">
@@ -175,7 +222,10 @@ export default function ReportsPage() {
                   </span>
                 </div>
                 <div className="report-stat-value">Rs.{formatCurrency(data.collected)}</div>
-                <div className="report-stat-sub">{getPeriodLabel(period)}</div>
+                <div className="report-stat-sub">
+                  {getPeriodLabel(period)}
+                  {renderChange(data.collected, data.prev.collected)}
+                </div>
               </div>
 
               <div className="report-stat-card">
@@ -186,7 +236,10 @@ export default function ReportsPage() {
                   </span>
                 </div>
                 <div className="report-stat-value">Rs.{formatCurrency(data.outstanding)}</div>
-                <div className="report-stat-sub">Still pending</div>
+                <div className="report-stat-sub">
+                  Still pending
+                  {renderChange(data.outstanding, data.prev.outstanding, true)}
+                </div>
               </div>
 
               <div className="report-stat-card">
@@ -197,7 +250,10 @@ export default function ReportsPage() {
                   </span>
                 </div>
                 <div className="report-stat-value">{data.collectionRate}%</div>
-                <div className="report-stat-sub">{rateLabel(data.collectionRate)}</div>
+                <div className="report-stat-sub">
+                  {rateLabel(data.collectionRate)}
+                  {renderChange(data.collectionRate, data.prev.collectionRate)}
+                </div>
               </div>
             </div>
 

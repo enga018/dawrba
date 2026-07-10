@@ -2475,6 +2475,31 @@ input, select, button, textarea {
   font-size: 0.78rem;
   color: var(--meta);
   margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.report-change {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+.report-change.up {
+  color: var(--green);
+  background: var(--tint-green);
+}
+
+.report-change.down {
+  color: var(--red);
+  background: var(--tint-red);
+}
+
+.report-change.neutral {
+  color: var(--meta);
+  background: var(--surface-alt);
 }
 
 .report-section {
