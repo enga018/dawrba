@@ -26,6 +26,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const [isOnline, setIsOnline] = useState(true)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [quickAddMode, setQuickAddMode] = useState<'credit' | 'pay' | 'add-customer'>('credit')
   const router = useRouter()
 
   useEffect(() => {
@@ -109,10 +110,15 @@ export default function Home() {
           <div className="content content-wide">
             <DashboardPage />
           </div>
-          <FabMenu />
-          <BottomNav onAddClick={() => setShowQuickAdd(true)} />
+          <FabMenu
+            onSelect={(mode) => {
+              setQuickAddMode(mode === 'payment' ? 'pay' : mode === 'new' ? 'add-customer' : 'credit')
+              setShowQuickAdd(true)
+            }}
+          />
+          <BottomNav onAddClick={() => { setQuickAddMode('credit'); setShowQuickAdd(true) }} />
         </div>
-        <AddModal show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
+        <AddModal show={showQuickAdd} defaultMode={quickAddMode} onClose={() => setShowQuickAdd(false)} />
       </div>
     )
   }

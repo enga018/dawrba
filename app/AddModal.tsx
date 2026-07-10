@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
+import { formatCurrency } from '@/lib/utils'
 import AmountKeypad from './AmountKeypad'
 
 interface AddModalProps {
@@ -16,6 +17,7 @@ interface AddModalProps {
 interface CustomerOption {
   id: string
   name: string
+  balance: number
 }
 
 export default function AddModal({ show, onClose, defaultMode = 'credit', defaultCustomerId }: AddModalProps) {
@@ -23,19 +25,27 @@ export default function AddModal({ show, onClose, defaultMode = 'credit', defaul
   const [modalMode, setModalMode] = useState<'credit' | 'pay' | 'add-customer'>(defaultMode)
   const [selectedCustomerId, setSelectedCustomerId] = useState(defaultCustomerId || '')
   const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newOpeningBalance, setNewOpeningBalance] = useState('')
+  const [showExtra, setShowExtra] = useState(false)
+  const [extraAmount, setExtraAmount] = useState('')
+  const [extraNote, setExtraNote] = useState('')
 
   useEffect(() => {
     if (show) {
       setModalMode(defaultMode)
       setSelectedCustomerId(defaultCustomerId || '')
       setAmount('')
+      setNote('')
       setNewName('')
       setNewPhone('')
       setNewOpeningBalance('')
+      setShowExtra(false)
+      setExtraAmount('')
+      setExtraNote('')
 
       const load = async () => {
         try {
@@ -45,7 +55,24 @@ export default function AddModal({ show, onClose, defaultMode = 'credit', defaul
             .from('customers')
             .select('id, name, phone, opening_balance, created_at')
             .eq('user_id', user.id)
-          const list = (data || []).map((c) => ({ id: c.id, name: c.name }))
+
+          const ids = (data || []).map((c) => c.id)
+          const balances: Record<string, number> = {}
+          if (ids.length > 0) {
+            const { data: txData } = await supabase
+              .from('transactions')
+              .select('customer_id, amount')
+              .in('customer_id', ids)
+            for (const t of txData || []) {
+              balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
+            }
+          }
+
+          const list = (data || []).map((c) => ({
+            id: c.id,
+            name: c.name,
+            balance: (c.opening_balance || 0) + (balances[c.id] || 0),
+          }))
           setCustomers(list)
           cacheCustomers(data || [])
         } catch {
@@ -62,6 +89,12 @@ export default function AddModal({ show, onClose, defaultMode = 'credit', defaul
   }
 
   const refresh = () => window.dispatchEvent(new Event('dawrba:refresh'))
+
+  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
+  const amountValue = parseFloat(amount) || 0
+  const newBalance = selectedCustomer
+    ? selectedCustomer.balance + (modalMode === 'pay' ? -amountValue : amountValue)
+    : 0
 
   return (
     <div className={`modal-backdrop ${show ? 'active' : ''}`} onClick={close}>
@@ -109,7 +142,50 @@ export default function AddModal({ show, onClose, defaultMode = 'credit', defaul
               </div>
             </div>
 
-            <AmountKeypad value={amount} onChange={setAmount} />
+            <div className="amount-keypad-mobile">
+              <AmountKeypad value={amount} onChange={setAmount} />
+            </div>
+
+            <div className="amount-input-desktop">
+              <div className="field">
+                <label>Amount (₹)</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  min="1"
+                  step="1"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="field">
+              <label>Note <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span></label>
+              <input
+                type="text"
+                placeholder={modalMode === 'pay' ? 'e.g. Cash payment' : 'e.g. Weekly supply'}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </div>
+
+            {selectedCustomer && amountValue > 0 && (
+              <div className="detail-card">
+                <div className="tx-detail-row">
+                  <span className="tx-detail-label">Current Balance</span>
+                  <span className="tx-detail-value">Rs.{formatCurrency(selectedCustomer.balance)}</span>
+                </div>
+                <div className="tx-detail-row">
+                  <span className="tx-detail-label">{modalMode === 'pay' ? 'Collecting' : 'Adding'}</span>
+                  <span className="tx-detail-value">{modalMode === 'pay' ? '-' : '+'}Rs.{formatCurrency(amountValue)}</span>
+                </div>
+                <div className="tx-detail-row total">
+                  <span className="tx-detail-label">New Balance</span>
+                  <span className="tx-detail-value">Rs.{formatCurrency(newBalance)}</span>
+                </div>
+              </div>
+            )}
 
             <button
               className="btn btn-primary btn-block"
@@ -123,6 +199,7 @@ export default function AddModal({ show, onClose, defaultMode = 'credit', defaul
                   const { error } = await supabase.from('transactions').insert({
                     customer_id: selectedCustomerId,
                     amount: signed,
+                    note: note || null,
                   })
                   if (error) throw error
                   showToast(modalMode === 'pay' ? 'Payment recorded' : 'Credit added')
@@ -174,8 +251,42 @@ export default function AddModal({ show, onClose, defaultMode = 'credit', defaul
                 onChange={(e) => setNewOpeningBalance(e.target.value)}
               />
             </div>
+
+            <button
+              type="button"
+              className="add-extra-toggle"
+              onClick={() => setShowExtra(!showExtra)}
+            >
+              <i className="fa-solid fa-chevron-down"></i> Add initial credit (extra)
+            </button>
+            {showExtra && (
+              <div className="add-extra show">
+                <div className="field">
+                  <label>Amount (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    step="1"
+                    value={extraAmount}
+                    onChange={(e) => setExtraAmount(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label>Note</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Milk supply"
+                    value={extraNote}
+                    onChange={(e) => setExtraNote(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
             <button
               className="btn btn-primary btn-block"
+              style={{ marginTop: '8px' }}
               disabled={!newName.trim() || submitting}
               onClick={async () => {
                 if (!newName.trim()) return
@@ -183,13 +294,23 @@ export default function AddModal({ show, onClose, defaultMode = 'credit', defaul
                 try {
                   const user = (await supabase.auth.getUser()).data.user
                   if (!user) throw new Error('Not authenticated')
-                  const { error } = await supabase.from('customers').insert({
+                  const { data: customer, error } = await supabase.from('customers').insert({
                     user_id: user.id,
                     name: newName.trim(),
                     phone: newPhone.trim() || null,
                     opening_balance: parseFloat(newOpeningBalance) || 0,
-                  })
+                  }).select().single()
                   if (error) throw error
+
+                  if (extraAmount && parseFloat(extraAmount) > 0) {
+                    const { error: txError } = await supabase.from('transactions').insert({
+                      customer_id: customer.id,
+                      amount: parseFloat(extraAmount),
+                      note: extraNote || null,
+                    })
+                    if (txError) throw txError
+                  }
+
                   showToast('Customer added')
                   close()
                   refresh()

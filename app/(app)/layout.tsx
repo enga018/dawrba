@@ -19,6 +19,7 @@ export default function AppLayout({
   const [shopName, setShopName] = useState('')
   const [loading, setLoading] = useState(true)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [quickAddMode, setQuickAddMode] = useState<'credit' | 'pay' | 'add-customer'>('credit')
   const router = useRouter()
 
   useEffect(() => {
@@ -93,10 +94,15 @@ export default function AppLayout({
         <div className="content">
           {children}
         </div>
-        <BottomNav onAddClick={() => setShowQuickAdd(true)} />
+        <BottomNav onAddClick={() => { setQuickAddMode('credit'); setShowQuickAdd(true) }} />
       </div>
-      <FloatingAddButton />
-      <AddModal show={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
+      <FloatingAddButton
+        onAddSelect={(mode) => {
+          setQuickAddMode(mode === 'payment' ? 'pay' : mode === 'new' ? 'add-customer' : 'credit')
+          setShowQuickAdd(true)
+        }}
+      />
+      <AddModal show={showQuickAdd} defaultMode={quickAddMode} onClose={() => setShowQuickAdd(false)} />
     </div>
   )
 }

@@ -1,11 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 interface FabItem {
   label: string
-  mode: string
+  mode: 'credit' | 'payment' | 'new'
   iconClass: string
   icon: string
 }
@@ -16,13 +15,16 @@ const ITEMS: FabItem[] = [
   { label: 'Add Customer', mode: 'new', iconClass: 'orange', icon: 'fa-user-plus' },
 ]
 
-export default function FabMenu() {
-  const router = useRouter()
+interface FabMenuProps {
+  onSelect: (mode: 'credit' | 'payment' | 'new') => void
+}
+
+export default function FabMenu({ onSelect }: FabMenuProps) {
   const [open, setOpen] = useState(false)
 
-  const handleSelect = (mode: string) => {
+  const handleSelect = (mode: 'credit' | 'payment' | 'new') => {
     setOpen(false)
-    router.push(`/add-customer?mode=${mode}`)
+    onSelect(mode)
   }
 
   return (
