@@ -2944,3 +2944,216 @@ button.profile-menu-item:last-child {
 .profile-logout .profile-menu-chevron {
   color: var(--red);
 }
+
+/* ============================================
+   Platform Admin
+   ============================================ */
+
+.admin-layout {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.admin-header {
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+  color: white;
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.admin-brand {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.admin-brand .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  margin: 0 2px 2px 4px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+}
+
+.admin-nav {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.admin-nav-link {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.admin-nav-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.admin-nav-link.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.admin-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.admin-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.admin-trend-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 90px;
+}
+
+.admin-trend-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 4px;
+}
+
+.admin-trend-bar {
+  width: 100%;
+  background: var(--border);
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+}
+
+.admin-trend-bar.has-value {
+  background: var(--blue);
+}
+
+.admin-trend-label {
+  font-size: 0.62rem;
+  color: var(--meta);
+  white-space: nowrap;
+}
+
+.admin-search {
+  margin-bottom: 16px;
+}
+
+.admin-search input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.admin-table th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table-row-link {
+  cursor: pointer;
+}
+
+.admin-table-row-link:hover {
+  background: var(--surface-alt);
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.admin-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.admin-detail-header h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.admin-detail-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
