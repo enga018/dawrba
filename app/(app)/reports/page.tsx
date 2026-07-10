@@ -176,7 +176,7 @@ export default function ReportsPage() {
           {scheduleLabel}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div style={{ background: '#fef2f2', borderRadius: '12px', padding: '14px' }}>
+          <div style={{ background: 'var(--tint-red)', borderRadius: '12px', padding: '14px' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--meta)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em' }}>
               Credit Given
             </div>
@@ -185,7 +185,7 @@ export default function ReportsPage() {
             </div>
             <TrendRow value={view.trend.credit} />
           </div>
-          <div style={{ background: '#ecfdf5', borderRadius: '12px', padding: '14px' }}>
+          <div style={{ background: 'var(--tint-green)', borderRadius: '12px', padding: '14px' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--meta)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em' }}>
               Collected
             </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import OfflineBanner from '@/app/OfflineBanner'
+import ThemeToggle from '@/app/ThemeToggle'
 import type { User } from '@supabase/supabase-js'
 
 export default function AppLayout({
@@ -90,13 +91,7 @@ export default function AppLayout({
           >
             <i className="fa-solid fa-calendar-day"></i>
           </button>
-          <button
-            className="header-btn"
-            title="Transaction Log"
-            onClick={() => router.push('/log')}
-          >
-            <i className="fa-solid fa-receipt"></i>
-          </button>
+          <ThemeToggle />
           <button
             className="header-btn"
             title="Settings"

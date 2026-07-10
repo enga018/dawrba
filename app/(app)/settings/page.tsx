@@ -117,7 +117,7 @@ export default function SettingsPage() {
               type="email"
               value={email}
               disabled
-              style={{ background: '#f1f5f9', color: 'var(--meta)' }}
+              style={{ background: 'var(--surface-alt)', color: 'var(--meta)' }}
             />
           </div>
 

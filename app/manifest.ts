@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'DawrBa — Track Credit, Get Paid Faster',
     short_name: 'DawrBa',
     description: 'Track customer credit and payments for your shop.',
-    start_url: '/dashboard',
+    start_url: '/',
     display: 'standalone',
     background_color: '#f1f5f9',
     theme_color: '#2563eb',

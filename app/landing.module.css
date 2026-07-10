@@ -461,6 +461,11 @@
 }
 
 .ctaBox {
+  /* Pinned to light values: this box keeps its own light-blue look
+     regardless of app theme, so descendants using var(--text) etc.
+     must resolve to light colors here, not the dark-mode overrides. */
+  --text: #111827;
+  --muted: #475569;
   margin: 8px 24px 24px;
   background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   border: 1px solid #bfdbfe;
@@ -476,6 +481,7 @@
 .ctaBox h3 {
   margin: 0 0 8px;
   font-size: 1.02rem;
+  color: var(--text);
 }
 
 .ctaBox p {
@@ -521,8 +527,20 @@
 }
 
 .modalSheet {
+  /* This demo modal always renders as a light card (a fixed product
+     preview) regardless of app theme, so pin the tokens its
+     descendants read (var(--text), var(--muted), etc.) to their light
+     values here rather than letting them pick up the dark overrides. */
+  --text: #111827;
+  --muted: #6b7280;
+  --meta: #9ca3af;
+  --border: #e5e7eb;
+  --red: #dc2626;
+  --green: #16a34a;
+  --blue: #1565ff;
   width: min(100%, 520px);
   background: white;
+  color: var(--text);
   border-radius: 24px 24px 16px 16px;
   padding: 16px 20px 18px;
   box-shadow: 0 20px 45px rgba(2, 6, 23, 0.2);

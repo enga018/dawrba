@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import LandingPage from './LandingPage'
 import DashboardPage from './DashboardPage'
 import OfflineBanner from './OfflineBanner'
+import ThemeToggle from './ThemeToggle'
 import type { User } from '@supabase/supabase-js'
 
 export default function Home() {
@@ -86,13 +87,7 @@ export default function Home() {
             >
               <i className="fa-solid fa-calendar-day"></i>
             </button>
-            <button
-              className="header-btn"
-              title="Transaction Log"
-              onClick={() => router.push('/log')}
-            >
-              <i className="fa-solid fa-receipt"></i>
-            </button>
+            <ThemeToggle />
             <button
               className="header-btn"
               title="Settings"

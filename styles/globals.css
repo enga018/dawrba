@@ -10,8 +10,57 @@
   --meta: #9ca3af;
   --border: #e5e7eb;
   --surface: #ffffff;
+  --surface-alt: #f8fafc;
   --red: #dc2626;
   --green: #16a34a;
+  --orange: #f97316;
+  --tint-red: #fef2f2;
+  --tint-green: #ecfdf5;
+  --tint-blue: #eff6ff;
+  --tint-orange: #fff7ed;
+  --overlay: rgba(2, 6, 23, 0.58);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1220;
+    --blue: #3b82f6;
+    --blue-dark: #1d4ed8;
+    --text: #e8ecf3;
+    --muted: #9aa4b6;
+    --meta: #6b7686;
+    --border: #232f45;
+    --surface: #131b2c;
+    --surface-alt: #1a2438;
+    --red: #f87171;
+    --green: #4ade80;
+    --orange: #fb923c;
+    --tint-red: #3a1e20;
+    --tint-green: #123324;
+    --tint-blue: #16233d;
+    --tint-orange: #3a2412;
+    --overlay: rgba(0, 0, 0, 0.7);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b1220;
+  --blue: #3b82f6;
+  --blue-dark: #1d4ed8;
+  --text: #e8ecf3;
+  --muted: #9aa4b6;
+  --meta: #6b7686;
+  --border: #232f45;
+  --surface: #131b2c;
+  --surface-alt: #1a2438;
+  --red: #f87171;
+  --green: #4ade80;
+  --orange: #fb923c;
+  --tint-red: #3a1e20;
+  --tint-green: #123324;
+  --tint-blue: #16233d;
+  --tint-orange: #3a2412;
+  --overlay: rgba(0, 0, 0, 0.7);
 }
 
 * {
@@ -168,7 +217,8 @@ input, select, button, textarea {
   border: 1px solid var(--border);
   border-radius: 12px;
   font-size: 0.95rem;
-  background: #f8fafc;
+  background: var(--surface-alt);
+  color: var(--text);
   outline: none;
   transition: border-color 0.18s;
 }
@@ -176,7 +226,7 @@ input, select, button, textarea {
 .field input:focus,
 .field select:focus {
   border-color: var(--blue);
-  background: #fff;
+  background: var(--surface);
 }
 
 .btn {
@@ -215,7 +265,7 @@ input, select, button, textarea {
 }
 
 .btn-secondary:hover {
-  background: #f8fafc;
+  background: var(--surface-alt);
 }
 
 .btn-green {
@@ -228,13 +278,13 @@ input, select, button, textarea {
 }
 
 .btn-red {
-  background: #fef2f2;
+  background: var(--tint-red);
   color: var(--red);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--red);
 }
 
 .btn-red:hover {
-  background: #fee2e2;
+  opacity: 0.85;
 }
 
 .btn-block {
@@ -329,7 +379,7 @@ input, select, button, textarea {
 }
 
 .customer-card:hover {
-  background: #f8fafc;
+  background: var(--surface-alt);
 }
 
 .customer-card:active {
@@ -536,12 +586,12 @@ input, select, button, textarea {
 }
 
 .tx-icon.credit {
-  background: #fef2f2;
+  background: var(--tint-red);
   color: var(--red);
 }
 
 .tx-icon.pay {
-  background: #ecfdf5;
+  background: var(--tint-green);
   color: var(--green);
 }
 
@@ -612,7 +662,7 @@ input, select, button, textarea {
   display: none;
   margin-top: 4px;
   padding: 12px;
-  background: #f8fafc;
+  background: var(--surface-alt);
   border-radius: 12px;
   border: 1px solid var(--border);
 }
@@ -655,7 +705,7 @@ input, select, button, textarea {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(2, 6, 23, 0.58);
+  background: var(--overlay);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -675,7 +725,7 @@ input, select, button, textarea {
 
 .modal-sheet {
   width: min(100%, 480px);
-  background: white;
+  background: var(--surface);
   border-radius: 24px 24px 16px 16px;
   padding: 16px 20px 18px;
   box-shadow: 0 20px 45px rgba(2, 6, 23, 0.2);
@@ -702,7 +752,7 @@ input, select, button, textarea {
 }
 
 .modal-close {
-  background: #f1f5f9;
+  background: var(--surface-alt);
   border: none;
   width: 34px;
   height: 34px;

@@ -358,7 +358,7 @@ export default function CustomerDetail() {
           {customer.opening_balance > 0 && (
             <div className="tx-item">
               <div className="tx-left">
-                <div className="tx-icon" style={{ background: '#f1f5f9', color: 'var(--muted)' }}>
+                <div className="tx-icon" style={{ background: 'var(--surface-alt)', color: 'var(--muted)' }}>
                   <i className="fa-solid fa-flag"></i>
                 </div>
                 <div>

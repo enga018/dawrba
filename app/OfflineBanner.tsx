@@ -21,7 +21,7 @@ export default function OfflineBanner() {
 
   return (
     <div style={{
-      background: '#f97316',
+      background: 'var(--orange)',
       color: 'white',
       textAlign: 'center',
       padding: '8px 16px',
