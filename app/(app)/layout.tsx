@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import OfflineBanner from '@/app/OfflineBanner'
 import ThemeToggle from '@/app/ThemeToggle'
+import BottomNav from '@/app/BottomNav'
 import type { User } from '@supabase/supabase-js'
 
 export default function AppLayout({
@@ -111,6 +112,7 @@ export default function AppLayout({
       <div className="content">
         {children}
       </div>
+      <BottomNav />
     </>
   )
 }

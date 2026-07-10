@@ -7,6 +7,7 @@ import LandingPage from './LandingPage'
 import DashboardPage from './DashboardPage'
 import OfflineBanner from './OfflineBanner'
 import ThemeToggle from './ThemeToggle'
+import BottomNav from './BottomNav'
 import type { User } from '@supabase/supabase-js'
 
 export default function Home() {
@@ -107,6 +108,7 @@ export default function Home() {
         <div className="content content-wide">
           <DashboardPage />
         </div>
+        <BottomNav />
       </>
     )
   }

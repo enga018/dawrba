@@ -157,7 +157,7 @@ input, select, button, textarea {
 
 /* Content area */
 .content {
-  padding: 16px 20px 24px;
+  padding: 16px 20px 96px;
   max-width: 640px;
   margin: 0 auto;
 }
@@ -344,9 +344,9 @@ input, select, button, textarea {
     padding: 18px 20px;
   }
   .avatar {
-    width: 38px;
-    height: 38px;
-    font-size: 0.78rem;
+    width: 44px;
+    height: 44px;
+    font-size: 0.82rem;
   }
   .cc-name {
     font-size: 1.05rem;
@@ -364,9 +364,9 @@ input, select, button, textarea {
     padding: 22px 24px;
   }
   .avatar {
-    width: 42px;
-    height: 42px;
-    font-size: 0.85rem;
+    width: 50px;
+    height: 50px;
+    font-size: 0.92rem;
   }
   .cc-name {
     font-size: 1.15rem;
@@ -387,18 +387,18 @@ input, select, button, textarea {
 .cc-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
   min-width: 0;
 }
 
 .avatar {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-weight: 700;
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   color: white;
   background: linear-gradient(135deg, #60a5fa, #3b82f6);
   flex-shrink: 0;
@@ -910,6 +910,78 @@ input, select, button, textarea {
 
 .add-btn:active:not(:disabled) {
   transform: scale(0.95);
+}
+
+/* On small screens the bottom nav's center Add tab takes over from the
+   floating button, so it doesn't overlap the full-width bar. */
+@media (max-width: 899px) {
+  .add-btn {
+    display: none;
+  }
+}
+
+/* Bottom navigation (mobile only) */
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  z-index: 12;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+.bottom-nav-item i {
+  font-size: 1.05rem;
+}
+
+.bottom-nav-item.active {
+  color: var(--blue);
+}
+
+.bottom-nav-add {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: white;
+  font-size: 1.3rem;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  transform: translateY(-10px);
+}
+
+@media (min-width: 900px) {
+  .bottom-nav {
+    display: none;
+  }
+}
+
+@media (max-width: 899px) {
+  .content {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
 }
 
 /* Summary cards grid: auto-fit divides the row evenly among however
