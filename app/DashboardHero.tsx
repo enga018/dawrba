@@ -106,7 +106,7 @@ function Trend({ value }: { value?: number }) {
 export default function DashboardHero() {
   const [txns, setTxns] = useState<Tx[] | null>(null)
   const [endDay, setEndDay] = useState(0) // 0 = Sunday
-  const [period, setPeriod] = useState<Period>('monthly')
+  const [period, setPeriod] = useState<Period>('daily')
 
   useEffect(() => {
     const load = async () => {

@@ -298,16 +298,7 @@ export default function CustomerDetail() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Recent Transactions</h3>
-        <Link
-          href={`/log/${customerId}`}
-          title="Transaction Log"
-          style={{ color: 'var(--blue)', fontSize: '1rem', lineHeight: 1 }}
-        >
-          <i className="fa-solid fa-clock-rotate-left"></i>
-        </Link>
-      </div>
+      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '8px' }}>Recent Transactions</h3>
       <div className="tx-list">
         {transactions.length === 0 && !(customer.opening_balance > 0) ? (
           <div className="empty">

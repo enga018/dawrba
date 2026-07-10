@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 20
 
 interface RecentTx {
   id: string
@@ -16,7 +16,15 @@ interface RecentTx {
   customer_name: string
 }
 
-export default function RecentTransactions({ limit }: { limit?: number }) {
+export default function RecentTransactions({
+  limit,
+  title = 'Recent Transactions',
+  showHeader = true,
+}: {
+  limit?: number
+  title?: string
+  showHeader?: boolean
+}) {
   const [transactions, setTransactions] = useState<RecentTx[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -68,16 +76,9 @@ export default function RecentTransactions({ limit }: { limit?: number }) {
 
   return (
     <div className="dashboard-recent">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Recent Transactions</h3>
-        <Link
-          href="/log"
-          title="Transaction Log"
-          style={{ color: 'var(--blue)', fontSize: '1rem', lineHeight: 1 }}
-        >
-          <i className="fa-solid fa-clock-rotate-left"></i>
-        </Link>
-      </div>
+      {showHeader && (
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '10px' }}>{title}</h3>
+      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '20px' }}>
