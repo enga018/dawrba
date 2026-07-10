@@ -1,14 +1,23 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { percentTrend } from '@/lib/utils'
+import { percentTrend, formatCurrency } from '@/lib/utils'
 
 type Period = 'daily' | 'weekly' | 'monthly'
 
 interface Tx {
   amount: number
   created_at: string
+  customer_id: string
+  customer_name: string
+}
+
+interface LargestTx {
+  amount: number
+  customerId: string
+  customerName: string
 }
 
 interface Bucket {
@@ -120,10 +129,17 @@ export default function DashboardHero() {
 
         const { data: txData } = await supabase
           .from('transactions')
-          .select('amount, created_at')
+          .select('amount, created_at, customer_id, customers!inner(name)')
           .in('customer_id', ids)
 
-        setTxns(txData || [])
+        setTxns(
+          (txData || []).map((t) => ({
+            amount: t.amount,
+            created_at: t.created_at,
+            customer_id: t.customer_id,
+            customer_name: (t.customers as unknown as { name: string }).name,
+          }))
+        )
       } catch {
         setTxns(null)
       }
@@ -161,7 +177,26 @@ export default function DashboardHero() {
   const headline = period === 'daily' ? 'Today' : period === 'weekly' ? 'This week' : 'This month'
   const vsLabel = period === 'daily' ? 'yesterday' : period === 'weekly' ? 'last week' : 'last month'
 
+  // Largest single credit / collection within the current period.
+  let largestCredit: LargestTx | null = null
+  let largestCollection: LargestTx | null = null
+  for (const t of txns ?? []) {
+    const ts = new Date(t.created_at).getTime()
+    if (ts < current.start || ts >= current.end) continue
+    if (t.amount > 0) {
+      if (!largestCredit || t.amount > largestCredit.amount) {
+        largestCredit = { amount: t.amount, customerId: t.customer_id, customerName: t.customer_name }
+      }
+    } else {
+      const a = Math.abs(t.amount)
+      if (!largestCollection || a > largestCollection.amount) {
+        largestCollection = { amount: a, customerId: t.customer_id, customerName: t.customer_name }
+      }
+    }
+  }
+
   return (
+    <>
     <div className="hero-card">
       <div className="segmented" style={{ marginBottom: '14px' }}>
         {(['daily', 'weekly', 'monthly'] as Period[]).map((p) => (
@@ -219,5 +254,52 @@ export default function DashboardHero() {
         ))}
       </div>
     </div>
+
+    {(largestCredit || largestCollection) && (
+      <div style={{ marginBottom: '18px' }}>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '4px 0 8px' }}>
+          Largest {headline === 'Today' ? 'today' : headline === 'This week' ? 'this week' : 'this month'}
+        </h3>
+        <div className="tx-list">
+          {largestCredit && (
+            <Link
+              href={`/customers/${largestCredit.customerId}`}
+              className="tx-item"
+              style={{ textDecoration: 'none' }}
+            >
+              <div className="tx-left">
+                <div className="tx-icon credit">
+                  <i className="fa-solid fa-plus"></i>
+                </div>
+                <div>
+                  <div className="tx-note">{largestCredit.customerName}</div>
+                  <div className="tx-date">Largest credit given</div>
+                </div>
+              </div>
+              <div className="tx-amount credit">+₹{formatCurrency(largestCredit.amount)}</div>
+            </Link>
+          )}
+          {largestCollection && (
+            <Link
+              href={`/customers/${largestCollection.customerId}`}
+              className="tx-item"
+              style={{ textDecoration: 'none' }}
+            >
+              <div className="tx-left">
+                <div className="tx-icon pay">
+                  <i className="fa-solid fa-minus"></i>
+                </div>
+                <div>
+                  <div className="tx-note">{largestCollection.customerName}</div>
+                  <div className="tx-date">Largest collection</div>
+                </div>
+              </div>
+              <div className="tx-amount pay">-₹{formatCurrency(largestCollection.amount)}</div>
+            </Link>
+          )}
+        </div>
+      </div>
+    )}
+    </>
   )
 }
