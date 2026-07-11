@@ -34,6 +34,16 @@ export default function AdminSidebar() {
           <i className="fa-solid fa-store"></i>
           <span>Tenants</span>
         </Link>
+
+        <Link href="/admin/reports" className={`sidebar-item ${isActive('/admin/reports') ? 'active' : ''}`}>
+          <i className="fa-solid fa-chart-pie"></i>
+          <span>Reports</span>
+        </Link>
+
+        <Link href="/admin/settings" className={`sidebar-item ${isActive('/admin/settings') ? 'active' : ''}`}>
+          <i className="fa-solid fa-gear"></i>
+          <span>Settings</span>
+        </Link>
       </nav>
 
       <div className="sidebar-footer">
