@@ -19,7 +19,13 @@ export default function Login() {
       } = await supabase.auth.getSession()
 
       if (session?.user) {
-        router.push('/')
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_platform_admin')
+          .eq('id', session.user.id)
+          .single()
+
+        router.push(profile?.is_platform_admin ? '/admin' : '/')
         return
       }
 
@@ -53,8 +59,15 @@ export default function Login() {
         throw new Error('Login failed - no user returned')
       }
 
-      console.log('Login successful, redirecting...')
-      router.push('/')
+      // Check if user is platform admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_platform_admin')
+        .eq('id', data.user.id)
+        .single()
+
+      const redirectTo = profile?.is_platform_admin ? '/admin' : '/'
+      router.push(redirectTo)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Login failed'
       console.error('Login error:', errorMsg)
