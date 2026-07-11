@@ -49,71 +49,9 @@ export default function AdminTenantsPage() {
   }, [search, page])
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1
-  const activeTenants = data?.tenants.length ?? 0
-  const suspendedTenants = 0
 
   return (
     <>
-      <div className="admin-section" style={{ marginBottom: 20 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 16,
-            flexWrap: 'wrap',
-            marginBottom: 20,
-          }}
-        >
-          <div>
-            <h2 className="admin-section-title" style={{ marginBottom: 4 }}>Tenants</h2>
-            <p style={{ color: 'var(--muted)', fontSize: '0.92rem' }}>
-              Manage all tenant accounts
-            </p>
-          </div>
-
-          <button className="btn btn-primary" onClick={() => router.push('/admin/tenants/new')}>
-            <i className="fa-solid fa-plus"></i>
-            Add Tenant
-          </button>
-        </div>
-
-        <div className="report-stats-grid" style={{ marginBottom: 0 }}>
-          <div className="report-stat-card">
-            <div className="report-stat-header">
-              <div className="report-stat-label">Total Tenants</div>
-              <div className="report-stat-icon report-stat-icon-blue">
-                <i className="fa-solid fa-store"></i>
-              </div>
-            </div>
-            <div className="report-stat-value">{data?.total ?? '—'}</div>
-            <div className="report-stat-sub">All registered shops</div>
-          </div>
-
-          <div className="report-stat-card">
-            <div className="report-stat-header">
-              <div className="report-stat-label">Visible</div>
-              <div className="report-stat-icon report-stat-icon-green">
-                <i className="fa-solid fa-check"></i>
-              </div>
-            </div>
-            <div className="report-stat-value">{activeTenants}</div>
-            <div className="report-stat-sub">Shown on this page</div>
-          </div>
-
-          <div className="report-stat-card">
-            <div className="report-stat-header">
-              <div className="report-stat-label">Suspended</div>
-              <div className="report-stat-icon report-stat-icon-orange">
-                <i className="fa-solid fa-ban"></i>
-              </div>
-            </div>
-            <div className="report-stat-value">{suspendedTenants}</div>
-            <div className="report-stat-sub">Accounts under review</div>
-          </div>
-        </div>
-      </div>
-
       <div className="admin-search">
         <input
           type="text"
