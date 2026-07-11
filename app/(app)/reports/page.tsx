@@ -228,6 +228,7 @@ export default function ReportsPage() {
                 <div className="report-stat-value">{data.collectionRate}%</div>
                 <div className="report-stat-sub">
                   {rateLabel(data.collectionRate)}
+                  {renderChange(data.collectionRate, data.prev.collectionRate)}
                 </div>
               </div>
 
@@ -241,7 +242,6 @@ export default function ReportsPage() {
                 <div className="report-stat-value">Rs.{formatCurrency(data.outstanding)}</div>
                 <div className="report-stat-sub">
                   Still pending
-                  {renderChange(data.outstanding, data.prev.outstanding, true)}
                 </div>
               </div>
             </div>
