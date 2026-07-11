@@ -26,22 +26,9 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [shopName, setShopName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [isOnline, setIsOnline] = useState(true)
   const [showPicker, setShowPicker] = useState(false)
   const [activeModal, setActiveModal] = useState<'credit' | 'pay' | 'add-customer' | null>(null)
   const router = useRouter()
-
-  useEffect(() => {
-    setIsOnline(navigator.onLine)
-    const handleOffline = () => setIsOnline(false)
-    const handleOnline = () => setIsOnline(true)
-    window.addEventListener('offline', handleOffline)
-    window.addEventListener('online', handleOnline)
-    return () => {
-      window.removeEventListener('offline', handleOffline)
-      window.removeEventListener('online', handleOnline)
-    }
-  }, [])
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -100,10 +87,6 @@ export default function Home() {
               {shopName && <div className="header-shop-label">{shopName}</div>}
             </div>
             <div className="header-actions">
-              <span className={`status-dot ${isOnline ? 'online' : 'offline'}`}>
-                <i className={`fa-solid ${isOnline ? 'fa-wifi' : 'fa-wifi'}`}></i>
-                {isOnline ? 'Online' : 'Offline'}
-              </span>
               <button className="header-logout-btn" onClick={async () => { await supabase.auth.signOut(); router.push('/'); }}>
                 <i className="fa-solid fa-right-from-bracket"></i>
               </button>
