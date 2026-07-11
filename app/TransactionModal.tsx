@@ -112,6 +112,16 @@ export default function TransactionModal({
   const handleSubmit = async () => {
     const targetCustomerId = customerId || selectedCustomerId
     if (!targetCustomerId || !amountValue) return
+
+    // Prevent collecting more than the outstanding balance.
+    if (mode === 'pay' && selectedCustomer) {
+      const effectiveBalance = selectedCustomer.balance - (editingTx?.amount ?? 0)
+      if (amountValue > effectiveBalance) {
+        showToast(`Payment exceeds outstanding balance (₹${formatCurrency(effectiveBalance)})`, 'error')
+        return
+      }
+    }
+
     setSubmitting(true)
     try {
       if (editingTx) {
