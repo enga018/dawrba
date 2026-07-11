@@ -1588,6 +1588,20 @@ input, select, button, textarea {
   box-shadow: 0 1px 3px rgba(2, 6, 23, 0.12);
 }
 
+/* Customer detail: two-column grid for desktop */
+.customer-detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .customer-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* Footer actions */
 .footer-actions {
   background: var(--surface);

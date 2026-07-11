@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { formatDate, formatCurrency, getInitials, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
-import { logActivity } from '@/lib/transactionLog'
+import { logActivity, formatLogEntry, type LogEntry } from '@/lib/transactionLog'
 import TransactionModal from '@/app/TransactionModal'
 
 interface Customer {
@@ -46,19 +46,23 @@ export default function CustomerDetail() {
   const [editingTx, setEditingTx] = useState<Transaction | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false)
-  const [openingBalanceInput, setOpeningBalanceInput] = useState('')
-  const [savingOpeningBalance, setSavingOpeningBalance] = useState(false)
   const [txFilter, setTxFilter] = useState<TxFilter>('all')
   const [deleteCustomerConfirm, setDeleteCustomerConfirm] = useState(false)
   const [deletingCustomer, setDeletingCustomer] = useState(false)
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false)
   const [editName, setEditName] = useState('')
   const [editPhone, setEditPhone] = useState('')
+  const [editOpeningBalance, setEditOpeningBalance] = useState('')
   const [savingCustomer, setSavingCustomer] = useState(false)
   const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('oldest_credit')
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([])
+  const [logLoading, setLogLoading] = useState(true)
+  const [logLoadingMore, setLogLoadingMore] = useState(false)
+  const [logHasMore, setLogHasMore] = useState(false)
+
+  const LOG_PAGE_SIZE = 5
 
   useEffect(() => {
     setOffline(!navigator.onLine)
@@ -130,11 +134,46 @@ export default function CustomerDetail() {
     }
   }, [customerId, router])
 
+  const loadLogPage = useCallback(async (offset: number) => {
+    const { data, error } = await supabase
+      .from('transaction_logs')
+      .select('*')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + LOG_PAGE_SIZE - 1)
+    if (error || !data) return []
+    return data as LogEntry[]
+  }, [customerId])
+
+  useEffect(() => {
+    const load = async () => {
+      const page = await loadLogPage(0)
+      setLogEntries(page)
+      setLogHasMore(page.length === LOG_PAGE_SIZE)
+      setLogLoading(false)
+    }
+    load()
+  }, [loadLogPage])
+
+  useEffect(() => {
+    const onRefresh = () => { loadData(); loadLogPage(0).then((page) => { setLogEntries(page); setLogHasMore(page.length === LOG_PAGE_SIZE) }) }
+    window.addEventListener('dawrba:refresh', onRefresh)
+    return () => window.removeEventListener('dawrba:refresh', onRefresh)
+  }, [loadData, loadLogPage])
+
   useEffect(() => {
     const handleOnline = () => loadData()
     window.addEventListener('online', handleOnline)
     return () => window.removeEventListener('online', handleOnline)
   }, [loadData])
+
+  const handleSeeMoreLog = async () => {
+    setLogLoadingMore(true)
+    const page = await loadLogPage(logEntries.length)
+    setLogEntries((prev) => [...prev, ...page])
+    setLogHasMore(page.length === LOG_PAGE_SIZE)
+    setLogLoadingMore(false)
+  }
 
   const handleEdit = (tx: Transaction) => {
     setEditingTx(tx)
@@ -168,36 +207,6 @@ export default function CustomerDetail() {
     }
   }
 
-  const openOpeningBalanceModal = () => {
-    setOpeningBalanceInput(customer ? String(customer.opening_balance) : '')
-    setShowOpeningBalanceModal(true)
-  }
-
-  const handleSaveOpeningBalance = async () => {
-    const value = parseFloat(openingBalanceInput)
-    if (isNaN(value) || value < 0) return
-    setSavingOpeningBalance(true)
-    try {
-      const { error } = await supabase.from('customers').update({ opening_balance: value }).eq('id', customerId)
-      if (error) throw error
-      showToast('Opening balance updated')
-      if (customer) {
-        logActivity({
-          eventType: 'opening_balance_update',
-          amount: value,
-          previousAmount: customer.opening_balance,
-          customerId: customer.id,
-        })
-      }
-      setShowOpeningBalanceModal(false)
-      await loadData()
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to update', 'error')
-    } finally {
-      setSavingOpeningBalance(false)
-    }
-  }
-
   const openAddModal = (mode: 'credit' | 'pay') => {
     setEditingTx(null)
     setActiveModal(mode)
@@ -223,11 +232,20 @@ export default function CustomerDetail() {
     if (!editName.trim()) return
     setSavingCustomer(true)
     try {
-      const { error } = await supabase
-        .from('customers')
-        .update({ name: editName.trim(), phone: editPhone.trim() || null })
-        .eq('id', customerId)
+      const ob = parseFloat(editOpeningBalance) || 0
+      const prevOb = customer ? customer.opening_balance : 0
+      const updateData: Record<string, unknown> = { name: editName.trim(), phone: editPhone.trim() || null }
+      if (ob !== prevOb) updateData.opening_balance = ob
+      const { error } = await supabase.from('customers').update(updateData).eq('id', customerId)
       if (error) throw error
+      if (ob !== prevOb && customer) {
+        logActivity({
+          eventType: 'opening_balance_update',
+          amount: ob,
+          previousAmount: prevOb,
+          customerId: customer.id,
+        })
+      }
       showToast('Customer updated')
       setShowEditCustomerModal(false)
       await loadData()
@@ -242,6 +260,7 @@ export default function CustomerDetail() {
     if (!customer) return
     setEditName(customer.name)
     setEditPhone(customer.phone || '')
+    setEditOpeningBalance(String(customer.opening_balance))
     setShowEditCustomerModal(true)
   }
 
@@ -257,6 +276,7 @@ export default function CustomerDetail() {
     return <div className="auth-error" style={{ display: 'block' }}>Customer not found</div>
   }
 
+  const totalCredit = transactions.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0)
   const totalPaid = transactions.filter((t) => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0)
   const lastPaymentTx = transactions.find((t) => t.amount < 0)
   const lastPayment = lastPaymentTx ? Math.abs(lastPaymentTx.amount) : 0
@@ -305,14 +325,8 @@ export default function CustomerDetail() {
         </div>
         <div className="balance-stat">
           <div className="balance-stat-body">
-            <span className="balance-stat-label">Total Paid</span>
-            <span className="balance-stat-value green">Rs.{formatCurrency(totalPaid)}</span>
-          </div>
-        </div>
-        <div className="balance-stat" onClick={openOpeningBalanceModal} style={{ cursor: 'pointer' }}>
-          <div className="balance-stat-body">
-            <span className="balance-stat-label">Opening Balance</span>
-            <span className="balance-stat-value">Rs.{formatCurrency(customer.opening_balance)}</span>
+            <span className="balance-stat-label">Total Credit</span>
+            <span className="balance-stat-value red">Rs.{formatCurrency(totalCredit)}</span>
           </div>
         </div>
         <div className="balance-stat">
@@ -321,6 +335,12 @@ export default function CustomerDetail() {
             <span className="balance-stat-value blue">
               {lastPayment > 0 ? `Rs.${formatCurrency(lastPayment)}` : 'Never'}
             </span>
+          </div>
+        </div>
+        <div className="balance-stat">
+          <div className="balance-stat-body">
+            <span className="balance-stat-label">Total Paid</span>
+            <span className="balance-stat-value green">Rs.{formatCurrency(totalPaid)}</span>
           </div>
         </div>
       </div>
@@ -353,57 +373,103 @@ export default function CustomerDetail() {
         </button>
       </div>
 
-      {/* Transaction History */}
-      <div className="home-section-card">
-        <div className="tx-history-header">
-          <h3>Transaction History</h3>
-          <div className="tx-tabs">
-            <button className={`tx-tab ${txFilter === 'all' ? 'active' : ''}`} onClick={() => setTxFilter('all')}>
-              All
-            </button>
-            <button className={`tx-tab ${txFilter === 'credit' ? 'active' : ''}`} onClick={() => setTxFilter('credit')}>
-              Credit
-            </button>
-            <button className={`tx-tab ${txFilter === 'payment' ? 'active' : ''}`} onClick={() => setTxFilter('payment')}>
-              Payment
-            </button>
+      <div className="customer-detail-grid">
+
+        {/* Transaction History */}
+        <div className="home-section-card">
+          <div className="tx-history-header">
+            <h3>Transaction History</h3>
+            <div className="tx-tabs">
+              <button className={`tx-tab ${txFilter === 'all' ? 'active' : ''}`} onClick={() => setTxFilter('all')}>
+                All
+              </button>
+              <button className={`tx-tab ${txFilter === 'credit' ? 'active' : ''}`} onClick={() => setTxFilter('credit')}>
+                Credit
+              </button>
+              <button className={`tx-tab ${txFilter === 'payment' ? 'active' : ''}`} onClick={() => setTxFilter('payment')}>
+                Payment
+              </button>
+            </div>
           </div>
+
+          <div className="tx-list">
+            {filteredTransactions.length === 0 ? (
+              <div className="empty"><p>No {txFilter === 'all' ? '' : txFilter} transactions yet.</p></div>
+            ) : (
+              <>
+                {filteredTransactions.slice(0, visibleCount).map((tx) => {
+                  const isCredit = tx.amount > 0
+                  return (
+                    <div key={tx.id} className="tx-item" style={{ cursor: 'pointer' }} onClick={() => setSelectedTx(tx)}>
+                      <div className="tx-left">
+                        <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
+                          <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-check'}`}></i>
+                        </div>
+                        <div>
+                          <div className="tx-note">{isCredit ? 'Credit added' : 'Payment collected'}</div>
+                          <div className="tx-date">{formatDate(tx.date)}{tx.note ? ` · ${tx.note}` : ''}</div>
+                        </div>
+                      </div>
+                      <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
+                        {isCredit ? '+' : '-'}Rs.{formatCurrency(Math.abs(tx.amount))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </>
+            )}
+          </div>
+
+          {filteredTransactions.length > visibleCount && (
+            <button className="btn btn-secondary btn-sm btn-block" style={{ marginTop: '12px' }}
+              onClick={() => setVisibleCount((prev) => prev + 10)}>
+              See more
+            </button>
+          )}
         </div>
 
-        <div className="tx-list">
-          {filteredTransactions.length === 0 ? (
-            <div className="empty"><p>No {txFilter === 'all' ? '' : txFilter} transactions yet.</p></div>
+        {/* Recent Activity */}
+        <div className="home-section-card">
+          <div className="home-section-header">
+            <h3>Recent Activity</h3>
+            <Link href={`/log/${customerId}`} className="home-section-link">View all</Link>
+          </div>
+
+          {logLoading ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <div className="spinner" style={{ margin: '0 auto' }}></div>
+            </div>
+          ) : logEntries.length === 0 ? (
+            <div className="empty" style={{ padding: '20px 0' }}>
+              <i className="fa-solid fa-clock-rotate-left"></i>
+              <p>No activity yet.</p>
+            </div>
           ) : (
             <>
-              {filteredTransactions.slice(0, visibleCount).map((tx) => {
-                const isCredit = tx.amount > 0
-                return (
-                  <div key={tx.id} className="tx-item" style={{ cursor: 'pointer' }} onClick={() => setSelectedTx(tx)}>
-                    <div className="tx-left">
-                      <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
-                        <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-check'}`}></i>
-                      </div>
-                      <div>
-                        <div className="tx-note">{isCredit ? 'Credit added' : 'Payment collected'}</div>
-                        <div className="tx-date">{formatDate(tx.date)}{tx.note ? ` · ${tx.note}` : ''}</div>
-                      </div>
-                    </div>
-                    <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
-                      {isCredit ? '+' : '-'}Rs.{formatCurrency(Math.abs(tx.amount))}
-                    </div>
+              <div className="activity-list">
+                {logEntries.map((entry) => (
+                  <div key={entry.id} style={{
+                    padding: '10px 0',
+                    borderBottom: '1px solid var(--border)',
+                    fontSize: '0.88rem',
+                    color: 'var(--text)',
+                  }}>
+                    {formatLogEntry(entry)}
                   </div>
-                )
-              })}
+                ))}
+              </div>
+              {logHasMore && (
+                <button className="btn btn-secondary btn-sm btn-block"
+                  style={{ marginTop: '12px' }}
+                  disabled={logLoadingMore}
+                  onClick={handleSeeMoreLog}>
+                  {logLoadingMore ? <span className="spinner"></span> : 'See more'}
+                </button>
+              )}
             </>
           )}
         </div>
 
-        {filteredTransactions.length > visibleCount && (
-          <button className="btn btn-secondary btn-sm btn-block" style={{ marginTop: '12px' }}
-            onClick={() => setVisibleCount((prev) => prev + 10)}>
-            See more
-          </button>
-        )}
       </div>
 
       {/* Footer Actions */}
@@ -485,24 +551,6 @@ export default function CustomerDetail() {
         </div>
       )}
 
-      {/* Edit Opening Balance */}
-      <div className={`modal-backdrop ${showOpeningBalanceModal ? 'active' : ''}`} onClick={() => setShowOpeningBalanceModal(false)}>
-        <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-head">
-            <h3>Edit Opening Balance</h3>
-            <button className="modal-close" onClick={() => setShowOpeningBalanceModal(false)}><i className="fa-solid fa-xmark"></i></button>
-          </div>
-          <div className="field">
-            <label>Amount (Rs.)</label>
-            <input type="number" placeholder="0" min="0" step="1" value={openingBalanceInput}
-              onChange={(e) => setOpeningBalanceInput(e.target.value)} />
-          </div>
-          <button className="btn btn-primary btn-block" disabled={savingOpeningBalance} onClick={handleSaveOpeningBalance}>
-            {savingOpeningBalance ? <span className="spinner"></span> : 'Save'}
-          </button>
-        </div>
-      </div>
-
       {/* Edit Customer */}
       <div className={`modal-backdrop ${showEditCustomerModal ? 'active' : ''}`} onClick={() => setShowEditCustomerModal(false)}>
         <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
@@ -519,6 +567,11 @@ export default function CustomerDetail() {
             <label>Phone</label>
             <input type="tel" placeholder="Phone number" value={editPhone}
               onChange={(e) => setEditPhone(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Opening Balance (Rs.)</label>
+            <input type="number" placeholder="0" min="0" value={editOpeningBalance}
+              onChange={(e) => setEditOpeningBalance(e.target.value)} />
           </div>
           <button className="btn btn-primary btn-block" disabled={!editName.trim() || savingCustomer} onClick={handleSaveCustomer}>
             {savingCustomer ? <span className="spinner"></span> : 'Save'}
