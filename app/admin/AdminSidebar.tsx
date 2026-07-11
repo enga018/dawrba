@@ -35,11 +35,6 @@ export default function AdminSidebar() {
           <span>Tenants</span>
         </Link>
 
-        <Link href="/admin/tenants/new" className="sidebar-item sidebar-item-add">
-          <i className="fa-solid fa-plus"></i>
-          <span>Add Tenant</span>
-        </Link>
-
         <button className="sidebar-item" type="button">
           <i className="fa-solid fa-chart-pie"></i>
           <span>Reports</span>
