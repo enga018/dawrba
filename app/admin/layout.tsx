@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import Sidebar from '@/app/Sidebar'
 import OfflineBanner from '@/app/OfflineBanner'
+import AdminSidebar from './AdminSidebar'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'checking' | 'ok'>('checking')
@@ -59,7 +59,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="app-layout">
       <OfflineBanner />
-      <Sidebar />
+      <AdminSidebar />
       <div className="app-main">
         <div className="header">
           <div>
