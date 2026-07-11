@@ -220,6 +220,19 @@ export default function ReportsPage() {
 
               <div className="report-stat-card">
                 <div className="report-stat-header">
+                  <span className="report-stat-label">Collection Rate</span>
+                  <span className="report-stat-icon report-stat-icon-blue">
+                    <i className="fa-solid fa-chart-column"></i>
+                  </span>
+                </div>
+                <div className="report-stat-value">{data.collectionRate}%</div>
+                <div className="report-stat-sub">
+                  {rateLabel(data.collectionRate)}
+                </div>
+              </div>
+
+              <div className="report-stat-card">
+                <div className="report-stat-header">
                   <span className="report-stat-label">Outstanding</span>
                   <span className="report-stat-icon report-stat-icon-orange">
                     <i className="fa-regular fa-calendar"></i>
@@ -229,20 +242,6 @@ export default function ReportsPage() {
                 <div className="report-stat-sub">
                   Still pending
                   {renderChange(data.outstanding, data.prev.outstanding, true)}
-                </div>
-              </div>
-
-              <div className="report-stat-card">
-                <div className="report-stat-header">
-                  <span className="report-stat-label">Collection Rate</span>
-                  <span className="report-stat-icon report-stat-icon-blue">
-                    <i className="fa-solid fa-chart-column"></i>
-                  </span>
-                </div>
-                <div className="report-stat-value">{data.collectionRate}%</div>
-                <div className="report-stat-sub">
-                  {rateLabel(data.collectionRate)}
-                  {renderChange(data.collectionRate, data.prev.collectionRate)}
                 </div>
               </div>
             </div>
