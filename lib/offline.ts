@@ -193,6 +193,7 @@ export async function processQueue(): Promise<void> {
 export function setupAutoSync() {
   if (typeof window === 'undefined') return
   window.addEventListener('online', () => { processQueue() })
+  setTimeout(() => { processQueue() }, 1000)
 }
 
 type WriteResult = { data: any; error: any } | null
