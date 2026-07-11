@@ -234,7 +234,7 @@ export default function TransactionModal({
           />
         </div>
 
-        {selectedCustomer && amountValue > 0 && (
+        {selectedCustomer && (
           <div className="detail-card">
             <div className="tx-detail-row">
               <span className="tx-detail-label">Current Balance</span>
