@@ -76,9 +76,9 @@ export default function AppLayout({
 
   return (
     <div className="app-layout">
-      <OfflineBanner />
       <Sidebar />
       <div className="app-main">
+        <OfflineBanner />
         <div className="header">
           <h1 className="header-mobile-title">DawrBa<span className="dot"></span></h1>
           <div className="header-actions">

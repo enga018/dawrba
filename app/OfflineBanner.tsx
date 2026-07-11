@@ -24,18 +24,17 @@ export default function OfflineBanner() {
       background: 'var(--orange)',
       color: 'white',
       textAlign: 'center',
-      padding: '8px 16px',
-      fontSize: '0.85rem',
+      padding: '6px 16px',
+      fontSize: '0.8rem',
       fontWeight: 600,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '8px',
-      position: 'sticky',
-      top: 0,
-      zIndex: 100,
+      gap: '6px',
+      width: '100%',
+      boxSizing: 'border-box',
     }}>
-      <i className="fa-solid fa-wifi-slash"></i>
+      <i className="fa-solid fa-wifi-slash" style={{ fontSize: '0.75rem' }}></i>
       <span>You are offline — showing cached data</span>
     </div>
   )
