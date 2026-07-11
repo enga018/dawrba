@@ -54,7 +54,7 @@ function CustomerDetailInner() {
   const [editPhone, setEditPhone] = useState('')
   const [editOpeningBalance, setEditOpeningBalance] = useState('')
   const [savingCustomer, setSavingCustomer] = useState(false)
-  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('oldest_credit')
+  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('fixed_period')
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])

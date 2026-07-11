@@ -11,7 +11,7 @@ export default function ShopInformationPage() {
   const [shopName, setShopName] = useState('')
   const [phone, setPhone] = useState('')
   const [weeklyReportDay, setWeeklyReportDay] = useState('sunday')
-  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('oldest_credit')
+  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('fixed_period')
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -136,15 +136,15 @@ export default function ShopInformationPage() {
               value={overdueStrategy}
               onChange={(e) => setOverdueStrategy(e.target.value as OverdueStrategy)}
             >
-              <option value="oldest_credit">Oldest unpaid credit</option>
-              <option value="fixed_period">Fixed period</option>
+              <option value="fixed_period">Days since last activity</option>
+              <option value="oldest_credit">Days since oldest unpaid credit</option>
             </select>
           </div>
 
           <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '-8px', marginBottom: '16px' }}>
-            {overdueStrategy === 'oldest_credit'
-              ? 'Days since the oldest unpaid credit transaction exceeds the threshold.'
-              : 'Days since the last transaction exceeds the threshold.'}
+            {overdueStrategy === 'fixed_period'
+              ? 'Customer is overdue if their last transaction (any type) is older than the grace period.'
+              : 'Customer is overdue if their oldest unpaid credit is older than the grace period.'}
           </div>
 
           <div className="field">

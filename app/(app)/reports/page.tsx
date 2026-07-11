@@ -68,7 +68,7 @@ export default function ReportsPage() {
           .eq('id', user.id)
           .single()
 
-        const strategy: OverdueStrategy = profileData?.overdue_strategy || 'oldest_credit'
+        const strategy: OverdueStrategy = profileData?.overdue_strategy || 'fixed_period'
         const thresholdDays: number = profileData?.overdue_threshold_days || 7
 
         const { data: customers } = await supabase

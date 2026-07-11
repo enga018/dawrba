@@ -88,7 +88,7 @@ interface Transaction {
 export function calculateOverdueDays(
   balance: number,
   transactions: Transaction[],
-  strategy: OverdueStrategy = 'oldest_credit',
+  strategy: OverdueStrategy = 'fixed_period',
   thresholdDays: number = 7
 ): number {
   if (balance <= 0) return 0
@@ -118,7 +118,7 @@ export function calculateOverdueDays(
 export function isCustomerOverdue(
   balance: number,
   transactions: Transaction[],
-  strategy: OverdueStrategy = 'oldest_credit',
+  strategy: OverdueStrategy = 'fixed_period',
   thresholdDays: number = 7
 ): boolean {
   return calculateOverdueDays(balance, transactions, strategy, thresholdDays) > 0

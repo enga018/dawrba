@@ -25,7 +25,7 @@ export default function CustomerList() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [visibleCount, setVisibleCount] = useState(20)
-  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('oldest_credit')
+  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('fixed_period')
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
 
   const loadData = useCallback(async () => {
