@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Sidebar from '@/app/Sidebar'
+import OfflineBanner from '@/app/OfflineBanner'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'checking' | 'ok'>('checking')
+  const [shopName, setShopName] = useState('')
   const router = useRouter()
-  const pathname = usePathname()
 
   useEffect(() => {
     let cancelled = false
@@ -25,7 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_platform_admin')
+        .select('is_platform_admin, shop_name')
         .eq('id', session.user.id)
         .single()
 
@@ -34,7 +35,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return
       }
 
-      if (!cancelled) setStatus('ok')
+      if (!cancelled) {
+        setShopName(profile.shop_name || '')
+        setStatus('ok')
+      }
     }
 
     checkAccess()
@@ -53,33 +57,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="admin-layout">
-      <header className="admin-header">
-        <span className="admin-brand">
-          DawrBa<span className="dot"></span> Admin
-        </span>
-        <nav className="admin-nav">
-          <Link href="/admin" className={`admin-nav-link ${pathname === '/admin' ? 'active' : ''}`}>
-            Overview
-          </Link>
-          <Link
-            href="/admin/tenants"
-            className={`admin-nav-link ${pathname?.startsWith('/admin/tenants') ? 'active' : ''}`}
-          >
-            Tenants
-          </Link>
-        </nav>
-        <button
-          className="header-logout-btn"
-          onClick={async () => {
-            await supabase.auth.signOut()
-            router.push('/login')
-          }}
-        >
-          <i className="fa-solid fa-right-from-bracket"></i>
-        </button>
-      </header>
-      <main className="admin-main">{children}</main>
+    <div className="app-layout">
+      <OfflineBanner />
+      <Sidebar />
+      <div className="app-main">
+        <div className="header">
+          <div>
+            <h1 className="header-mobile-title">Admin Dashboard</h1>
+            <div className="admin-layout-subtitle">DawrBa Management Console</div>
+          </div>
+          <div className="header-actions">
+            {shopName && (
+              <button className="header-shop-name" title={shopName}>
+                {shopName}
+              </button>
+            )}
+            <button
+              className="header-logout-btn"
+              onClick={async () => {
+                await supabase.auth.signOut()
+                router.push('/login')
+              }}
+            >
+              <i className="fa-solid fa-right-from-bracket"></i>
+            </button>
+          </div>
+        </div>
+        <div className="content">{children}</div>
+      </div>
     </div>
   )
 }
