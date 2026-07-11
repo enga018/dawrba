@@ -20,11 +20,13 @@ export async function requirePlatformAdmin(req: Request): Promise<AdminAuthResul
     return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }
 
-  const { data: profile, error: profileError } = await supabaseAdmin
+  const { data: rawProfile, error: profileError } = await supabaseAdmin
     .from('profiles')
     .select('is_platform_admin')
     .eq('id', userData.user.id)
     .single()
+
+  const profile = rawProfile as { is_platform_admin: boolean } | null
 
   if (profileError || !profile?.is_platform_admin) {
     return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }

@@ -13,11 +13,12 @@ export async function GET(req: Request) {
     const totalShopOwners = tenants.length
     const totalCustomers = tenants.reduce((sum, t) => sum + t.customerCount, 0)
 
-    const { data: transactions, error: txError } = await supabaseAdmin
+    const { data: rawTx, error: txError } = await supabaseAdmin
       .from('transactions')
       .select('amount')
     if (txError) throw txError
-    const totalTransactionVolume = (transactions || []).reduce(
+    const transactions = (rawTx || []) as { amount: number }[]
+    const totalTransactionVolume = transactions.reduce(
       (sum, t) => sum + Math.abs(t.amount || 0),
       0
     )

@@ -42,8 +42,8 @@ export async function getTenantSummaries(): Promise<TenantSummary[]> {
   if (profilesResult.error) throw profilesResult.error
   if (customersResult.error) throw customersResult.error
 
-  const profiles = profilesResult.data || []
-  const customers = customersResult.data || []
+  const profiles = (profilesResult.data || []) as { id: string; shop_name: string | null; phone: string | null }[]
+  const customers = (customersResult.data || []) as { id: string; user_id: string }[]
 
   const customerToUser: Record<string, string> = {}
   const customerCountByUser: Record<string, number> = {}
@@ -63,7 +63,9 @@ export async function getTenantSummaries(): Promise<TenantSummary[]> {
       .in('customer_id', customerIds)
     if (txError) throw txError
 
-    for (const t of transactions || []) {
+    const txList = (transactions || []) as { customer_id: string; created_at: string }[]
+
+    for (const t of txList) {
       const userId = customerToUser[t.customer_id]
       if (!userId) continue
       transactionCountByUser[userId] = (transactionCountByUser[userId] || 0) + 1
