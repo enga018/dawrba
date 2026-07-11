@@ -2203,6 +2203,52 @@ input, select, button, textarea {
   }
 }
 
+/* Admin bottom nav (mobile only) */
+.admin-bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  z-index: 12;
+}
+
+.admin-bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 2px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.62rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.admin-bottom-nav-item i {
+  font-size: 1.05rem;
+}
+
+.admin-bottom-nav-item.active {
+  color: var(--blue);
+}
+
+@media (min-width: 1024px) {
+  .admin-bottom-nav {
+    display: none;
+  }
+}
+
 /* ─── Header greeting & status ──────────────────────────────────── */
 .header-left {
   display: flex;
