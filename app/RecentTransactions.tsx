@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { getAllCachedTransactions, getCachedCustomers } from '@/lib/offline'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
 const PAGE_SIZE = 20
@@ -32,45 +33,66 @@ export default function RecentTransactions({
 
   const pageSize = limit ?? PAGE_SIZE
 
-  const loadPage = useCallback(async (offset: number) => {
-    const user = (await supabase.auth.getUser()).data.user
-    if (!user) return []
+  useEffect(() => {
+    const load = async () => {
+      const user = (await supabase.auth.getUser()).data.user
+      if (!user) { setLoading(false); return }
 
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('id, amount, note, date, created_at, customer_id, customers!inner(name)')
+        .order('created_at', { ascending: false })
+        .limit(pageSize)
+
+      if (!error && data) {
+        setTransactions(data.map((tx) => ({
+          id: tx.id,
+          amount: tx.amount,
+          note: tx.note,
+          date: tx.date,
+          customer_id: tx.customer_id,
+          customer_name: (tx.customers as unknown as { name: string }).name,
+        })))
+        setHasMore(data.length === pageSize)
+      } else {
+        const cached = await getAllCachedTransactions<{ id: string; customerId: string; amount: number; note?: string; date?: string; created_at: string }>()
+        const customers = await getCachedCustomers<{ id: string; name: string }>()
+        const names = new Map(customers.map((c) => [c.id, c.name]))
+        setTransactions(cached.slice(0, pageSize).map((tx) => ({
+          id: tx.id,
+          amount: tx.amount,
+          note: tx.note,
+          date: tx.date,
+          customer_id: tx.customerId,
+          customer_name: names.get(tx.customerId) || 'Unknown',
+        })))
+        setHasMore(false)
+      }
+      setLoading(false)
+    }
+    load()
+  }, [pageSize, limit])
+
+  const handleSeeMore = async () => {
+    setLoadingMore(true)
+    const user = (await supabase.auth.getUser()).data.user
+    if (!user) { setLoadingMore(false); return }
     const { data, error } = await supabase
       .from('transactions')
       .select('id, amount, note, date, created_at, customer_id, customers!inner(name)')
       .order('created_at', { ascending: false })
-      .range(offset, offset + pageSize - 1)
-
-    if (error || !data) return []
-
-    return data.map((tx) => ({
-      id: tx.id,
-      amount: tx.amount,
-      note: tx.note,
-      date: tx.date,
-      customer_id: tx.customer_id,
-      customer_name: (tx.customers as unknown as { name: string }).name,
-    }))
-  }, [pageSize])
-
-  useEffect(() => {
-    const load = async () => {
-      const page = await loadPage(0)
-      setTransactions(page)
-      // In compact (limited) mode there is no in-place pagination; the
-      // header links out to the full /log instead.
-      setHasMore(limit ? false : page.length === pageSize)
-      setLoading(false)
+      .range(transactions.length, transactions.length + PAGE_SIZE - 1)
+    if (!error && data) {
+      setTransactions((prev) => [...prev, ...data.map((tx) => ({
+        id: tx.id,
+        amount: tx.amount,
+        note: tx.note,
+        date: tx.date,
+        customer_id: tx.customer_id,
+        customer_name: (tx.customers as unknown as { name: string }).name,
+      }))])
+      setHasMore(data.length === PAGE_SIZE)
     }
-    load()
-  }, [loadPage, limit, pageSize])
-
-  const handleSeeMore = async () => {
-    setLoadingMore(true)
-    const page = await loadPage(transactions.length)
-    setTransactions((prev) => [...prev, ...page])
-    setHasMore(page.length === PAGE_SIZE)
     setLoadingMore(false)
   }
 

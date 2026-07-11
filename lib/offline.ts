@@ -97,6 +97,23 @@ export async function getCachedTransactions<T>(customerId: string): Promise<T[]>
   }
 }
 
+export async function getAllCachedTransactions<T>(): Promise<T[]> {
+  try {
+    const all = await getDb().transactions.orderBy('created_at').reverse().toArray()
+    return all as unknown as T[]
+  } catch {
+    return []
+  }
+}
+
+export async function putTransaction(tx: TransactionRecord) {
+  try {
+    await getDb().transactions.put(tx)
+  } catch {
+    // IndexedDB unavailable
+  }
+}
+
 export async function clearAllCache() {
   try {
     await getDb().customers.clear()

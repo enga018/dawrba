@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { cacheCustomers, getCachedCustomers, offlineWrite, isOnline } from '@/lib/offline'
+import { cacheCustomers, getCachedCustomers, offlineWrite, isOnline, putTransaction } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
 import { logActivity } from '@/lib/transactionLog'
@@ -165,6 +165,15 @@ export default function TransactionModal({
           { table: 'transactions', operation: 'insert', data: { customer_id: targetCustomerId, amount: signedAmount, note: note || null } }
         )
         if (result?.error) throw result.error
+        if (!isOnline()) {
+          putTransaction({
+            id: `local_${crypto.randomUUID()}`,
+            customerId: targetCustomerId,
+            amount: signedAmount,
+            note: note || undefined,
+            created_at: new Date().toISOString(),
+          })
+        }
       }
       showToast(editingTx ? 'Transaction updated' : mode === 'pay' ? 'Payment recorded' : 'Credit added')
       close()
