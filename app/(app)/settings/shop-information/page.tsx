@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { offlineWrite } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
-import type { OverdueStrategy } from '@/lib/utils'
 
 export default function ShopInformationPage() {
   const [shopName, setShopName] = useState('')
   const [phone, setPhone] = useState('')
   const [weeklyReportDay, setWeeklyReportDay] = useState('sunday')
-  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('fixed_period')
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -36,7 +34,6 @@ export default function ShopInformationPage() {
         if (data.shop_name) setShopName(data.shop_name)
         if (data.phone) setPhone(data.phone)
         if (data.weekly_report_day) setWeeklyReportDay(data.weekly_report_day)
-        if (data.overdue_strategy) setOverdueStrategy(data.overdue_strategy)
         if (data.overdue_threshold_days) setOverdueThresholdDays(data.overdue_threshold_days)
       }
       setLoading(false)
@@ -58,12 +55,12 @@ export default function ShopInformationPage() {
           const { error } = await supabase.from('profiles').upsert({
             id: user.id, shop_name: shopName, phone: phone || null,
             report_time: '00:00', weekly_report_day: weeklyReportDay,
-            overdue_strategy: overdueStrategy, overdue_threshold_days: overdueThresholdDays,
+            overdue_strategy: 'fixed_period', overdue_threshold_days: overdueThresholdDays,
           })
           if (error) throw error
           return { data: null, error: null }
         },
-        { table: 'profiles', operation: 'upsert', data: { id: user.id, shop_name: shopName, phone: phone || null, report_time: '00:00', weekly_report_day: weeklyReportDay, overdue_strategy: overdueStrategy, overdue_threshold_days: overdueThresholdDays } }
+        { table: 'profiles', operation: 'upsert', data: { id: user.id, shop_name: shopName, phone: phone || null, report_time: '00:00', weekly_report_day: weeklyReportDay, overdue_strategy: 'fixed_period', overdue_threshold_days: overdueThresholdDays } }
       )
       if (result?.error) throw result.error
       showToast('Shop information saved')
@@ -124,31 +121,8 @@ export default function ShopInformationPage() {
         </div>
 
         <div className="detail-card" style={{ marginTop: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <i className="fa-solid fa-clock-rotate-left" style={{ color: 'var(--orange)' }}></i>
-            <span style={{ fontWeight: 700, fontSize: '1rem' }}>Overdue Strategy</span>
-          </div>
-
           <div className="field">
-            <label htmlFor="overdueStrategy">Calculate overdue by</label>
-            <select
-              id="overdueStrategy"
-              value={overdueStrategy}
-              onChange={(e) => setOverdueStrategy(e.target.value as OverdueStrategy)}
-            >
-              <option value="fixed_period">Days since last activity</option>
-              <option value="oldest_credit">Days since oldest unpaid credit</option>
-            </select>
-          </div>
-
-          <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '-8px', marginBottom: '16px' }}>
-            {overdueStrategy === 'fixed_period'
-              ? 'Customer is overdue if their last transaction (any type) is older than the grace period.'
-              : 'Customer is overdue if their oldest unpaid credit is older than the grace period.'}
-          </div>
-
-          <div className="field">
-            <label htmlFor="overdueThresholdDays">Grace period (days)</label>
+            <label htmlFor="overdueThresholdDays">Overdue grace period (days)</label>
             <input
               type="number"
               id="overdueThresholdDays"
@@ -157,10 +131,9 @@ export default function ShopInformationPage() {
               value={overdueThresholdDays}
               onChange={(e) => setOverdueThresholdDays(parseInt(e.target.value) || 7)}
             />
-          </div>
-
-          <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '-8px' }}>
-            Customer is marked overdue only after this many days.
+            <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '6px' }}>
+              Customer is marked overdue if their last transaction is older than this many days.
+            </div>
           </div>
         </div>
 
