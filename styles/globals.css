@@ -122,6 +122,68 @@ input, select, button, textarea {
   }
 }
 
+/* Admin Navbar (below 1024px, hidden on desktop where sidebar shows) */
+.admin-navbar {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-navbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .admin-navbar {
+    display: none;
+  }
+}
+
+.admin-navbar-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.admin-navbar-item i {
+  font-size: 0.95rem;
+}
+
+.admin-navbar-item:hover {
+  color: var(--text);
+}
+
+.admin-navbar-item.active {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+}
+
+.admin-navbar-logout {
+  margin-left: auto;
+  color: var(--red);
+}
+
+.admin-navbar-logout:hover {
+  color: var(--red);
+}
+
 .sidebar-brand {
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
