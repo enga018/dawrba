@@ -20,7 +20,7 @@ export default function FloatingAddButton({ onAddSelect }: FloatingAddButtonProp
   // Customer detail pages render their own Add Credit / Collect buttons.
   if (pathname.startsWith('/customers/')) return null
   // Settings and the activity log aren't places to add a transaction.
-  if (pathname.startsWith('/profile') || pathname.startsWith('/log')) return null
+  if (pathname.startsWith('/settings') || pathname.startsWith('/log')) return null
 
   return <FabMenu onSelect={onAddSelect} />
 }

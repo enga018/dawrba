@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { offlineWrite, isOnline } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import { logActivity } from '@/lib/transactionLog'
 
@@ -61,21 +62,19 @@ export default function AddCustomer() {
     setError('')
     setLoading(true)
     try {
-      const { data: tx, error: txError } = await supabase.from('transactions').insert({
-        customer_id: selectedCustomerId,
-        amount: parseFloat(amount),
-        note: note || null,
-      }).select().single()
-      if (txError) throw txError
-
+      const result = await offlineWrite(
+        async () => {
+          const { data: tx, error } = await supabase.from('transactions').insert({
+            customer_id: selectedCustomerId, amount: parseFloat(amount), note: note || null,
+          }).select().single()
+          if (error) throw error
+          logActivity({ transactionId: tx?.id, eventType: 'insert', amount: parseFloat(amount), note: note || null, customerId: selectedCustomerId })
+          return { data: null, error: null }
+        },
+        { table: 'transactions', operation: 'insert', data: { customer_id: selectedCustomerId, amount: parseFloat(amount), note: note || null } }
+      )
+      if (result?.error) throw result.error
       showToast('Credit added')
-      logActivity({
-        transactionId: tx?.id,
-        eventType: 'insert',
-        amount: parseFloat(amount),
-        note: note || null,
-        customerId: selectedCustomerId,
-      })
       router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add credit')
@@ -91,21 +90,19 @@ export default function AddCustomer() {
     setError('')
     setLoading(true)
     try {
-      const { data: tx, error: txError } = await supabase.from('transactions').insert({
-        customer_id: selectedCustomerId,
-        amount: -parseFloat(amount),
-        note: note || null,
-      }).select().single()
-      if (txError) throw txError
-
+      const result = await offlineWrite(
+        async () => {
+          const { data: tx, error } = await supabase.from('transactions').insert({
+            customer_id: selectedCustomerId, amount: -parseFloat(amount), note: note || null,
+          }).select().single()
+          if (error) throw error
+          logActivity({ transactionId: tx?.id, eventType: 'insert', amount: -parseFloat(amount), note: note || null, customerId: selectedCustomerId })
+          return { data: null, error: null }
+        },
+        { table: 'transactions', operation: 'insert', data: { customer_id: selectedCustomerId, amount: -parseFloat(amount), note: note || null } }
+      )
+      if (result?.error) throw result.error
       showToast('Payment recorded')
-      logActivity({
-        transactionId: tx?.id,
-        eventType: 'insert',
-        amount: -parseFloat(amount),
-        note: note || null,
-        customerId: selectedCustomerId,
-      })
       router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to record payment')
@@ -124,41 +121,32 @@ export default function AddCustomer() {
       if (!user) throw new Error('Not authenticated')
 
       const ob = parseFloat(formData.openingBalance) || 0
-      const { data: customer, error: customerError } = await supabase
-        .from('customers')
-        .insert({
-          user_id: user.id,
-          name: formData.name,
-          phone: formData.phone || null,
-          opening_balance: ob,
-        })
-        .select()
-        .single()
 
-      if (customerError) throw customerError
-
-      if (ob > 0) {
-        logActivity({
-          eventType: 'opening_balance',
-          amount: ob,
-          customerId: customer.id,
-        })
-      }
-
-      if (formData.amount && parseFloat(formData.amount) > 0) {
-        const { data: tx, error: txError } = await supabase.from('transactions').insert({
-          customer_id: customer.id,
-          amount: parseFloat(formData.amount),
-          note: formData.note || null,
-        }).select().single()
-        if (txError) throw txError
-        logActivity({
-          transactionId: tx?.id,
-          eventType: 'insert',
-          amount: parseFloat(formData.amount),
-          note: formData.note || null,
-          customerId: customer.id,
-        })
+      if (isOnline()) {
+        const { data: customer, error: customerError } = await supabase
+          .from('customers').insert({
+            user_id: user.id, name: formData.name, phone: formData.phone || null, opening_balance: ob,
+          }).select().single()
+        if (customerError) throw customerError
+        if (ob > 0) logActivity({ eventType: 'opening_balance', amount: ob, customerId: customer.id })
+        if (formData.amount && parseFloat(formData.amount) > 0) {
+          const { data: tx, error: txError } = await supabase.from('transactions').insert({
+            customer_id: customer.id, amount: parseFloat(formData.amount), note: formData.note || null,
+          }).select().single()
+          if (txError) throw txError
+          logActivity({ transactionId: tx?.id, eventType: 'insert', amount: parseFloat(formData.amount), note: formData.note || null, customerId: customer.id })
+        }
+      } else {
+        await offlineWrite(
+          async () => ({ data: null, error: null }),
+          { table: 'customers', operation: 'insert', data: { user_id: user.id, name: formData.name, phone: formData.phone || null, opening_balance: ob } }
+        )
+        if (formData.amount && parseFloat(formData.amount) > 0) {
+          await offlineWrite(
+            async () => ({ data: null, error: null }),
+            { table: 'transactions', operation: 'insert', data: { amount: parseFloat(formData.amount), note: formData.note || null } }
+          )
+        }
       }
 
       showToast('Customer added')

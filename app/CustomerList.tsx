@@ -80,7 +80,7 @@ export default function CustomerList() {
       setCustomers(withBalance)
       cacheCustomers(withBalance)
     } catch {
-      const cached = getCachedCustomers<Customer>()
+      const cached = await getCachedCustomers<Customer>()
       if (cached && cached.length > 0) setCustomers(cached)
     } finally {
       setLoading(false)

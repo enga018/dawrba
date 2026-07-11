@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { offlineWrite } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import type { OverdueStrategy } from '@/lib/utils'
 
@@ -52,19 +53,21 @@ export default function ShopInformationPage() {
       const user = (await supabase.auth.getUser()).data.user
       if (!user) throw new Error('Not authenticated')
 
-      const { error: dbError } = await supabase.from('profiles').upsert({
-        id: user.id,
-        shop_name: shopName,
-        phone: phone || null,
-        report_time: '00:00',
-        weekly_report_day: weeklyReportDay,
-        overdue_strategy: overdueStrategy,
-        overdue_threshold_days: overdueThresholdDays,
-      })
-
-      if (dbError) throw dbError
+      const result = await offlineWrite(
+        async () => {
+          const { error } = await supabase.from('profiles').upsert({
+            id: user.id, shop_name: shopName, phone: phone || null,
+            report_time: '00:00', weekly_report_day: weeklyReportDay,
+            overdue_strategy: overdueStrategy, overdue_threshold_days: overdueThresholdDays,
+          })
+          if (error) throw error
+          return { data: null, error: null }
+        },
+        { table: 'profiles', operation: 'upsert', data: { id: user.id, shop_name: shopName, phone: phone || null, report_time: '00:00', weekly_report_day: weeklyReportDay, overdue_strategy: overdueStrategy, overdue_threshold_days: overdueThresholdDays } }
+      )
+      if (result?.error) throw result.error
       showToast('Shop information saved')
-      router.push('/profile')
+      router.push('/settings')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save')
     } finally {

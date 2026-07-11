@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { setupAutoSync } from '@/lib/offline'
 import OfflineBanner from '@/app/OfflineBanner'
 import BottomNav from '@/app/BottomNav'
 import Sidebar from '@/app/Sidebar'
@@ -50,6 +51,7 @@ export default function AppLayout({
     }
 
     checkAuth()
+    setupAutoSync()
 
     const {
       data: { subscription },

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { offlineWrite } from '@/lib/offline'
 
 export default function Setup() {
   const [shopName, setShopName] = useState('')
@@ -19,12 +20,15 @@ export default function Setup() {
       const user = (await supabase.auth.getUser()).data.user
       if (!user) throw new Error('Not authenticated')
 
-      const { error: dbError } = await supabase.from('profiles').upsert({
-        id: user.id,
-        shop_name: shopName,
-      })
-
-      if (dbError) throw dbError
+      const result = await offlineWrite(
+        async () => {
+          const { error } = await supabase.from('profiles').upsert({ id: user.id, shop_name: shopName })
+          if (error) throw error
+          return { data: null, error: null }
+        },
+        { table: 'profiles', operation: 'upsert', data: { id: user.id, shop_name: shopName } }
+      )
+      if (result?.error) throw result.error
       router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Setup failed')

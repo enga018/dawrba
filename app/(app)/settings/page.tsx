@@ -67,7 +67,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="profile-menu">
-        <Link href="/profile/shop-information" className="profile-menu-item">
+        <Link href="/settings/shop-information" className="profile-menu-item">
           <div className="profile-menu-icon" style={{ background: 'var(--tint-blue)', color: 'var(--blue)' }}>
             <i className="fa-solid fa-store"></i>
           </div>
@@ -78,7 +78,7 @@ export default function SettingsPage() {
           <i className="fa-solid fa-chevron-right profile-menu-chevron"></i>
         </Link>
 
-        <Link href="/profile/notifications" className="profile-menu-item">
+        <Link href="/settings/notifications" className="profile-menu-item">
           <div className="profile-menu-icon" style={{ background: 'var(--tint-orange)', color: 'var(--orange)' }}>
             <i className="fa-solid fa-bell"></i>
           </div>
@@ -105,7 +105,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <Link href="/profile/change-password" className="profile-menu-item">
+        <Link href="/settings/change-password" className="profile-menu-item">
           <div className="profile-menu-icon" style={{ background: 'var(--tint-green)', color: 'var(--green)' }}>
             <i className="fa-solid fa-key"></i>
           </div>
@@ -116,7 +116,7 @@ export default function SettingsPage() {
           <i className="fa-solid fa-chevron-right profile-menu-chevron"></i>
         </Link>
 
-        <Link href="/profile/export-data" className="profile-menu-item">
+        <Link href="/settings/export-data" className="profile-menu-item">
           <div className="profile-menu-icon" style={{ background: 'var(--tint-blue)', color: 'var(--blue)' }}>
             <i className="fa-solid fa-download"></i>
           </div>

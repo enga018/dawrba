@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
+import { cacheCustomers, getCachedCustomers, offlineWrite, isOnline } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
 import { logActivity } from '@/lib/transactionLog'
@@ -87,7 +87,7 @@ export default function TransactionModal({
         setCustomers(list)
         cacheCustomers(data || [])
       } catch {
-        const cached = getCachedCustomers<CustomerOption>()
+        const cached = await getCachedCustomers<CustomerOption>()
         if (cached && cached.length > 0) setCustomers(cached)
       }
     }
@@ -113,7 +113,6 @@ export default function TransactionModal({
     const targetCustomerId = customerId || selectedCustomerId
     if (!targetCustomerId || !amountValue) return
 
-    // Prevent collecting more than the outstanding balance.
     if (mode === 'pay' && selectedCustomer) {
       const effectiveBalance = selectedCustomer.balance - (editingTx?.amount ?? 0)
       if (amountValue > effectiveBalance) {
@@ -125,36 +124,49 @@ export default function TransactionModal({
     setSubmitting(true)
     try {
       if (editingTx) {
-        const { error } = await supabase
-          .from('transactions')
-          .update({ amount: signedAmount, note: note || null, updated_at: new Date().toISOString() })
-          .eq('id', editingTx.id)
-        if (error) throw error
-        showToast('Transaction updated')
-        logActivity({
-          transactionId: editingTx.id,
-          eventType: 'update',
-          amount: signedAmount,
-          previousAmount: editingTx.amount,
-          note: note || null,
-          previousNote: editingTx.note || null,
-          customerId: targetCustomerId,
-        })
+        const result = await offlineWrite(
+          async () => {
+            const { error } = await supabase
+              .from('transactions')
+              .update({ amount: signedAmount, note: note || null, updated_at: new Date().toISOString() })
+              .eq('id', editingTx.id)
+            if (error) throw error
+            logActivity({
+              transactionId: editingTx.id,
+              eventType: 'update',
+              amount: signedAmount,
+              previousAmount: editingTx.amount,
+              note: note || null,
+              previousNote: editingTx.note || null,
+              customerId: targetCustomerId,
+            })
+            return { data: null, error: null }
+          },
+          { table: 'transactions', operation: 'update', data: { amount: signedAmount, note: note || null, updated_at: new Date().toISOString() }, filters: { id: editingTx.id } }
+        )
+        if (result?.error) throw result.error
       } else {
-        const { data, error } = await supabase.from('transactions').insert({
-          customer_id: targetCustomerId,
-          amount: signedAmount,
-          note: note || null,
-        }).select().single()
-        if (error) throw error
-        showToast(mode === 'pay' ? 'Payment recorded' : 'Credit added')
-        logActivity({
-          transactionId: data?.id,
-          eventType: 'insert',
-          amount: signedAmount,
-          customerId: targetCustomerId,
-        })
+        const result = await offlineWrite(
+          async () => {
+            const { data, error } = await supabase.from('transactions').insert({
+              customer_id: targetCustomerId,
+              amount: signedAmount,
+              note: note || null,
+            }).select().single()
+            if (error) throw error
+            logActivity({
+              transactionId: data?.id,
+              eventType: 'insert',
+              amount: signedAmount,
+              customerId: targetCustomerId,
+            })
+            return { data, error: null }
+          },
+          { table: 'transactions', operation: 'insert', data: { customer_id: targetCustomerId, amount: signedAmount, note: note || null } }
+        )
+        if (result?.error) throw result.error
       }
+      showToast(editingTx ? 'Transaction updated' : mode === 'pay' ? 'Payment recorded' : 'Credit added')
       close()
       refresh()
       onSaved?.()

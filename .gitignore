@@ -17,3 +17,7 @@ dist/
 
 # Root screenshots
 /*.png
+
+# Serwist / Service Worker
+public/sw*
+public/swe-worker*

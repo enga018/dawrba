@@ -34,7 +34,7 @@ export default function ChangePasswordPage() {
 
       if (updateError) throw updateError
       showToast('Password updated')
-      router.push('/profile')
+      router.push('/settings')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update password')
     } finally {

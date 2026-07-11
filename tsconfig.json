@@ -4,7 +4,8 @@
     "lib": [
       "ES2020",
       "DOM",
-      "DOM.Iterable"
+      "DOM.Iterable",
+      "webworker"
     ],
     "jsx": "preserve",
     "module": "ESNext",
@@ -40,6 +41,7 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "public/sw.js"
   ]
 }

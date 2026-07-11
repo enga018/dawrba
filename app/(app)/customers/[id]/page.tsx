@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { Suspense, useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { formatDate, formatCurrency, getInitials, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
-import { cacheTransactions, getCachedTransactions } from '@/lib/offline'
+import { cacheTransactions, getCachedTransactions, offlineWrite } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import { logActivity, formatLogEntry, type LogEntry } from '@/lib/transactionLog'
 import TransactionModal from '@/app/TransactionModal'
@@ -30,7 +30,7 @@ interface Transaction {
 
 type TxFilter = 'all' | 'credit' | 'payment'
 
-export default function CustomerDetail() {
+function CustomerDetailInner() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -121,7 +121,7 @@ export default function CustomerDetail() {
       setTransactions(txData || [])
       cacheTransactions(customerId, txData || [])
     } catch (err) {
-      const cached = getCachedTransactions<Transaction>(customerId)
+      const cached = await getCachedTransactions<Transaction>(customerId)
       if (cached && cached.length > 0) {
         const balance = cached.reduce((sum, t) => sum + (t.amount || 0), 0)
         setCustomer({ id: customerId, name: 'Cached Customer', opening_balance: 0, balance } as Customer)
@@ -184,19 +184,26 @@ export default function CustomerDetail() {
     const deletedTx = transactions.find((t) => t.id === txId)
     setDeleting(true)
     try {
-      const { error } = await supabase.from('transactions').delete().eq('id', txId)
-      if (error) throw error
+      const result = await offlineWrite(
+        async () => {
+          const { error } = await supabase.from('transactions').delete().eq('id', txId)
+          if (error) throw error
+          if (deletedTx && customer) {
+            logActivity({
+              transactionId: txId,
+              eventType: 'delete',
+              previousAmount: deletedTx.amount,
+              previousNote: deletedTx.note || null,
+              customerId: customer.id,
+            })
+          }
+          return { data: null, error: null }
+        },
+        { table: 'transactions', operation: 'delete', data: {}, filters: { id: txId } }
+      )
+      if (result?.error) throw result.error
       setDeleteConfirm(null)
       showToast('Transaction deleted')
-      if (deletedTx && customer) {
-        logActivity({
-          transactionId: txId,
-          eventType: 'delete',
-          previousAmount: deletedTx.amount,
-          previousNote: deletedTx.note || null,
-          customerId: customer.id,
-        })
-      }
       await loadData()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to delete transaction'
@@ -215,9 +222,16 @@ export default function CustomerDetail() {
   const handleDeleteCustomer = async () => {
     setDeletingCustomer(true)
     try {
-      await supabase.from('transactions').delete().eq('customer_id', customerId)
-      const { error } = await supabase.from('customers').delete().eq('id', customerId)
-      if (error) throw error
+      const result = await offlineWrite(
+        async () => {
+          await supabase.from('transactions').delete().eq('customer_id', customerId)
+          const { error } = await supabase.from('customers').delete().eq('id', customerId)
+          if (error) throw error
+          return { data: null, error: null }
+        },
+        { table: 'customers', operation: 'delete', data: {}, filters: { id: customerId } }
+      )
+      if (result?.error) throw result.error
       showToast('Customer deleted')
       router.push('/customers')
     } catch (err) {
@@ -236,16 +250,23 @@ export default function CustomerDetail() {
       const prevOb = customer ? customer.opening_balance : 0
       const updateData: Record<string, unknown> = { name: editName.trim(), phone: editPhone.trim() || null }
       if (ob !== prevOb) updateData.opening_balance = ob
-      const { error } = await supabase.from('customers').update(updateData).eq('id', customerId)
-      if (error) throw error
-      if (ob !== prevOb && customer) {
-        logActivity({
-          eventType: 'opening_balance_update',
-          amount: ob,
-          previousAmount: prevOb,
-          customerId: customer.id,
-        })
-      }
+      const result = await offlineWrite(
+        async () => {
+          const { error } = await supabase.from('customers').update(updateData).eq('id', customerId)
+          if (error) throw error
+          if (ob !== prevOb && customer) {
+            logActivity({
+              eventType: 'opening_balance_update',
+              amount: ob,
+              previousAmount: prevOb,
+              customerId: customer.id,
+            })
+          }
+          return { data: null, error: null }
+        },
+        { table: 'customers', operation: 'update', data: updateData, filters: { id: customerId } }
+      )
+      if (result?.error) throw result.error
       showToast('Customer updated')
       setShowEditCustomerModal(false)
       await loadData()
@@ -632,5 +653,17 @@ export default function CustomerDetail() {
         onSaved={loadData}
       />
     </>
+  )
+}
+
+export default function CustomerDetail() {
+  return (
+    <Suspense fallback={
+      <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+        <div className="spinner" style={{ margin: '0 auto' }}></div>
+      </div>
+    }>
+      <CustomerDetailInner />
+    </Suspense>
   )
 }

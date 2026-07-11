@@ -34,9 +34,9 @@ export default function BottomNav({ onAddClick }: BottomNavProps) {
         <i className="fa-solid fa-chart-pie"></i>
         <span>Reports</span>
       </Link>
-      <Link href="/profile" className={`bottom-nav-item ${isActive('/profile') ? 'active' : ''}`}>
-        <i className="fa-solid fa-user"></i>
-        <span>Profile</span>
+      <Link href="/settings" className={`bottom-nav-item ${isActive('/settings') ? 'active' : ''}`}>
+        <i className="fa-solid fa-gear"></i>
+        <span>Settings</span>
       </Link>
     </nav>
   )

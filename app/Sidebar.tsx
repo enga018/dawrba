@@ -38,9 +38,9 @@ export default function Sidebar() {
           <i className="fa-solid fa-chart-pie"></i>
           <span>Reports</span>
         </Link>
-        <Link href="/profile" className={`sidebar-item ${isActive('/profile') ? 'active' : ''}`}>
-          <i className="fa-solid fa-user"></i>
-          <span>Profile</span>
+        <Link href="/settings" className={`sidebar-item ${isActive('/settings') ? 'active' : ''}`}>
+          <i className="fa-solid fa-gear"></i>
+          <span>Settings</span>
         </Link>
       </nav>
       <div className="sidebar-footer">
