@@ -2207,14 +2207,16 @@ input, select, button, textarea {
 .admin-bottom-nav {
   display: flex;
   justify-content: space-around;
-  align-items: flex-end;
+  align-items: flex-start;
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+  padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
   z-index: 12;
 }
 
@@ -2224,17 +2226,18 @@ input, select, button, textarea {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 6px 2px 8px;
-  color: var(--muted);
+  gap: 4px;
+  padding: 6px 2px;
+  color: var(--meta);
   text-decoration: none;
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 600;
   background: none;
   border: none;
   cursor: pointer;
   font: inherit;
-  transition: color 0.15s;
+  transition: color 0.2s;
+  position: relative;
 }
 
 .admin-bottom-nav-item span {
@@ -2245,15 +2248,25 @@ input, select, button, textarea {
 }
 
 .admin-bottom-nav-item i {
-  font-size: 1.05rem;
-  transition: transform 0.15s;
+  font-size: 1.1rem;
+  transition: transform 0.2s, color 0.2s;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
 }
 
 .admin-bottom-nav-item:active i {
-  transform: scale(0.9);
+  transform: scale(0.88);
 }
 
 .admin-bottom-nav-item.active {
+  color: var(--blue);
+}
+
+.admin-bottom-nav-item.active i {
+  background: var(--tint-blue);
   color: var(--blue);
 }
 

@@ -1,20 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { usePathname } from 'next/navigation'
 
 export default function AdminBottomNav() {
   const pathname = usePathname()
-  const router = useRouter()
 
   const isActive = (href: string) =>
     href === '/admin' ? pathname === '/admin' : pathname.startsWith(href)
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
 
   return (
     <nav className="admin-bottom-nav">
@@ -37,11 +30,6 @@ export default function AdminBottomNav() {
         <i className="fa-solid fa-gear"></i>
         <span>Settings</span>
       </Link>
-
-      <button className="admin-bottom-nav-item" onClick={handleLogout}>
-        <i className="fa-solid fa-right-from-bracket"></i>
-        <span>Logout</span>
-      </button>
     </nav>
   )
 }
