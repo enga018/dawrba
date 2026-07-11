@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import '../styles/globals.css'
 import ToastContainer from './ToastContainer'
+import ServiceWorkerRegister from './ServiceWorkerRegister'
 
 export const metadata: Metadata = {
   title: 'DawrBa',
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body>
         {children}
         <ToastContainer />
+        <ServiceWorkerRegister />
       </body>
     </html>
   )
