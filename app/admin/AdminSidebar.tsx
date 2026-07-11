@@ -34,6 +34,16 @@ export default function AdminSidebar() {
           <i className="fa-solid fa-store"></i>
           <span>Tenants</span>
         </Link>
+
+        <button className="sidebar-item" type="button">
+          <i className="fa-solid fa-chart-pie"></i>
+          <span>Reports</span>
+        </button>
+
+        <button className="sidebar-item" type="button">
+          <i className="fa-solid fa-gear"></i>
+          <span>Settings</span>
+        </button>
       </nav>
 
       <div className="sidebar-footer">
