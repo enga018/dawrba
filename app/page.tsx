@@ -91,9 +91,9 @@ export default function Home() {
   if (user) {
     return (
       <div className="app-layout">
-        <OfflineBanner />
         <Sidebar />
         <div className="app-main">
+          <OfflineBanner />
           <div className="header">
             <div className="header-left">
               <h1 className="header-greeting">{getGreeting()}</h1>
