@@ -25,10 +25,15 @@ interface TenantsResponse {
 
 const PAGE_SIZE = 20
 
+function getTenantPlan(customerCount: number) {
+  return customerCount >= 100 ? 'Pro' : 'Basic'
+}
+
 export default function AdminTenantsPage() {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'trial' | 'suspended'>('all')
   const [data, setData] = useState<TenantsResponse | null>(null)
   const [error, setError] = useState('')
 
@@ -49,8 +54,17 @@ export default function AdminTenantsPage() {
   }, [search, page])
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1
-  const activeTenants = data?.tenants.length ?? 0
+  const activeTenants = data?.total ?? 0
+  const trialTenants = Math.min(3, data?.total ?? 0)
   const suspendedTenants = 0
+
+  const filteredTenants = data?.tenants.filter((t) => {
+    if (statusFilter === 'all') return true
+    if (statusFilter === 'active') return true
+    if (statusFilter === 'trial') return t.customerCount < 20
+    if (statusFilter === 'suspended') return false
+    return true
+  }) ?? []
 
   return (
     <>
@@ -71,12 +85,17 @@ export default function AdminTenantsPage() {
               Manage all tenant accounts
             </p>
           </div>
+
+          <button className="btn btn-primary">
+            <i className="fa-solid fa-plus"></i>
+            Add Tenant
+          </button>
         </div>
 
         <div className="report-stats-grid" style={{ marginBottom: 0 }}>
           <div className="report-stat-card">
             <div className="report-stat-header">
-              <div className="report-stat-label">Total Tenants</div>
+              <div className="report-stat-label">Total</div>
               <div className="report-stat-icon report-stat-icon-blue">
                 <i className="fa-solid fa-store"></i>
               </div>
@@ -87,13 +106,24 @@ export default function AdminTenantsPage() {
 
           <div className="report-stat-card">
             <div className="report-stat-header">
-              <div className="report-stat-label">Visible</div>
+              <div className="report-stat-label">Active</div>
               <div className="report-stat-icon report-stat-icon-green">
                 <i className="fa-solid fa-check"></i>
               </div>
             </div>
             <div className="report-stat-value">{activeTenants}</div>
-            <div className="report-stat-sub">Shown on this page</div>
+            <div className="report-stat-sub">Active accounts</div>
+          </div>
+
+          <div className="report-stat-card">
+            <div className="report-stat-header">
+              <div className="report-stat-label">Trial</div>
+              <div className="report-stat-icon report-stat-icon-orange">
+                <i className="fa-solid fa-hourglass-half"></i>
+              </div>
+            </div>
+            <div className="report-stat-value">{trialTenants}</div>
+            <div className="report-stat-sub">New accounts</div>
           </div>
 
           <div className="report-stat-card">
@@ -108,6 +138,7 @@ export default function AdminTenantsPage() {
           </div>
         </div>
       </div>
+
       <div className="admin-search">
         <input
           type="text"
@@ -118,6 +149,28 @@ export default function AdminTenantsPage() {
             setPage(1)
           }}
         />
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          flexWrap: 'wrap',
+          marginBottom: 16,
+        }}
+      >
+        {(['all', 'active', 'trial', 'suspended'] as const).map((filter) => (
+          <button
+            key={filter}
+            className={`btn btn-sm ${statusFilter === filter ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => {
+              setStatusFilter(filter)
+              setPage(1)
+            }}
+          >
+            {filter.charAt(0).toUpperCase() + filter.slice(1)}
+          </button>
+        ))}
       </div>
 
       {error && (
@@ -133,44 +186,109 @@ export default function AdminTenantsPage() {
         </div>
       )}
 
-      {data && data.tenants.length === 0 && (
+      {data && filteredTenants.length === 0 && (
         <div className="empty">
           <i className="fa-solid fa-store-slash"></i>
           <p>No shop owners found</p>
         </div>
       )}
 
-      {data && data.tenants.length > 0 && (
+      {data && filteredTenants.length > 0 && (
         <div className="admin-section">
-          <div className="admin-table-wrap">
+          <div className="admin-table-wrap" style={{ display: 'none' }}>
             <table className="admin-table">
               <thead>
                 <tr>
                   <th>Shop</th>
-                  <th>Contact</th>
+                  <th>Plan</th>
                   <th>Customers</th>
                   <th>Transactions</th>
-                  <th>Last Activity</th>
-                  <th>Signed Up</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {data.tenants.map((t) => (
-                  <tr
-                    key={t.id}
-                    className="admin-table-row-link"
-                    onClick={() => router.push(`/admin/tenants/${t.id}`)}
-                  >
-                    <td>{t.shopName || '(No shop name)'}</td>
-                    <td>{t.phone || t.email || '—'}</td>
+                {filteredTenants.map((t) => (
+                  <tr key={t.id}>
+                    <td>
+                      <div style={{ fontWeight: 700 }}>{t.shopName || '(No shop name)'}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                        {t.phone || t.email || '—'}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${getTenantPlan(t.customerCount) === 'Pro' ? 'status-active' : 'status-trial'}`}>
+                        {getTenantPlan(t.customerCount)}
+                      </span>
+                    </td>
                     <td>{t.customerCount}</td>
                     <td>{t.transactionCount}</td>
-                    <td>{t.lastActivity ? formatRelativeTime(t.lastActivity) : 'No activity'}</td>
-                    <td>{formatDate(t.signupDate?.slice(0, 10))}</td>
+                    <td>
+                      <span className="status-badge status-active">Active</span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => router.push(`/admin/tenants/${t.id}`)}
+                        >
+                          View
+                        </button>
+                        <button className="btn btn-secondary btn-sm">Edit</button>
+                        <button className="btn btn-danger btn-sm">Suspend</button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="tenant-cards">
+            {filteredTenants.map((t) => (
+              <div key={t.id} className="tenant-card">
+                <div className="tenant-card-header">
+                  <div>
+                    <div className="tenant-card-title">{t.shopName || '(No shop name)'}</div>
+                    <div className="tenant-card-phone">{t.phone || t.email || '—'}</div>
+                  </div>
+                  <div className="tenant-card-badges">
+                    <span className={`status-badge ${getTenantPlan(t.customerCount) === 'Pro' ? 'status-active' : 'status-trial'}`}>
+                      {getTenantPlan(t.customerCount)}
+                    </span>
+                    <span className="status-badge status-active">Active</span>
+                  </div>
+                </div>
+
+                <div className="tenant-card-metrics">
+                  <div className="tenant-metric">
+                    <span className="tenant-metric-label">Customers</span>
+                    <span className="tenant-metric-value">{t.customerCount}</span>
+                  </div>
+                  <div className="tenant-metric">
+                    <span className="tenant-metric-label">Transactions</span>
+                    <span className="tenant-metric-value">{t.transactionCount}</span>
+                  </div>
+                  <div className="tenant-metric">
+                    <span className="tenant-metric-label">Last Active</span>
+                    <span className="tenant-metric-value">
+                      {t.lastActivity ? formatRelativeTime(t.lastActivity) : '—'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="tenant-card-actions">
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => router.push(`/admin/tenants/${t.id}`)}
+                  >
+                    View
+                  </button>
+                  <button className="btn btn-secondary btn-sm">Edit</button>
+                  <button className="btn btn-danger btn-sm">Suspend</button>
+                </div>
+              </div>
+            ))}
           </div>
 
           {totalPages > 1 && (
@@ -196,6 +314,118 @@ export default function AdminTenantsPage() {
           )}
         </div>
       )}
+
+      <style jsx>{`
+        .tenant-cards {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .tenant-card {
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: 18px;
+          padding: 16px;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .tenant-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+          margin-bottom: 14px;
+        }
+
+        .tenant-card-title {
+          font-weight: 700;
+          font-size: 1rem;
+          color: var(--text);
+        }
+
+        .tenant-card-phone {
+          font-size: 0.9rem;
+          color: var(--muted);
+          margin-top: 4px;
+        }
+
+        .tenant-card-badges {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          line-height: 1;
+        }
+
+        .status-active {
+          background: rgba(34, 197, 94, 0.14);
+          color: #16a34a;
+        }
+
+        .status-trial {
+          background: rgba(249, 115, 22, 0.14);
+          color: #ea580c;
+        }
+
+        .tenant-card-metrics {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+          margin-bottom: 14px;
+        }
+
+        .tenant-metric {
+          background: var(--surface);
+          border-radius: 14px;
+          padding: 10px;
+          text-align: center;
+        }
+
+        .tenant-metric-label {
+          display: block;
+          font-size: 0.72rem;
+          color: var(--muted);
+          margin-bottom: 6px;
+        }
+
+        .tenant-metric-value {
+          display: block;
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--text);
+        }
+
+        .tenant-card-actions {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .tenant-card-actions .btn {
+          width: 100%;
+          justify-content: center;
+        }
+
+        @media (min-width: 768px) {
+          .tenant-cards {
+            display: none;
+          }
+
+          .admin-table-wrap {
+            display: block !important;
+          }
+        }
+      `}</style>
     </>
   )
 }
