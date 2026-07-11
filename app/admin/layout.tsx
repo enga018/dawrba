@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import OfflineBanner from '@/app/OfflineBanner'
 import AdminSidebar from './AdminSidebar'
 import AdminBottomNav from './AdminBottomNav'
+import './admin.css'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'checking' | 'ok'>('checking')
