@@ -367,6 +367,7 @@ export default function ReportsPage() {
                 </div>
                 <div className="report-stat-sub">
                   {getPeriodLabel(period)}
+                  {renderChange(data.collected - data.creditGiven, data.prev.collected - data.prev.creditGiven)}
                 </div>
               </div>
 
@@ -512,12 +513,7 @@ export default function ReportsPage() {
                   </div>
                   <div className="report-stat-sub">Since start of month</div>
                 </div>
-              </div>
-            </div>
 
-            <div className="report-section">
-              <h3 className="report-section-title">All-Time Records</h3>
-              <div className="report-stats-grid">
                 <div className="report-stat-card">
                   <div className="report-stat-header">
                     <span className="report-stat-label">Largest Credit Ever</span>
