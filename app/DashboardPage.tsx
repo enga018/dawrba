@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import DashboardSummary from './DashboardSummary'
 import NeedsAttention from './NeedsAttention'
 import RecentTransactions from './RecentTransactions'
-import SummaryFeed from './SummaryFeed'
+import InsightsFeed from './InsightsFeed'
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
@@ -65,7 +65,7 @@ export default function DashboardPage() {
           <RecentTransactions limit={5} title="Recent Transactions" />
         </div>
         <div className="home-grid-side">
-          <SummaryFeed />
+          <InsightsFeed />
         </div>
       </div>
     </>
