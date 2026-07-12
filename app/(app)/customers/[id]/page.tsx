@@ -286,7 +286,7 @@ function CustomerDetailInner() {
     return <div className="auth-error" style={{ display: 'block' }}>Customer not found</div>
   }
 
-  const totalCredit = transactions.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0)
+  const totalCredit = customer.opening_balance + transactions.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0)
   const totalPaid = transactions.filter((t) => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0)
   const lastPaymentTx = transactions.find((t) => t.amount < 0)
   const lastPayment = lastPaymentTx ? Math.abs(lastPaymentTx.amount) : 0

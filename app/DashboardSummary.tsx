@@ -74,6 +74,7 @@ export default function DashboardSummary() {
         let outstanding = 0
         let overdueCount = 0
         for (const c of customers || []) {
+          totalCredit += c.opening_balance || 0
           const balance = (c.opening_balance || 0) + (balances[c.id] || 0)
           if (balance > 0) {
             outstanding += balance
