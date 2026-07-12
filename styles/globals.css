@@ -2756,15 +2756,16 @@ input, select, button, textarea {
 .report-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .report-stat-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 16px;
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 .report-stat-header {
@@ -2775,9 +2776,9 @@ input, select, button, textarea {
 }
 
 .report-stat-label {
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text);
 }
 
 .report-stat-icon {
@@ -2805,15 +2806,17 @@ input, select, button, textarea {
 }
 
 .report-stat-value {
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 800;
   color: var(--text);
   line-height: 1.2;
+  margin: 12px 0;
 }
 
 .report-stat-sub {
-  font-size: 0.78rem;
-  color: var(--meta);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
   margin-top: 2px;
   display: flex;
   align-items: center;
@@ -2821,9 +2824,9 @@ input, select, button, textarea {
 }
 
 .report-change {
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 1px 6px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 2px 8px;
   border-radius: 6px;
 }
 
@@ -2838,15 +2841,16 @@ input, select, button, textarea {
 }
 
 .report-change.neutral {
-  color: var(--meta);
-  background: var(--surface-alt);
+  color: #6B7280;
+  background: #F3F4F6;
 }
 
 .report-section {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 16px;
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 .report-section-title {
@@ -2877,7 +2881,7 @@ input, select, button, textarea {
 .report-overdue-amount {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--red);
+  color: #EA580C;
 }
 
 @media (min-width: 768px) {

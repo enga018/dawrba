@@ -197,7 +197,7 @@ export default function ReportsPage() {
                     <i className="fa-solid fa-arrow-trend-up"></i>
                   </span>
                 </div>
-                <div className="report-stat-value">Rs.{formatCurrency(data.creditGiven)}</div>
+                <div className="report-stat-value">₹{formatCurrency(data.creditGiven)}</div>
                 <div className="report-stat-sub">
                   {getPeriodLabel(period)}
                   {renderChange(data.creditGiven, data.prev.creditGiven)}
@@ -257,7 +257,7 @@ export default function ReportsPage() {
                 data.overdueCustomers.map((c) => (
                   <div key={c.name} className="report-overdue-row">
                     <span className="report-overdue-name">{c.name}</span>
-                    <span className="report-overdue-amount">Rs.{formatCurrency(c.balance)}</span>
+                    <span className="report-overdue-amount">₹{formatCurrency(c.balance)}</span>
                   </div>
                 ))
               )}
