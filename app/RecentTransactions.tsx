@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getAllCachedTransactions, getCachedCustomers } from '@/lib/offline'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { formatDate, formatTime, formatCurrency } from '@/lib/utils'
 
 const PAGE_SIZE = 20
 
@@ -13,6 +13,7 @@ interface RecentTx {
   amount: number
   note?: string
   date?: string
+  created_at: string
   customer_id: string
   customer_name: string
 }
@@ -50,6 +51,7 @@ export default function RecentTransactions({
           amount: tx.amount,
           note: tx.note,
           date: tx.date,
+          created_at: tx.created_at,
           customer_id: tx.customer_id,
           customer_name: (tx.customers as unknown as { name: string }).name,
         })))
@@ -63,6 +65,7 @@ export default function RecentTransactions({
           amount: tx.amount,
           note: tx.note,
           date: tx.date,
+          created_at: tx.created_at,
           customer_id: tx.customerId,
           customer_name: names.get(tx.customerId) || 'Unknown',
         })))
@@ -88,6 +91,7 @@ export default function RecentTransactions({
         amount: tx.amount,
         note: tx.note,
         date: tx.date,
+        created_at: tx.created_at,
         customer_id: tx.customer_id,
         customer_name: (tx.customers as unknown as { name: string }).name,
       }))])
@@ -127,9 +131,15 @@ export default function RecentTransactions({
                       <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-minus'}`}></i>
                     </div>
                     <div>
-                      <div className="tx-note">{tx.customer_name}</div>
+                      <div className="tx-header">
+                        <div className="tx-note">{tx.customer_name}</div>
+                        <span className={`tx-badge ${isCredit ? 'credit' : 'pay'}`}>
+                          {isCredit ? 'Credit' : 'Payment'}
+                        </span>
+                      </div>
                       <div className="tx-date">
-                        {tx.note || (isCredit ? 'Credit' : 'Payment')} · {formatDate(tx.date)}
+                        {tx.note ? `${tx.note} · ` : ''}
+                        {formatDate(tx.date)} · {formatTime(tx.created_at)}
                       </div>
                     </div>
                   </div>

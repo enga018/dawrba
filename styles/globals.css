@@ -780,7 +780,7 @@ input, select, button, textarea {
   align-items: center;
   justify-content: space-between;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid color-mix(in srgb, var(--border), transparent 40%);
 }
 
 .tx-item:last-child {
@@ -815,6 +815,7 @@ input, select, button, textarea {
 .tx-amount {
   font-weight: 700;
   font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .tx-amount.credit {
@@ -827,12 +828,38 @@ input, select, button, textarea {
 
 .tx-date {
   font-size: 0.78rem;
+  font-weight: 500;
   color: var(--meta);
+}
+
+.tx-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .tx-note {
   font-size: 0.85rem;
-  color: var(--muted);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tx-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tx-badge.credit {
+  background: var(--tint-red);
+  color: var(--red);
+}
+
+.tx-badge.pay {
+  background: var(--tint-green);
+  color: var(--green);
 }
 
 .tx-actions {
