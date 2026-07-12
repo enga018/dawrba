@@ -256,19 +256,20 @@ export default function TransactionModal({
               </div>
             </div>
           )}
-
-          <button
-            className="btn btn-primary btn-block"
-            disabled={!(customerId || selectedCustomerId) || !amount || submitting}
-            onClick={handleSubmit}
-          >
-            {submitting ? <span className="spinner"></span> : editingTx ? 'Update' : mode === 'pay' ? 'Collect Payment' : 'Add Credit'}
-          </button>
         </div>
 
         <div className="amount-keypad-mobile">
           <AmountKeypad value={amount} onChange={setAmount} />
         </div>
+
+        <button
+          className="btn btn-primary btn-block"
+          disabled={!(customerId || selectedCustomerId) || !amount || submitting}
+          onClick={handleSubmit}
+          style={{ flexShrink: 0, marginTop: 'auto' }}
+        >
+          {submitting ? <span className="spinner"></span> : editingTx ? 'Update' : mode === 'pay' ? 'Collect Payment' : 'Add Credit'}
+        </button>
       </div>
     </div>
   )
