@@ -102,7 +102,7 @@ export default function CustomerList() {
     const overdueDays = calculateOverdueDays(c.balance || 0, c.transactions, overdueStrategy, overdueThresholdDays)
     if (overdueDays > 0) return { label: 'Overdue', type: 'overdue', overdueDays }
     if ((c.balance || 0) > 0) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
-    return { label: 'Clear', type: 'clear', overdueDays: 0 }
+    return { label: 'Settled', type: 'clear', overdueDays: 0 }
   }
 
   const getFilteredSorted = () => {
