@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { formatCurrency, isCustomerOverdue, startOfDay, type OverdueStrategy } from '@/lib/utils'
+import { formatCurrency, isCustomerOverdue, startOfDay } from '@/lib/utils'
 
 interface SummaryData {
   todayCredit: number
@@ -24,11 +24,10 @@ export default function DashboardSummary() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('overdue_strategy, overdue_threshold_days')
+          .select('overdue_threshold_days')
           .eq('id', user.id)
           .single()
 
-        const strategy: OverdueStrategy = profileData?.overdue_strategy || 'fixed_period'
         const thresholdDays: number = profileData?.overdue_threshold_days || 7
 
         const { data: customers } = await supabase
@@ -78,7 +77,7 @@ export default function DashboardSummary() {
           const balance = (c.opening_balance || 0) + (balances[c.id] || 0)
           if (balance > 0) {
             outstanding += balance
-            if (isCustomerOverdue(balance, txByCustomer[c.id] || [], strategy, thresholdDays)) {
+            if (isCustomerOverdue(balance, txByCustomer[c.id] || [], thresholdDays)) {
               overdueCount += 1
             }
           }
