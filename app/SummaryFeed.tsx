@@ -59,7 +59,7 @@ export default function SummaryFeed() {
         } else {
           paymentsCount += 1
         }
-        netChange += tx.amount
+        netChange -= tx.amount
       }
 
       setData({ creditsCount, paymentsCount, netChange, loading: false, error: null })
@@ -127,7 +127,7 @@ export default function SummaryFeed() {
           </div>
           <div className="summary-feed-text">
             <div className="summary-feed-label">
-              Net change: {data.netChange >= 0 ? '+' : '-'}₹{formatCurrency(Math.abs(data.netChange))}
+              Net collection: {data.netChange >= 0 ? '+' : '-'}₹{formatCurrency(Math.abs(data.netChange))}
             </div>
             <div className="summary-feed-time">Today</div>
           </div>
