@@ -27,8 +27,8 @@ export default function Sidebar() {
       </div>
       <nav className="sidebar-nav">
         <Link href="/" className={`sidebar-item ${isActive('/') ? 'active' : ''}`}>
-          <i className="fa-solid fa-house"></i>
-          <span>Home</span>
+          <i className="fa-solid fa-chart-line"></i>
+          <span>Dashboard</span>
         </Link>
         <Link href="/customers" className={`sidebar-item ${isActive('/customers') ? 'active' : ''}`}>
           <i className="fa-solid fa-users"></i>
