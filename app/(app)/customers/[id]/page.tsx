@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { formatDate, formatTime, formatCurrency, getInitials, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
+import { formatDate, formatTime, formatCurrency, getInitials, calculateOverdueDays, daysUntilOverdue, type OverdueStrategy } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions, offlineWrite } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import { logActivity, formatLogEntry, type LogEntry } from '@/lib/transactionLog'
@@ -302,6 +302,12 @@ function CustomerDetailInner() {
     overdueStrategy,
     overdueThresholdDays
   )
+  const daysRemaining = daysUntilOverdue(
+    customer.balance,
+    transactions,
+    overdueStrategy,
+    overdueThresholdDays
+  )
 
   const filteredTransactions = transactions.filter((tx) => {
     if (txFilter === 'credit') return tx.amount > 0
@@ -327,8 +333,16 @@ function CustomerDetailInner() {
             )}
           </div>
         </div>
-        <div className={`overdue-badge ${overdueDays > 0 ? 'overdue' : 'clear'}`}>
-          {overdueDays > 0 ? `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue` : 'All clear'}
+        <div className={`overdue-badge ${overdueDays > 0 ? 'overdue' : customer.balance <= 0 ? 'clear' : 'active'}`}>
+          {overdueDays > 0
+            ? `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue`
+            : customer.balance <= 0
+            ? 'All clear'
+            : daysRemaining === 0
+            ? 'Due today'
+            : daysRemaining !== null
+            ? `Due in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}`
+            : 'Active'}
         </div>
       </div>
 
