@@ -2756,7 +2756,7 @@ input, select, button, textarea {
 .report-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
@@ -2806,11 +2806,11 @@ input, select, button, textarea {
 }
 
 .report-stat-value {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--text);
   line-height: 1.2;
-  margin: 12px 0;
+  margin: 8px 0;
 }
 
 .report-stat-sub {
