@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { setupAutoSync } from '@/lib/offline'
 import OfflineBanner from '@/app/OfflineBanner'
@@ -20,13 +19,10 @@ export default function AppLayout({
   children: React.ReactNode
 }) {
   const [user, setUser] = useState<User | null>(null)
-  const [shopName, setShopName] = useState('')
   const [loading, setLoading] = useState(true)
   const [showPicker, setShowPicker] = useState(false)
   const [activeModal, setActiveModal] = useState<'credit' | 'pay' | 'add-customer' | null>(null)
   const router = useRouter()
-  const pathname = usePathname()
-  const isSettingsPage = pathname.startsWith('/settings')
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -41,16 +37,6 @@ export default function AppLayout({
 
       setUser(session.user)
       setLoading(false)
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('shop_name')
-        .eq('id', session.user.id)
-        .single()
-
-      if (profileData?.shop_name) {
-        setShopName(profileData.shop_name)
-      }
     }
 
     checkAuth()
@@ -84,20 +70,6 @@ export default function AppLayout({
         <OfflineBanner />
         <div className="header">
           <h1 className="header-mobile-title">DawrBa<span className="dot"></span></h1>
-          <div className="header-actions">
-            {shopName && !isSettingsPage && (
-              <Link
-                href="/settings"
-                className="header-shop-name"
-                title={shopName}
-              >
-                {shopName}
-              </Link>
-            )}
-            <button className="header-logout-btn" onClick={async () => { await supabase.auth.signOut(); router.push('/'); }}>
-              <i className="fa-solid fa-right-from-bracket"></i>
-            </button>
-          </div>
         </div>
         <div className="content">
           {children}

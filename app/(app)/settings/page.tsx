@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const [overdueRemindersEnabled, setOverdueRemindersEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
   const [isDark, setIsDark] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const router = useRouter()
 
   const loadProfile = async () => {
@@ -86,6 +87,11 @@ export default function SettingsPage() {
     } catch {
       // Silent fail - local state is updated
     }
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
   }
 
   if (loading) {
@@ -223,6 +229,43 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Logout */}
+      <div style={{ marginBottom: '24px' }}>
+        <button className="profile-logout" onClick={() => setShowLogoutConfirm(true)}>
+          <div className="profile-logout-icon">
+            <i className="fa-solid fa-right-from-bracket"></i>
+          </div>
+          <div className="profile-logout-text">
+            <div className="profile-logout-title">Logout</div>
+            <div className="profile-logout-sub">Sign out of your account</div>
+          </div>
+        </button>
+      </div>
+
+      {showLogoutConfirm && (
+        <div className="modal-backdrop active" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()} style={{ maxHeight: 'none' }}>
+            <div className="modal-head">
+              <h3>Logout</h3>
+              <button className="modal-close" onClick={() => setShowLogoutConfirm(false)} aria-label="Close">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <p style={{ color: 'var(--muted)', marginBottom: '20px' }}>
+              Are you sure you want to logout?
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="btn btn-secondary btn-block" onClick={() => setShowLogoutConfirm(false)}>
+                Cancel
+              </button>
+              <button className="btn btn-primary btn-block" style={{ background: 'var(--red)' }} onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
