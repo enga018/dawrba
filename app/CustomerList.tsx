@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { getInitials, formatCurrency, formatDate, calculateOverdueDays, daysUntilOverdue, type OverdueStrategy } from '@/lib/utils'
+import { getInitials, formatCurrency, formatDate, calculateOverdueDays, daysUntilOverdue } from '@/lib/utils'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
 import { formatRelativeTime } from '@/lib/utils'
 import TransactionModal from '@/app/TransactionModal'
@@ -26,7 +26,6 @@ export default function CustomerList() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [visibleCount, setVisibleCount] = useState(20)
-  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('fixed_period')
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
   const [modalTarget, setModalTarget] = useState<{ id: string; name: string; balance: number } | null>(null)
   const [modalMode, setModalMode] = useState<'credit' | 'pay' | null>(null)
@@ -38,11 +37,10 @@ export default function CustomerList() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('overdue_strategy, overdue_threshold_days')
+        .select('overdue_threshold_days')
         .eq('id', user.id)
         .single()
 
-      if (profileData?.overdue_strategy) setOverdueStrategy(profileData.overdue_strategy)
       if (profileData?.overdue_threshold_days) setOverdueThresholdDays(profileData.overdue_threshold_days)
 
       const { data: customersData, error: customersError } = await supabase
@@ -100,13 +98,13 @@ export default function CustomerList() {
 
   const getCustomerStatus = (c: Customer): { label: string; type: 'overdue' | 'due_today' | 'due_soon' | 'active' | 'clear'; overdueDays: number } => {
     const balance = c.balance || 0
-    const overdueDays = calculateOverdueDays(balance, c.transactions, overdueStrategy, overdueThresholdDays)
+    const overdueDays = calculateOverdueDays(balance, c.transactions, overdueThresholdDays)
     if (overdueDays > 0) return { label: 'Overdue', type: 'overdue', overdueDays }
 
     if (balance <= 0) return { label: 'Settled', type: 'clear', overdueDays: 0 }
 
     // Customer still owes money but hasn't crossed the overdue threshold yet
-    const remaining = daysUntilOverdue(balance, c.transactions, overdueStrategy, overdueThresholdDays)
+    const remaining = daysUntilOverdue(balance, c.transactions, overdueThresholdDays)
     if (remaining === 0) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
     if (remaining !== null && remaining <= 2) return { label: 'Due soon', type: 'due_soon', overdueDays: 0 }
 

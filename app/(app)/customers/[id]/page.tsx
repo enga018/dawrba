@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { formatDate, formatTime, formatCurrency, getInitials, calculateOverdueDays, daysUntilOverdue, type OverdueStrategy } from '@/lib/utils'
+import { formatDate, formatTime, formatCurrency, getInitials, calculateOverdueDays, daysUntilOverdue } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions, offlineWrite } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import { logActivity, formatLogEntry, type LogEntry } from '@/lib/transactionLog'
@@ -54,7 +54,6 @@ function CustomerDetailInner() {
   const [editPhone, setEditPhone] = useState('')
   const [editOpeningBalance, setEditOpeningBalance] = useState('')
   const [savingCustomer, setSavingCustomer] = useState(false)
-  const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('fixed_period')
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
@@ -88,11 +87,10 @@ function CustomerDetailInner() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('overdue_strategy, overdue_threshold_days')
+        .select('overdue_threshold_days')
         .eq('id', user.id)
         .single()
 
-      if (profileData?.overdue_strategy) setOverdueStrategy(profileData.overdue_strategy)
       if (profileData?.overdue_threshold_days) setOverdueThresholdDays(profileData.overdue_threshold_days)
 
       const { data: customerData, error: customerError } = await supabase
@@ -299,13 +297,11 @@ function CustomerDetailInner() {
   const overdueDays = calculateOverdueDays(
     customer.balance,
     transactions,
-    overdueStrategy,
     overdueThresholdDays
   )
   const daysRemaining = daysUntilOverdue(
     customer.balance,
     transactions,
-    overdueStrategy,
     overdueThresholdDays
   )
 

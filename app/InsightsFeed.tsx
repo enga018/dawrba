@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { formatCurrency, startOfDay, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
+import { formatCurrency, startOfDay, calculateOverdueDays } from '@/lib/utils'
 
 type IconColor = 'red' | 'orange' | 'green' | 'purple' | 'blue'
 
@@ -40,10 +40,9 @@ export default function InsightsFeed() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('overdue_strategy, overdue_threshold_days')
+        .select('overdue_threshold_days')
         .eq('id', user.id)
         .single()
-      const strategy: OverdueStrategy = profileData?.overdue_strategy || 'fixed_period'
       const thresholdDays: number = profileData?.overdue_threshold_days || 7
 
       const { data: customers, error: custError } = await supabase
@@ -65,7 +64,7 @@ export default function InsightsFeed() {
         .in('customer_id', ids)
       if (txError) throw txError
 
-      setInsights(buildInsights(customers as CustomerRow[], (txData || []) as TxRow[], strategy, thresholdDays))
+      setInsights(buildInsights(customers as CustomerRow[], (txData || []) as TxRow[], thresholdDays))
       setLoading(false)
     } catch (err) {
       console.error('Error loading insights feed:', err)
@@ -128,7 +127,6 @@ export default function InsightsFeed() {
 function buildInsights(
   customers: CustomerRow[],
   txData: TxRow[],
-  strategy: OverdueStrategy,
   thresholdDays: number
 ): Insight[] {
   const nameById = new Map(customers.map((c) => [c.id, c.name]))
@@ -199,7 +197,7 @@ function buildInsights(
 
   // Priority 0: Overdue alert - customers who crossed into overdue for the first time today
   const newlyOverdue = customers.filter((c) => {
-    const days = calculateOverdueDays(balances[c.id] || 0, txByCustomer[c.id] || [], strategy, thresholdDays)
+    const days = calculateOverdueDays(balances[c.id] || 0, txByCustomer[c.id] || [], thresholdDays)
     return days === 1
   })
   if (newlyOverdue.length > 0) {

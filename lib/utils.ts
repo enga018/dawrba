@@ -95,42 +95,29 @@ export function daysSince(dateStr: string): number {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24))
 }
 
-export type OverdueStrategy = 'oldest_credit' | 'fixed_period'
-
 interface Transaction {
   amount: number
   date?: string
   created_at: string
 }
 
-function daysElapsedSinceReference(transactions: Transaction[], strategy: OverdueStrategy): number | null {
-  if (strategy === 'fixed_period') {
-    const lastTx = [...transactions].sort((a, b) => {
-      const dateA = new Date(a.date || a.created_at).getTime()
-      const dateB = new Date(b.date || b.created_at).getTime()
-      return dateB - dateA
-    })[0]
-    if (!lastTx) return null
-    return daysSince(lastTx.date || lastTx.created_at)
-  }
-
-  const credits = transactions.filter((t) => t.amount > 0)
-  if (credits.length === 0) return null
-  const oldest = credits.reduce((min, t) => {
-    const d = new Date(t.date || t.created_at).getTime()
-    return d < min ? d : min
-  }, Infinity)
-  return daysSince(new Date(oldest).toISOString())
+function daysElapsedSinceReference(transactions: Transaction[]): number | null {
+  const lastTx = [...transactions].sort((a, b) => {
+    const dateA = new Date(a.date || a.created_at).getTime()
+    const dateB = new Date(b.date || b.created_at).getTime()
+    return dateB - dateA
+  })[0]
+  if (!lastTx) return null
+  return daysSince(lastTx.date || lastTx.created_at)
 }
 
 export function calculateOverdueDays(
   balance: number,
   transactions: Transaction[],
-  strategy: OverdueStrategy = 'fixed_period',
   thresholdDays: number = 7
 ): number {
   if (balance <= 0) return 0
-  const days = daysElapsedSinceReference(transactions, strategy)
+  const days = daysElapsedSinceReference(transactions)
   if (days === null) return 0
   return days > thresholdDays ? days - thresholdDays : 0
 }
@@ -138,10 +125,9 @@ export function calculateOverdueDays(
 export function isCustomerOverdue(
   balance: number,
   transactions: Transaction[],
-  strategy: OverdueStrategy = 'fixed_period',
   thresholdDays: number = 7
 ): boolean {
-  return calculateOverdueDays(balance, transactions, strategy, thresholdDays) > 0
+  return calculateOverdueDays(balance, transactions, thresholdDays) > 0
 }
 
 /* Days of grace period left before a customer becomes overdue (0 = last day
@@ -150,11 +136,10 @@ export function isCustomerOverdue(
 export function daysUntilOverdue(
   balance: number,
   transactions: Transaction[],
-  strategy: OverdueStrategy = 'fixed_period',
   thresholdDays: number = 7
 ): number | null {
   if (balance <= 0) return null
-  const days = daysElapsedSinceReference(transactions, strategy)
+  const days = daysElapsedSinceReference(transactions)
   if (days === null) return null
   const remaining = thresholdDays - days
   return remaining >= 0 ? remaining : null

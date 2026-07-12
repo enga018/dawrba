@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { formatCurrency, isCustomerOverdue, daysUntilOverdue, startOfDay, startOfWeek, type OverdueStrategy } from '@/lib/utils'
+import { formatCurrency, isCustomerOverdue, daysUntilOverdue, startOfDay, startOfWeek } from '@/lib/utils'
 
 type Period = 'today' | 'week' | 'month'
 
@@ -73,11 +73,10 @@ export default function ReportsPage() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('weekly_report_day, overdue_strategy, overdue_threshold_days')
+          .select('weekly_report_day, overdue_threshold_days')
           .eq('id', user.id)
           .single()
 
-        const strategy: OverdueStrategy = profileData?.overdue_strategy || 'fixed_period'
         const thresholdDays: number = profileData?.overdue_threshold_days || 7
         const weekStartDay: 0 | 1 = profileData?.weekly_report_day === 'monday' ? 1 : 0
 
@@ -215,9 +214,9 @@ export default function ReportsPage() {
 
           if (balance > 0) {
             outstanding += balance
-            if (isCustomerOverdue(balance, txByCustomer[c.id] || [], strategy, thresholdDays)) {
+            if (isCustomerOverdue(balance, txByCustomer[c.id] || [], thresholdDays)) {
               overdueList.push({ name: c.name, balance })
-            } else if (daysUntilOverdue(balance, txByCustomer[c.id] || [], strategy, thresholdDays) === 0) {
+            } else if (daysUntilOverdue(balance, txByCustomer[c.id] || [], thresholdDays) === 0) {
               dueTodayCount += 1
             }
           }

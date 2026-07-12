@@ -24,7 +24,7 @@ export default function BusinessSettingsPage() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('weekly_report_day, overdue_strategy, overdue_threshold_days')
+        .select('weekly_report_day, overdue_threshold_days')
         .eq('id', user.id)
         .single()
 
@@ -51,7 +51,6 @@ export default function BusinessSettingsPage() {
           const { error } = await supabase.from('profiles').upsert({
             id: user.id,
             weekly_report_day: weeklyReportDay,
-            overdue_strategy: 'fixed_period',
             overdue_threshold_days: overdueThresholdDays,
           })
           if (error) throw error
@@ -63,7 +62,6 @@ export default function BusinessSettingsPage() {
           data: {
             id: user.id,
             weekly_report_day: weeklyReportDay,
-            overdue_strategy: 'fixed_period',
             overdue_threshold_days: overdueThresholdDays,
           },
         }

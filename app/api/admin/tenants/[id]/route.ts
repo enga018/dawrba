@@ -16,10 +16,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('shop_name, phone, weekly_report_day, overdue_strategy, overdue_threshold_days')
+      .select('shop_name, phone, weekly_report_day, overdue_threshold_days')
       .eq('id', id)
       .single()
-    const profile = (profileData as { shop_name: string | null; phone: string | null; weekly_report_day: number | null; overdue_strategy: string | null; overdue_threshold_days: number | null } | null)
+    const profile = (profileData as { shop_name: string | null; phone: string | null; weekly_report_day: number | null; overdue_threshold_days: number | null } | null)
     if (profileError) throw profileError
 
     const { data: rawCustomers, error: customersError } = await supabaseAdmin

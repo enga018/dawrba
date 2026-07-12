@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { formatCurrency, getInitials, isCustomerOverdue, type OverdueStrategy } from '@/lib/utils'
+import { formatCurrency, getInitials, isCustomerOverdue } from '@/lib/utils'
 
 interface AttentionCustomer {
   id: string
@@ -24,11 +24,10 @@ export default function NeedsAttention() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('overdue_strategy, overdue_threshold_days')
+          .select('overdue_threshold_days')
           .eq('id', user.id)
           .single()
 
-        const strategy: OverdueStrategy = profileData?.overdue_strategy || 'fixed_period'
         const thresholdDays: number = profileData?.overdue_threshold_days || 7
 
         const { data: customersData } = await supabase
@@ -60,7 +59,7 @@ export default function NeedsAttention() {
             balance: (c.opening_balance || 0) + (balances[c.id] || 0),
             transactions: txByCustomer[c.id] || [],
           }))
-          .filter((c) => isCustomerOverdue(c.balance, c.transactions, strategy, thresholdDays))
+          .filter((c) => isCustomerOverdue(c.balance, c.transactions, thresholdDays))
           .sort((a, b) => b.balance - a.balance)
           .slice(0, 3)
           .map(({ transactions, ...rest }) => rest)
