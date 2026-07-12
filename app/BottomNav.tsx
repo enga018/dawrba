@@ -18,8 +18,8 @@ export default function BottomNav({ onAddClick }: BottomNavProps) {
   return (
     <nav className="bottom-nav">
       <Link href="/" className={`bottom-nav-item ${isActive('/') ? 'active' : ''}`}>
-        <i className="fa-solid fa-house"></i>
-        <span>Home</span>
+        <i className="fa-solid fa-chart-line"></i>
+        <span>Dashboard</span>
       </Link>
       <Link href="/customers" className={`bottom-nav-item ${isActive('/customers') ? 'active' : ''}`}>
         <i className="fa-solid fa-users"></i>
