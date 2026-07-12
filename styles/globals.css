@@ -2776,7 +2776,7 @@ input, select, button, textarea {
 }
 
 .report-stat-label {
-  font-size: 1rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text);
 }
@@ -2814,7 +2814,7 @@ input, select, button, textarea {
 }
 
 .report-stat-sub {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--muted);
   margin-top: 2px;
@@ -2824,9 +2824,9 @@ input, select, button, textarea {
 }
 
 .report-change {
-  font-size: 0.8125rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 6px;
 }
 
@@ -2893,8 +2893,20 @@ input, select, button, textarea {
     padding: 16px;
   }
 
+  .report-stat-label {
+    font-size: 1rem;
+  }
+
   .report-stat-value {
     font-size: 1.8rem;
+  }
+
+  .report-stat-sub {
+    font-size: 0.875rem;
+  }
+
+  .report-change {
+    font-size: 0.8125rem;
   }
 }
 
