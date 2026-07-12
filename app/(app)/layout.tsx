@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { setupAutoSync } from '@/lib/offline'
 import OfflineBanner from '@/app/OfflineBanner'
+import AppHeader from '@/app/AppHeader'
 import BottomNav from '@/app/BottomNav'
 import Sidebar from '@/app/Sidebar'
 import FloatingAddButton from '@/app/FloatingAddButton'
@@ -68,9 +69,7 @@ export default function AppLayout({
       <Sidebar />
       <div className="app-main">
         <OfflineBanner />
-        <div className="header">
-          <h1 className="header-mobile-title">DawrBa<span className="dot"></span></h1>
-        </div>
+        <AppHeader />
         <div className="content">
           {children}
         </div>

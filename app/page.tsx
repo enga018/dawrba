@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import LandingPage from './LandingPage'
 import DashboardPage from './DashboardPage'
 import OfflineBanner from './OfflineBanner'
-import ThemeToggle from './ThemeToggle'
+import AppHeader from './AppHeader'
 import BottomNav from './BottomNav'
 import Sidebar from './Sidebar'
 import TransactionModal from './TransactionModal'
@@ -14,16 +14,8 @@ import AddTransactionPicker from './AddTransactionPicker'
 import FabMenu from './FabMenu'
 import type { User } from '@supabase/supabase-js'
 
-function getGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good Morning'
-  if (hour < 17) return 'Good Afternoon'
-  return 'Good Evening'
-}
-
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
-  const [shopName, setShopName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [showPicker, setShowPicker] = useState(false)
   const [activeModal, setActiveModal] = useState<'credit' | 'pay' | 'add-customer' | null>(null)
@@ -37,16 +29,6 @@ export default function Home() {
 
         if (session?.user) {
           setUser(session.user)
-
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('shop_name')
-            .eq('id', session.user.id)
-            .single()
-
-          if (profileData?.shop_name) {
-            setShopName(profileData.shop_name)
-          }
         }
         setIsLoading(false)
       } catch {
@@ -79,12 +61,7 @@ export default function Home() {
         <Sidebar />
         <div className="app-main">
           <OfflineBanner />
-          <div className="header">
-            <div className="header-left">
-              <h1 className="header-greeting">{getGreeting()}</h1>
-              {shopName && <div className="header-shop-label">{shopName}</div>}
-            </div>
-          </div>
+          <AppHeader />
           <div className="content content-wide">
             <DashboardPage />
           </div>
