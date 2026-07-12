@@ -337,7 +337,7 @@ function CustomerDetailInner() {
           {overdueDays > 0
             ? `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue`
             : customer.balance <= 0
-            ? 'All clear'
+            ? 'Settled'
             : daysRemaining === 0
             ? 'Due today'
             : daysRemaining !== null
