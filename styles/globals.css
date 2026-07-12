@@ -2654,49 +2654,6 @@ input, select, button, textarea {
   flex-direction: column;
 }
 
-.activity-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.activity-item:last-child { border-bottom: none; }
-
-.activity-body {
-  min-width: 0;
-}
-
-.activity-title {
-  font-size: 0.85rem;
-  color: var(--text);
-  line-height: 1.35;
-}
-
-.activity-customer {
-  font-weight: 700;
-  color: var(--blue);
-  text-decoration: none;
-}
-
-.activity-customer:hover { text-decoration: underline; }
-
-.activity-action {
-  color: var(--muted);
-  font-weight: 500;
-}
-
-.activity-meta {
-  font-size: 0.75rem;
-  color: var(--meta);
-  margin-top: 2px;
-}
-
-.activity-amount {
-  font-weight: 600;
-}
-
 /* ─── Summary cards grid ────────────────────────────────────────── */
 .summary-grid {
   display: grid;
