@@ -2896,6 +2896,12 @@ input, select, button, textarea {
   margin-bottom: 4px;
 }
 
+.report-section-sub {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
 .report-overdue-row {
   display: flex;
   justify-content: space-between;
