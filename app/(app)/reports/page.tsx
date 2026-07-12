@@ -32,7 +32,6 @@ interface ReportData extends PeriodStats {
   highestCollection: HighestTx | null
   collectionRateAllTime: number
   overduePercent: number
-  outstandingChangeThisMonth: number
   allTimeHighestCredit: HighestTx | null
   allTimeHighestCollection: HighestTx | null
   highestOutstanding: HighestTx | null
@@ -97,7 +96,6 @@ export default function ReportsPage() {
             highestCollection: null,
             collectionRateAllTime: 0,
             overduePercent: 0,
-            outstandingChangeThisMonth: 0,
             allTimeHighestCredit: null,
             allTimeHighestCollection: null,
             highestOutstanding: null,
@@ -202,7 +200,6 @@ export default function ReportsPage() {
         }
 
         let outstanding = 0
-        let outstandingAtMonthStart = 0
         let fullySettledThisMonth = 0
         let dueTodayCount = 0
         let highestOutstandingTx: { amount: number; customerId: string } | null = null
@@ -225,7 +222,6 @@ export default function ReportsPage() {
             }
           }
 
-          if (balanceBeforeMonth > 0) outstandingAtMonthStart += balanceBeforeMonth
           if (balanceBeforeMonth > 0 && balance <= 0) fullySettledThisMonth += 1
 
           if (!highestOutstandingTx || balance > highestOutstandingTx.amount) {
@@ -270,7 +266,6 @@ export default function ReportsPage() {
             : null,
           collectionRateAllTime,
           overduePercent,
-          outstandingChangeThisMonth: outstanding - outstandingAtMonthStart,
           allTimeHighestCredit: allTimeHighestCreditTx
             ? { amount: allTimeHighestCreditTx.amount, customerName: nameById.get(allTimeHighestCreditTx.customerId) || 'Unknown' }
             : null,
@@ -496,22 +491,6 @@ export default function ReportsPage() {
                   </div>
                   <div className="report-stat-value">{data.overduePercent}%</div>
                   <div className="report-stat-sub">of all customers</div>
-                </div>
-
-                <div className="report-stat-card">
-                  <div className="report-stat-header">
-                    <span className="report-stat-label">Outstanding Change</span>
-                    <span className="report-stat-icon report-stat-icon-blue">
-                      <i className="fa-solid fa-scale-balanced"></i>
-                    </span>
-                  </div>
-                  <div
-                    className="report-stat-value"
-                    style={{ color: data.outstandingChangeThisMonth <= 0 ? 'var(--green)' : 'var(--red)' }}
-                  >
-                    {data.outstandingChangeThisMonth <= 0 ? '-' : '+'}₹{formatCurrency(Math.abs(data.outstandingChangeThisMonth))}
-                  </div>
-                  <div className="report-stat-sub">Since start of month</div>
                 </div>
 
                 <div className="report-stat-card">
