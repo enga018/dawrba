@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { formatDate, formatCurrency, getInitials, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
+import { formatDate, formatTime, formatCurrency, getInitials, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
 import { cacheTransactions, getCachedTransactions, offlineWrite } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import { logActivity, formatLogEntry, type LogEntry } from '@/lib/transactionLog'
@@ -59,8 +59,6 @@ function CustomerDetailInner() {
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
   const [logLoading, setLogLoading] = useState(true)
-  const [logLoadingMore, setLogLoadingMore] = useState(false)
-  const [logHasMore, setLogHasMore] = useState(false)
 
   const LOG_PAGE_SIZE = 5
 
@@ -149,14 +147,13 @@ function CustomerDetailInner() {
     const load = async () => {
       const page = await loadLogPage(0)
       setLogEntries(page)
-      setLogHasMore(page.length === LOG_PAGE_SIZE)
       setLogLoading(false)
     }
     load()
   }, [loadLogPage])
 
   useEffect(() => {
-    const onRefresh = () => { loadData(); loadLogPage(0).then((page) => { setLogEntries(page); setLogHasMore(page.length === LOG_PAGE_SIZE) }) }
+    const onRefresh = () => { loadData(); loadLogPage(0).then(setLogEntries) }
     window.addEventListener('dawrba:refresh', onRefresh)
     return () => window.removeEventListener('dawrba:refresh', onRefresh)
   }, [loadData, loadLogPage])
@@ -166,14 +163,6 @@ function CustomerDetailInner() {
     window.addEventListener('online', handleOnline)
     return () => window.removeEventListener('online', handleOnline)
   }, [loadData])
-
-  const handleSeeMoreLog = async () => {
-    setLogLoadingMore(true)
-    const page = await loadLogPage(logEntries.length)
-    setLogEntries((prev) => [...prev, ...page])
-    setLogHasMore(page.length === LOG_PAGE_SIZE)
-    setLogLoadingMore(false)
-  }
 
   const handleEdit = (tx: Transaction) => {
     setEditingTx(tx)
@@ -347,13 +336,13 @@ function CustomerDetailInner() {
         <div className="balance-stat">
           <div className="balance-stat-body">
             <span className="balance-stat-label">Total Credit</span>
-            <span className="balance-stat-value red">₹{formatCurrency(totalCredit)}</span>
+            <span className="balance-stat-value">₹{formatCurrency(totalCredit)}</span>
           </div>
         </div>
         <div className="balance-stat">
           <div className="balance-stat-body">
             <span className="balance-stat-label">Last Payment</span>
-            <span className="balance-stat-value blue">
+            <span className="balance-stat-value">
               {lastPayment > 0 ? `₹${formatCurrency(lastPayment)}` : 'Never'}
             </span>
           </div>
@@ -428,7 +417,10 @@ function CustomerDetailInner() {
                         </div>
                         <div>
                           <div className="tx-note">{isCredit ? 'Credit added' : 'Payment collected'}</div>
-                          <div className="tx-date">{formatDate(tx.date)}{tx.note ? ` · ${tx.note}` : ''}</div>
+                          <div className="tx-date">
+                            {formatDate(tx.date)} · {formatTime(tx.created_at)}
+                            {tx.note ? ` · ${tx.note}` : ''}
+                          </div>
                         </div>
                       </div>
                       <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
@@ -466,28 +458,18 @@ function CustomerDetailInner() {
               <p>No activity yet.</p>
             </div>
           ) : (
-            <>
-              <div className="activity-list">
-                {logEntries.map((entry) => (
-                  <div key={entry.id} style={{
-                    padding: '10px 0',
-                    borderBottom: '1px solid var(--border)',
-                    fontSize: '0.88rem',
-                    color: 'var(--text)',
-                  }}>
-                    {formatLogEntry(entry)}
-                  </div>
-                ))}
-              </div>
-              {logHasMore && (
-                <button className="btn btn-secondary btn-sm btn-block"
-                  style={{ marginTop: '12px' }}
-                  disabled={logLoadingMore}
-                  onClick={handleSeeMoreLog}>
-                  {logLoadingMore ? <span className="spinner"></span> : 'See more'}
-                </button>
-              )}
-            </>
+            <div className="activity-list">
+              {logEntries.map((entry) => (
+                <div key={entry.id} style={{
+                  padding: '10px 0',
+                  borderBottom: '1px solid var(--border)',
+                  fontSize: '0.88rem',
+                  color: 'var(--text)',
+                }}>
+                  {formatLogEntry(entry)}
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
