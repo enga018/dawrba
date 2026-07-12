@@ -257,8 +257,7 @@ export default function CustomerList() {
                     </span>
                     <span className={`cc-status-text ${status.type}`}>
                       {status.type === 'overdue' && `${status.overdueDays} day${status.overdueDays === 1 ? '' : 's'} overdue`}
-                      {status.type === 'due_today' && 'Due today'}
-                      {status.type === 'clear' && (customer.lastTxDate ? `Last: ${formatRelativeTime(customer.lastTxDate)}` : 'No transactions')}
+                      {status.type !== 'overdue' && (customer.lastTxDate ? `Last: ${formatRelativeTime(customer.lastTxDate)}` : 'No transactions')}
                     </span>
                   </div>
 
