@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { formatCurrency, isCustomerOverdue, startOfDay, startOfWeek, type OverdueStrategy } from '@/lib/utils'
+import { formatCurrency, isCustomerOverdue, daysUntilOverdue, startOfDay, startOfWeek, type OverdueStrategy } from '@/lib/utils'
 
 type Period = 'today' | 'week' | 'month'
 
@@ -27,6 +27,20 @@ interface ReportData extends PeriodStats {
   overdueCustomers: OverdueCustomer[]
   highestCredit: HighestTx | null
   highestCollection: HighestTx | null
+  collectionRateAllTime: number
+  overduePercent: number
+  outstandingChangeThisMonth: number
+  monthHighestCredit: HighestTx | null
+  monthHighestCollection: HighestTx | null
+  monthNetRecovery: number
+  allTimeHighestCredit: HighestTx | null
+  allTimeHighestCollection: HighestTx | null
+  highestOutstanding: HighestTx | null
+  mostPayments: HighestTx | null
+  fullySettledThisMonth: number
+  overdueCount: number
+  dueTodayCount: number
+  overdueAmount: number
 }
 
 function getPeriodLabel(period: Period): string {
@@ -81,6 +95,20 @@ export default function ReportsPage() {
             overdueCustomers: [],
             highestCredit: null,
             highestCollection: null,
+            collectionRateAllTime: 0,
+            overduePercent: 0,
+            outstandingChangeThisMonth: 0,
+            monthHighestCredit: null,
+            monthHighestCollection: null,
+            monthNetRecovery: 0,
+            allTimeHighestCredit: null,
+            allTimeHighestCollection: null,
+            highestOutstanding: null,
+            mostPayments: null,
+            fullySettledThisMonth: 0,
+            overdueCount: 0,
+            dueTodayCount: 0,
+            overdueAmount: 0,
           })
           return
         }
@@ -105,51 +133,127 @@ export default function ReportsPage() {
           const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
           return prevMonth.getTime()
         })()
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
 
         let creditGiven = 0, collected = 0
         let prevCredit = 0, prevCollected = 0
         let highestCreditTx: { amount: number; customerId: string } | null = null
         let highestCollectionTx: { amount: number; customerId: string } | null = null
+
+        let monthCredit = 0, monthCollected = 0
+        let monthHighestCreditTx: { amount: number; customerId: string } | null = null
+        let monthHighestCollectionTx: { amount: number; customerId: string } | null = null
+
+        let totalCreditAllTime = 0, totalCollectedAllTime = 0
+        let allTimeHighestCreditTx: { amount: number; customerId: string } | null = null
+        let allTimeHighestCollectionTx: { amount: number; customerId: string } | null = null
+        const collectedByCustomer: Record<string, number> = {}
+
         const balances: Record<string, number> = {}
+        const balancesBeforeMonth: Record<string, number> = {}
         const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
 
         for (const t of txData || []) {
-          balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
+          const amount = t.amount || 0
+          balances[t.customer_id] = (balances[t.customer_id] || 0) + amount
           if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
           txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
           const ts = new Date(t.created_at).getTime()
-          if (ts >= periodStart) {
-            if (t.amount > 0) {
-              creditGiven += t.amount
-              if (!highestCreditTx || t.amount > highestCreditTx.amount) {
-                highestCreditTx = { amount: t.amount, customerId: t.customer_id }
+
+          if (ts < monthStart) {
+            balancesBeforeMonth[t.customer_id] = (balancesBeforeMonth[t.customer_id] || 0) + amount
+          }
+
+          if (amount > 0) {
+            totalCreditAllTime += amount
+            if (!allTimeHighestCreditTx || amount > allTimeHighestCreditTx.amount) {
+              allTimeHighestCreditTx = { amount, customerId: t.customer_id }
+            }
+          } else {
+            const abs = Math.abs(amount)
+            totalCollectedAllTime += abs
+            collectedByCustomer[t.customer_id] = (collectedByCustomer[t.customer_id] || 0) + abs
+            if (!allTimeHighestCollectionTx || abs > allTimeHighestCollectionTx.amount) {
+              allTimeHighestCollectionTx = { amount: abs, customerId: t.customer_id }
+            }
+          }
+
+          if (ts >= monthStart) {
+            if (amount > 0) {
+              monthCredit += amount
+              if (!monthHighestCreditTx || amount > monthHighestCreditTx.amount) {
+                monthHighestCreditTx = { amount, customerId: t.customer_id }
               }
             } else {
-              const abs = Math.abs(t.amount)
+              const abs = Math.abs(amount)
+              monthCollected += abs
+              if (!monthHighestCollectionTx || abs > monthHighestCollectionTx.amount) {
+                monthHighestCollectionTx = { amount: abs, customerId: t.customer_id }
+              }
+            }
+          }
+
+          if (ts >= periodStart) {
+            if (amount > 0) {
+              creditGiven += amount
+              if (!highestCreditTx || amount > highestCreditTx.amount) {
+                highestCreditTx = { amount, customerId: t.customer_id }
+              }
+            } else {
+              const abs = Math.abs(amount)
               collected += abs
               if (!highestCollectionTx || abs > highestCollectionTx.amount) {
                 highestCollectionTx = { amount: abs, customerId: t.customer_id }
               }
             }
           } else if (ts >= prevStart && ts <= prevEnd) {
-            if (t.amount > 0) prevCredit += t.amount
-            else prevCollected += Math.abs(t.amount)
+            if (amount > 0) prevCredit += amount
+            else prevCollected += Math.abs(amount)
           }
         }
 
         let outstanding = 0
+        let outstandingAtMonthStart = 0
+        let fullySettledThisMonth = 0
+        let dueTodayCount = 0
+        let highestOutstandingTx: { amount: number; customerId: string } | null = null
+        let mostPaymentsTx: { amount: number; customerId: string } | null = null
         const overdueList: OverdueCustomer[] = []
+
         for (const c of customers || []) {
-          const balance = (c.opening_balance || 0) + (balances[c.id] || 0)
+          const ob = c.opening_balance || 0
+          totalCreditAllTime += ob
+
+          const balance = ob + (balances[c.id] || 0)
+          const balanceBeforeMonth = ob + (balancesBeforeMonth[c.id] || 0)
+
           if (balance > 0) {
             outstanding += balance
             if (isCustomerOverdue(balance, txByCustomer[c.id] || [], strategy, thresholdDays)) {
               overdueList.push({ name: c.name, balance })
+            } else if (daysUntilOverdue(balance, txByCustomer[c.id] || [], strategy, thresholdDays) === 0) {
+              dueTodayCount += 1
             }
+          }
+
+          if (balanceBeforeMonth > 0) outstandingAtMonthStart += balanceBeforeMonth
+          if (balanceBeforeMonth > 0 && balance <= 0) fullySettledThisMonth += 1
+
+          if (!highestOutstandingTx || balance > highestOutstandingTx.amount) {
+            highestOutstandingTx = { amount: balance, customerId: c.id }
+          }
+
+          const totalPaidByCustomer = collectedByCustomer[c.id] || 0
+          if (totalPaidByCustomer > 0 && (!mostPaymentsTx || totalPaidByCustomer > mostPaymentsTx.amount)) {
+            mostPaymentsTx = { amount: totalPaidByCustomer, customerId: c.id }
           }
         }
 
         overdueList.sort((a, b) => b.balance - a.balance)
+
+        const collectionRateAllTime = totalCreditAllTime > 0 ? Math.round((totalCollectedAllTime / totalCreditAllTime) * 100) : 0
+        const overduePercent = (customers || []).length > 0 ? Math.round((overdueList.length / (customers || []).length) * 100) : 0
+        const overdueAmount = overdueList.reduce((sum, c) => sum + c.balance, 0)
 
         setData({
           creditGiven,
@@ -163,6 +267,32 @@ export default function ReportsPage() {
           highestCollection: highestCollectionTx
             ? { amount: highestCollectionTx.amount, customerName: nameById.get(highestCollectionTx.customerId) || 'Unknown' }
             : null,
+          collectionRateAllTime,
+          overduePercent,
+          outstandingChangeThisMonth: outstanding - outstandingAtMonthStart,
+          monthHighestCredit: monthHighestCreditTx
+            ? { amount: monthHighestCreditTx.amount, customerName: nameById.get(monthHighestCreditTx.customerId) || 'Unknown' }
+            : null,
+          monthHighestCollection: monthHighestCollectionTx
+            ? { amount: monthHighestCollectionTx.amount, customerName: nameById.get(monthHighestCollectionTx.customerId) || 'Unknown' }
+            : null,
+          monthNetRecovery: monthCollected - monthCredit,
+          allTimeHighestCredit: allTimeHighestCreditTx
+            ? { amount: allTimeHighestCreditTx.amount, customerName: nameById.get(allTimeHighestCreditTx.customerId) || 'Unknown' }
+            : null,
+          allTimeHighestCollection: allTimeHighestCollectionTx
+            ? { amount: allTimeHighestCollectionTx.amount, customerName: nameById.get(allTimeHighestCollectionTx.customerId) || 'Unknown' }
+            : null,
+          highestOutstanding: highestOutstandingTx && highestOutstandingTx.amount > 0
+            ? { amount: highestOutstandingTx.amount, customerName: nameById.get(highestOutstandingTx.customerId) || 'Unknown' }
+            : null,
+          mostPayments: mostPaymentsTx
+            ? { amount: mostPaymentsTx.amount, customerName: nameById.get(mostPaymentsTx.customerId) || 'Unknown' }
+            : null,
+          fullySettledThisMonth,
+          overdueCount: overdueList.length,
+          dueTodayCount,
+          overdueAmount,
         })
       } catch {
         // silent
@@ -301,6 +431,207 @@ export default function ReportsPage() {
                   </div>
                 ))
               )}
+            </div>
+
+            <div className="report-section">
+              <h3 className="report-section-title">Key Performance</h3>
+              <div className="report-stats-grid">
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Collection Rate</span>
+                    <span className="report-stat-icon report-stat-icon-green">
+                      <i className="fa-solid fa-percent"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">{data.collectionRateAllTime}%</div>
+                  <div className="report-stat-sub">All time</div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Overdue %</span>
+                    <span className="report-stat-icon report-stat-icon-orange">
+                      <i className="fa-solid fa-triangle-exclamation"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">{data.overduePercent}%</div>
+                  <div className="report-stat-sub">of all customers</div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Outstanding Change</span>
+                    <span className="report-stat-icon report-stat-icon-blue">
+                      <i className="fa-solid fa-scale-balanced"></i>
+                    </span>
+                  </div>
+                  <div
+                    className="report-stat-value"
+                    style={{ color: data.outstandingChangeThisMonth <= 0 ? 'var(--green)' : 'var(--red)' }}
+                  >
+                    {data.outstandingChangeThisMonth <= 0 ? '-' : '+'}₹{formatCurrency(Math.abs(data.outstandingChangeThisMonth))}
+                  </div>
+                  <div className="report-stat-sub">Since start of month</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="report-section">
+              <h3 className="report-section-title">This Month Highlights</h3>
+              <div className="report-stats-grid">
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Largest Credit</span>
+                    <span className="report-stat-icon report-stat-icon-blue">
+                      <i className="fa-solid fa-award"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">₹{formatCurrency(data.monthHighestCredit?.amount ?? 0)}</div>
+                  <div className="report-stat-sub">
+                    {data.monthHighestCredit ? data.monthHighestCredit.customerName : 'No credit this month'}
+                  </div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Largest Collection</span>
+                    <span className="report-stat-icon report-stat-icon-green">
+                      <i className="fa-solid fa-award"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">₹{formatCurrency(data.monthHighestCollection?.amount ?? 0)}</div>
+                  <div className="report-stat-sub">
+                    {data.monthHighestCollection ? data.monthHighestCollection.customerName : 'No collections this month'}
+                  </div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Net Recovery</span>
+                    <span className="report-stat-icon report-stat-icon-blue">
+                      <i className="fa-solid fa-scale-balanced"></i>
+                    </span>
+                  </div>
+                  <div
+                    className="report-stat-value"
+                    style={{ color: data.monthNetRecovery >= 0 ? 'var(--green)' : 'var(--red)' }}
+                  >
+                    {data.monthNetRecovery >= 0 ? '+' : '-'}₹{formatCurrency(Math.abs(data.monthNetRecovery))}
+                  </div>
+                  <div className="report-stat-sub">This month</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="report-section">
+              <h3 className="report-section-title">All-Time Records</h3>
+              <div className="report-stats-grid">
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Largest Credit Ever</span>
+                    <span className="report-stat-icon report-stat-icon-blue">
+                      <i className="fa-solid fa-trophy"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">₹{formatCurrency(data.allTimeHighestCredit?.amount ?? 0)}</div>
+                  <div className="report-stat-sub">
+                    {data.allTimeHighestCredit ? data.allTimeHighestCredit.customerName : 'No credit yet'}
+                  </div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Largest Collection Ever</span>
+                    <span className="report-stat-icon report-stat-icon-green">
+                      <i className="fa-solid fa-trophy"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">₹{formatCurrency(data.allTimeHighestCollection?.amount ?? 0)}</div>
+                  <div className="report-stat-sub">
+                    {data.allTimeHighestCollection ? data.allTimeHighestCollection.customerName : 'No collections yet'}
+                  </div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Highest Outstanding</span>
+                    <span className="report-stat-icon report-stat-icon-orange">
+                      <i className="fa-solid fa-trophy"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">₹{formatCurrency(data.highestOutstanding?.amount ?? 0)}</div>
+                  <div className="report-stat-sub">
+                    {data.highestOutstanding ? data.highestOutstanding.customerName : 'No balances owed'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="report-section">
+              <h3 className="report-section-title">Customer Insights</h3>
+              <div className="report-stats-grid">
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Most Payments</span>
+                    <span className="report-stat-icon report-stat-icon-green">
+                      <i className="fa-solid fa-star"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">₹{formatCurrency(data.mostPayments?.amount ?? 0)}</div>
+                  <div className="report-stat-sub">
+                    {data.mostPayments ? data.mostPayments.customerName : 'No payments yet'}
+                  </div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Fully Settled</span>
+                    <span className="report-stat-icon report-stat-icon-green">
+                      <i className="fa-solid fa-circle-check"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">{data.fullySettledThisMonth}</div>
+                  <div className="report-stat-sub">This month</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="report-section">
+              <h3 className="report-section-title">Risk Overview</h3>
+              <div className="report-stats-grid">
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Overdue Customers</span>
+                    <span className="report-stat-icon report-stat-icon-orange">
+                      <i className="fa-solid fa-user-clock"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">{data.overdueCount}</div>
+                  <div className="report-stat-sub">Need follow-up</div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Due Today</span>
+                    <span className="report-stat-icon report-stat-icon-orange">
+                      <i className="fa-regular fa-clock"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">{data.dueTodayCount}</div>
+                  <div className="report-stat-sub">Last day of grace period</div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Overdue Amount</span>
+                    <span className="report-stat-icon report-stat-icon-orange">
+                      <i className="fa-solid fa-sack-dollar"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">₹{formatCurrency(data.overdueAmount)}</div>
+                  <div className="report-stat-sub">Across {data.overdueCount} customer{data.overdueCount === 1 ? '' : 's'}</div>
+                </div>
+              </div>
             </div>
           </div>
         </>
