@@ -290,7 +290,6 @@ function CustomerDetailInner() {
   const totalPaid = transactions.filter((t) => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0)
   const lastPaymentTx = transactions.find((t) => t.amount < 0)
   const lastPayment = lastPaymentTx ? Math.abs(lastPaymentTx.amount) : 0
-  const lastPaymentDate = lastPaymentTx ? lastPaymentTx.date || lastPaymentTx.created_at : null
 
   const overdueDays = calculateOverdueDays(
     customer.balance,
@@ -504,7 +503,7 @@ function CustomerDetailInner() {
           <div className="modal-sheet modal-tx-detail" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
               <div className="modal-tx-detail-title">
-                <div className="tx-icon credit" style={{ width: '28px', height: '28px', fontSize: '0.7rem' }}>
+                <div className={`tx-icon ${selectedTx.amount > 0 ? 'credit' : 'pay'}`} style={{ width: '28px', height: '28px', fontSize: '0.7rem' }}>
                   <i className={`fa-solid ${selectedTx.amount > 0 ? 'fa-plus' : 'fa-minus'}`}></i>
                 </div>
                 <h3>Transaction Details</h3>
@@ -539,7 +538,7 @@ function CustomerDetailInner() {
               </div>
               <div className="tx-detail-row">
                 <span className="tx-detail-label">Time</span>
-                <span className="tx-detail-value">{new Date(selectedTx.date || selectedTx.created_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                <span className="tx-detail-value">{formatTime(selectedTx.date || selectedTx.created_at)}</span>
               </div>
             </div>
             <div className="tx-detail-actions">
