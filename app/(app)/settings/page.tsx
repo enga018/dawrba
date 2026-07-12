@@ -9,7 +9,6 @@ import { getInitials } from '@/lib/utils'
 export default function SettingsPage() {
   const [shopName, setShopName] = useState('')
   const [phone, setPhone] = useState('')
-  const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
   const [overdueRemindersEnabled, setOverdueRemindersEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
   const [isDark, setIsDark] = useState(false)
@@ -26,13 +25,12 @@ export default function SettingsPage() {
       try {
         const { data } = await supabase
           .from('profiles')
-          .select('shop_name, phone, overdue_threshold_days, overdue_reminders_enabled')
+          .select('shop_name, phone, overdue_reminders_enabled')
           .eq('id', user.id)
           .single()
 
         if (data?.shop_name) setShopName(data.shop_name)
         if (data?.phone) setPhone(data.phone)
-        if (data?.overdue_threshold_days) setOverdueThresholdDays(data.overdue_threshold_days)
         if (data?.overdue_reminders_enabled !== null && data?.overdue_reminders_enabled !== undefined) {
           setOverdueRemindersEnabled(data.overdue_reminders_enabled)
         }
@@ -113,26 +111,16 @@ export default function SettingsPage() {
       <div style={{ marginBottom: '24px' }}>
         <div className="settings-section-title">Business Settings</div>
         <div className="settings-section">
-          <div className="settings-row">
+          <Link href="/settings/business-settings" className="settings-row">
             <div className="settings-row-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
-              <i className="fa-solid fa-coins"></i>
+              <i className="fa-solid fa-sliders"></i>
             </div>
             <div className="settings-row-content">
-              <div className="settings-row-title">Currency</div>
-              <div className="settings-row-sub">₹ INR</div>
+              <div className="settings-row-title">Business Preferences</div>
+              <div className="settings-row-sub">Week ends on, overdue period</div>
             </div>
-            <span style={{ color: '#6B7280', fontSize: '0.9rem' }}>₹</span>
-          </div>
-          <div className="settings-row">
-            <div className="settings-row-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
-              <i className="fa-solid fa-calendar-days"></i>
-            </div>
-            <div className="settings-row-content">
-              <div className="settings-row-title">Overdue Period</div>
-              <div className="settings-row-sub">{overdueThresholdDays} days grace period</div>
-            </div>
-            <span style={{ color: '#6B7280', fontSize: '0.9rem' }}>{overdueThresholdDays}d</span>
-          </div>
+            <i className="fa-solid fa-chevron-right" style={{ color: '#9CA3AF', fontSize: '0.7rem' }}></i>
+          </Link>
         </div>
       </div>
 

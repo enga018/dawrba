@@ -6,9 +6,9 @@ import { supabase } from '@/lib/supabase'
 import { offlineWrite } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 
-export default function ShopInformationPage() {
-  const [shopName, setShopName] = useState('')
-  const [phone, setPhone] = useState('')
+export default function BusinessSettingsPage() {
+  const [weeklyReportDay, setWeeklyReportDay] = useState('sunday')
+  const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -24,13 +24,13 @@ export default function ShopInformationPage() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('shop_name, phone')
+        .select('weekly_report_day, overdue_strategy, overdue_threshold_days')
         .eq('id', user.id)
         .single()
 
       if (data) {
-        if (data.shop_name) setShopName(data.shop_name)
-        if (data.phone) setPhone(data.phone)
+        if (data.weekly_report_day) setWeeklyReportDay(data.weekly_report_day)
+        if (data.overdue_threshold_days) setOverdueThresholdDays(data.overdue_threshold_days)
       }
       setLoading(false)
     }
@@ -50,8 +50,9 @@ export default function ShopInformationPage() {
         async () => {
           const { error } = await supabase.from('profiles').upsert({
             id: user.id,
-            shop_name: shopName,
-            phone: phone || null,
+            weekly_report_day: weeklyReportDay,
+            overdue_strategy: 'fixed_period',
+            overdue_threshold_days: overdueThresholdDays,
           })
           if (error) throw error
           return { data: null, error: null }
@@ -61,13 +62,14 @@ export default function ShopInformationPage() {
           operation: 'upsert',
           data: {
             id: user.id,
-            shop_name: shopName,
-            phone: phone || null,
+            weekly_report_day: weeklyReportDay,
+            overdue_strategy: 'fixed_period',
+            overdue_threshold_days: overdueThresholdDays,
           },
         }
       )
       if (result?.error) throw result.error
-      showToast('Shop information saved')
+      showToast('Business settings saved')
       router.push('/settings')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save')
@@ -89,26 +91,30 @@ export default function ShopInformationPage() {
       <form onSubmit={handleSave}>
         <div className="detail-card">
           <div className="field">
-            <label htmlFor="shopName">Shop name</label>
-            <input
-              type="text"
-              id="shopName"
-              placeholder="e.g. Shahid's Tea Stall"
-              value={shopName}
-              onChange={(e) => setShopName(e.target.value)}
-              required
-            />
+            <label htmlFor="weeklyReportDay">Week ends on</label>
+            <select
+              id="weeklyReportDay"
+              value={weeklyReportDay}
+              onChange={(e) => setWeeklyReportDay(e.target.value)}
+            >
+              <option value="saturday">Saturday</option>
+              <option value="sunday">Sunday</option>
+            </select>
           </div>
 
           <div className="field">
-            <label htmlFor="phone">Phone number</label>
+            <label htmlFor="overdueThresholdDays">Overdue grace period (days)</label>
             <input
-              type="tel"
-              id="phone"
-              placeholder="+91 98765 43210"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              type="number"
+              id="overdueThresholdDays"
+              min="1"
+              max="365"
+              value={overdueThresholdDays}
+              onChange={(e) => setOverdueThresholdDays(parseInt(e.target.value) || 7)}
             />
+            <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '6px' }}>
+              Customer is marked overdue if their last transaction is older than this many days.
+            </div>
           </div>
         </div>
 
