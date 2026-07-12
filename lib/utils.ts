@@ -101,14 +101,37 @@ interface Transaction {
   created_at: string
 }
 
-function daysElapsedSinceReference(transactions: Transaction[]): number | null {
-  const lastTx = [...transactions].sort((a, b) => {
+/* Days since the customer's balance most recently went from settled (<= 0)
+   to owing (> 0) - the start of the current unpaid streak. This is NOT
+   just "days since the last transaction": taking on more credit while
+   already owing money doesn't reset the clock (the debt has been aging
+   the whole time), but paying off in full and being given new credit
+   later correctly starts a fresh clock. Null if there's no active streak
+   (already settled, or no transactions to anchor to). */
+function daysSinceStreakStart(balance: number, transactions: Transaction[]): number | null {
+  if (balance <= 0) return null
+
+  const sorted = [...transactions].sort((a, b) => {
     const dateA = new Date(a.date || a.created_at).getTime()
     const dateB = new Date(b.date || b.created_at).getTime()
-    return dateB - dateA
-  })[0]
-  if (!lastTx) return null
-  return daysSince(lastTx.date || lastTx.created_at)
+    return dateA - dateB
+  })
+
+  const totalTxAmount = sorted.reduce((sum, t) => sum + (t.amount || 0), 0)
+  let runningBalance = balance - totalTxAmount
+  let streakStart: string | null = null
+
+  for (const t of sorted) {
+    const prevBalance = runningBalance
+    runningBalance += t.amount || 0
+    if (prevBalance <= 0 && runningBalance > 0) {
+      streakStart = t.date || t.created_at
+    } else if (runningBalance <= 0) {
+      streakStart = null
+    }
+  }
+
+  return streakStart ? daysSince(streakStart) : null
 }
 
 export function calculateOverdueDays(
@@ -117,7 +140,7 @@ export function calculateOverdueDays(
   thresholdDays: number = 7
 ): number {
   if (balance <= 0) return 0
-  const days = daysElapsedSinceReference(transactions)
+  const days = daysSinceStreakStart(balance, transactions)
   if (days === null) return 0
   return days > thresholdDays ? days - thresholdDays : 0
 }
@@ -139,7 +162,7 @@ export function daysUntilOverdue(
   thresholdDays: number = 7
 ): number | null {
   if (balance <= 0) return null
-  const days = daysElapsedSinceReference(transactions)
+  const days = daysSinceStreakStart(balance, transactions)
   if (days === null) return null
   const remaining = thresholdDays - days
   return remaining >= 0 ? remaining : null
