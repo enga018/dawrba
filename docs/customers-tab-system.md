@@ -1,4 +1,4 @@
-# Customers Tab System (Approved)
+# Customers Tab System (Implemented)
 
 ## Purpose
 Manage customer balances and provide quick actions for adding credit and collecting payments.
