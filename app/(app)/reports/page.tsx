@@ -31,6 +31,8 @@ interface ReportData extends PeriodStats {
   highestCredit: HighestTx | null
   highestCollection: HighestTx | null
   collectionRateAllTime: number
+  totalCreditAllTime: number
+  totalCollectedAllTime: number
   overduePercent: number
   allTimeHighestCredit: HighestTx | null
   allTimeHighestCollection: HighestTx | null
@@ -94,6 +96,8 @@ export default function ReportsPage() {
             highestCredit: null,
             highestCollection: null,
             collectionRateAllTime: 0,
+            totalCreditAllTime: 0,
+            totalCollectedAllTime: 0,
             overduePercent: 0,
             allTimeHighestCredit: null,
             allTimeHighestCollection: null,
@@ -264,6 +268,8 @@ export default function ReportsPage() {
             ? { amount: highestCollectionTx.amount, customerName: nameById.get(highestCollectionTx.customerId) || 'Unknown' }
             : null,
           collectionRateAllTime,
+          totalCreditAllTime,
+          totalCollectedAllTime,
           overduePercent,
           allTimeHighestCredit: allTimeHighestCreditTx
             ? { amount: allTimeHighestCreditTx.amount, customerName: nameById.get(allTimeHighestCreditTx.customerId) || 'Unknown' }
@@ -467,6 +473,28 @@ export default function ReportsPage() {
                     </span>
                   </div>
                   <div className="report-stat-value">{data.collectionRateAllTime}%</div>
+                  <div className="report-stat-sub">All time</div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Total Credit Given</span>
+                    <span className="report-stat-icon report-stat-icon-blue">
+                      <i className="fa-solid fa-arrow-trend-up"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">₹{formatCurrency(data.totalCreditAllTime)}</div>
+                  <div className="report-stat-sub">All time</div>
+                </div>
+
+                <div className="report-stat-card">
+                  <div className="report-stat-header">
+                    <span className="report-stat-label">Total Collection</span>
+                    <span className="report-stat-icon report-stat-icon-green">
+                      <i className="fa-solid fa-circle-check"></i>
+                    </span>
+                  </div>
+                  <div className="report-stat-value">₹{formatCurrency(data.totalCollectedAllTime)}</div>
                   <div className="report-stat-sub">All time</div>
                 </div>
 
