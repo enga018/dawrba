@@ -58,6 +58,14 @@ This page is designed to be mobile-first while remaining responsive on tablet an
 | Last Payment | Dark Gray | Most recent payment |
 | Total Paid | Green | Total amount received |
 
+### Example
+```
+Current Balance: ₹2,500
+Total Credit:   ₹24,100
+Last Payment:   ₹900
+Total Paid:     ₹21,600
+```
+
 ---
 
 # Quick Actions
@@ -67,6 +75,12 @@ This page is designed to be mobile-first while remaining responsive on tablet an
 | Add Credit | Light Red | Red |
 | Collect | Light Green | Green |
 | Remind | Light Blue | Blue |
+
+## Card Height
+Quick action cards must use the official token height:
+```
+92px
+```
 
 ---
 
@@ -91,6 +105,13 @@ This page is designed to be mobile-first while remaining responsive on tablet an
 | Payment | Green Check | Green |
 | Edit | Blue Edit | Blue |
 
+## Example
+```
+Credit added
+12 Jul 2026 · 1:26 PM
++₹2,500
+```
+
 ---
 
 # Recent Activity
@@ -109,6 +130,9 @@ Recent Activity              View all
 | Reminder sent | Blue |
 | Customer deleted | Red |
 
+## Note
+Keep the **View all** link in the header and do not add a duplicate **See more** button at the bottom of the card.
+
 ---
 
 # Responsive Behavior
@@ -117,15 +141,37 @@ Recent Activity              View all
 - 2 × 2 summary grid
 - 3 quick action cards
 - Single-column transaction list
+- Bottom navigation visible
 
 ## Tablet (768px–1023px)
 - 2 × 2 summary grid
 - Larger action cards
+- Bottom navigation remains visible
 
 ## Desktop (1024px+)
 - 4 summary cards in one row
 - Sidebar navigation
 - Max content width: 1200px
+
+---
+
+# Final Design Decisions
+
+## Keep
+- Blue brand header
+- Red current balance
+- Green total paid
+- Filter tabs in transaction history
+- View all link in Recent Activity
+- Bottom navigation on tablet
+
+## Improve
+- Add timestamps everywhere
+- Use consistent currency format (`₹2,500`)
+- Align amounts using tabular numbers
+
+## Remove
+- Duplicate “See more” button in Recent Activity
 
 ---
 
@@ -139,4 +185,4 @@ Transaction History
 Recent Activity
 ```
 
-This structure provides the best balance of visibility, usability, and financial clarity for DawrBa users.
+This structure provides the best balance of visibility, usability, and financial clarity for DawrBa users and is fully aligned with the official DawrBa color system and design tokens.
