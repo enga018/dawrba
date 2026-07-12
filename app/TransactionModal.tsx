@@ -247,15 +247,15 @@ export default function TransactionModal({
           <div className="detail-card">
             <div className="tx-detail-row">
               <span className="tx-detail-label">Current Balance</span>
-              <span className="tx-detail-value">Rs.{formatCurrency(selectedCustomer.balance)}</span>
+              <span className="tx-detail-value">₹{formatCurrency(selectedCustomer.balance)}</span>
             </div>
             <div className="tx-detail-row">
               <span className="tx-detail-label">{mode === 'pay' ? 'Collecting' : 'Adding'}</span>
-              <span className="tx-detail-value">{mode === 'pay' ? '-' : '+'}Rs.{formatCurrency(amountValue)}</span>
+              <span className="tx-detail-value">{mode === 'pay' ? '-' : '+'}₹{formatCurrency(amountValue)}</span>
             </div>
             <div className="tx-detail-row total">
               <span className="tx-detail-label">New Balance</span>
-              <span className="tx-detail-value">Rs.{formatCurrency(newBalance)}</span>
+              <span className="tx-detail-value">₹{formatCurrency(newBalance)}</span>
             </div>
           </div>
         )}

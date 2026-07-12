@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { getInitials, formatCurrency, formatDate, isCustomerOverdue, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
 import { formatRelativeTime } from '@/lib/utils'
+import TransactionModal from '@/app/TransactionModal'
 
 interface Customer {
   id: string
@@ -17,7 +18,7 @@ interface Customer {
   transactions: Array<{ amount: number; date?: string; created_at: string }>
 }
 
-type FilterType = 'all' | 'overdue' | 'due_today' | 'cleared'
+type FilterType = 'all' | 'active' | 'overdue' | 'due_today' | 'cleared'
 
 export default function CustomerList() {
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -27,6 +28,8 @@ export default function CustomerList() {
   const [visibleCount, setVisibleCount] = useState(20)
   const [overdueStrategy, setOverdueStrategy] = useState<OverdueStrategy>('fixed_period')
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
+  const [modalTarget, setModalTarget] = useState<{ id: string; name: string; balance: number } | null>(null)
+  const [modalMode, setModalMode] = useState<'credit' | 'pay' | null>(null)
 
   const loadData = useCallback(async () => {
     try {
@@ -115,6 +118,7 @@ export default function CustomerList() {
     list = list.filter((c) => {
       if (activeFilter === 'all') return true
       const status = getCustomerStatus(c)
+      if (activeFilter === 'active') return status.type === 'overdue' || status.type === 'due_today'
       if (activeFilter === 'overdue') return status.type === 'overdue'
       if (activeFilter === 'due_today') return status.type === 'due_today'
       if (activeFilter === 'cleared') return status.type === 'clear'
@@ -142,6 +146,13 @@ export default function CustomerList() {
   useEffect(() => {
     setVisibleCount(20)
   }, [searchQuery, activeFilter])
+
+  const openModal = (e: React.MouseEvent, customer: Customer, mode: 'credit' | 'pay') => {
+    e.preventDefault()
+    e.stopPropagation()
+    setModalTarget({ id: customer.id, name: customer.name, balance: customer.balance || 0 })
+    setModalMode(mode)
+  }
 
   if (loading) {
     return (
@@ -186,6 +197,9 @@ export default function CustomerList() {
         <button className={`filter-chip ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => setActiveFilter('all')}>
           All
         </button>
+        <button className={`filter-chip filter-chip-active-status ${activeFilter === 'active' ? 'active' : ''}`} onClick={() => setActiveFilter('active')}>
+          Active
+        </button>
         <button className={`filter-chip filter-chip-overdue ${activeFilter === 'overdue' ? 'active' : ''}`} onClick={() => setActiveFilter('overdue')}>
           Overdue
         </button>
@@ -193,7 +207,7 @@ export default function CustomerList() {
           Due Today
         </button>
         <button className={`filter-chip filter-chip-cleared ${activeFilter === 'cleared' ? 'active' : ''}`} onClick={() => setActiveFilter('cleared')}>
-          Cleared
+          Settled
         </button>
       </div>
 
@@ -214,36 +228,91 @@ export default function CustomerList() {
                   className="customer-card"
                   style={{ textDecoration: 'none' }}
                 >
-                  <div className="cc-left">
-                    <div className={`avatar ${status.type}`}>{getInitials(customer.name)}</div>
-                    <div>
-                      <div className="cc-name-row">
-                        <span className="cc-name">{customer.name}</span>
-                        <span className={`status-badge ${status.type}`}>{status.label}</span>
-                      </div>
-                      <div className="cc-meta">
-                        {customer.lastTxDate
-                          ? <span>Last: {formatRelativeTime(customer.lastTxDate)}</span>
-                          : <span>No transactions</span>
-                        }
+                  <div className="cc-top">
+                    <div className="cc-left">
+                      <div className={`avatar ${status.type}`}>{getInitials(customer.name)}</div>
+                      <div className="cc-identity">
+                        <div className="cc-name-row">
+                          <span className="cc-name">{customer.name}</span>
+                        </div>
+                        <div className="cc-phone">{customer.phone || 'No phone'}</div>
                       </div>
                     </div>
+                    <span className={`status-badge ${status.type}`}>{status.label}</span>
                   </div>
-                  <div className="cc-right">
-                    <div className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
+
+                  <div className="cc-amount-row">
+                    <span className={`cc-balance ${(customer.balance || 0) <= 0 ? 'zero' : ''}`}>
                       {(customer.balance || 0) <= 0
-                        ? 'Rs.0'
-                        : 'Rs.' + formatCurrency(customer.balance || 0)}
-                    </div>
-                    <div className={`cc-status-text ${status.type}`}>
+                        ? '₹0'
+                        : '₹' + formatCurrency(customer.balance || 0)}
+                    </span>
+                    <span className={`cc-status-text ${status.type}`}>
                       {status.type === 'overdue' && `${status.overdueDays} day${status.overdueDays === 1 ? '' : 's'} overdue`}
                       {status.type === 'due_today' && 'Due today'}
-                      {status.type === 'clear' && 'No due'}
-                    </div>
+                      {status.type === 'clear' && (customer.lastTxDate ? `Last: ${formatRelativeTime(customer.lastTxDate)}` : 'No transactions')}
+                    </span>
+                  </div>
+
+                  <div className="cc-actions">
+                    <button className="btn btn-secondary btn-sm" onClick={(e) => openModal(e, customer, 'credit')}>
+                      Add Credit
+                    </button>
+                    <button className="btn btn-primary btn-sm" onClick={(e) => openModal(e, customer, 'pay')}>
+                      Collect
+                    </button>
                   </div>
                 </Link>
               )
             })}
+          </div>
+
+          <div className="customer-table-wrap" style={{ display: 'none' }}>
+            <table className="customer-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Phone</th>
+                  <th>Outstanding</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredList.slice(0, visibleCount).map((customer) => {
+                  const status = getCustomerStatus(customer)
+                  return (
+                    <tr key={customer.id}>
+                      <td>
+                        <Link href={`/customers/${customer.id}`} className="ct-name-cell" style={{ textDecoration: 'none', color: 'inherit' }}>
+                          <div className={`avatar ${status.type}`}>{getInitials(customer.name)}</div>
+                          <span className="cc-name">{customer.name}</span>
+                        </Link>
+                      </td>
+                      <td>{customer.phone || '—'}</td>
+                      <td className="ct-balance">
+                        {(customer.balance || 0) <= 0
+                          ? '₹0'
+                          : '₹' + formatCurrency(customer.balance || 0)}
+                      </td>
+                      <td>
+                        <span className={`status-badge ${status.type}`}>{status.label}</span>
+                      </td>
+                      <td>
+                        <div className="ct-actions">
+                          <button className="btn btn-secondary btn-sm" onClick={(e) => openModal(e, customer, 'credit')}>
+                            Add Credit
+                          </button>
+                          <button className="btn btn-primary btn-sm" onClick={(e) => openModal(e, customer, 'pay')}>
+                            Collect
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
 
           {filteredList.length > visibleCount && (
@@ -257,6 +326,16 @@ export default function CustomerList() {
           )}
         </>
       )}
+
+      <TransactionModal
+        show={modalMode !== null}
+        mode={modalMode === 'pay' ? 'pay' : 'credit'}
+        customerId={modalTarget?.id}
+        customerName={modalTarget?.name}
+        currentBalance={modalTarget?.balance}
+        onClose={() => { setModalMode(null); setModalTarget(null) }}
+        onSaved={loadData}
+      />
     </>
   )
 }

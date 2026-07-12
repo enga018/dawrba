@@ -512,16 +512,53 @@ input, select, button, textarea {
 /* Customer card */
 .customer-card {
   background: var(--surface);
-  border-radius: 18px;
-  padding: 14px 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 14px;
   cursor: pointer;
   transition: box-shadow 0.18s, transform 0.15s;
   container-type: inline-size;
   container-name: customer-card;
+}
+
+.cc-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cc-identity {
+  min-width: 0;
+}
+
+.cc-phone {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.cc-amount-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cc-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cc-actions .btn {
+  width: 100%;
+  justify-content: center;
 }
 
 /* When fewer cards mean auto-fit stretches each one wider, scale the
@@ -600,15 +637,9 @@ input, select, button, textarea {
   text-overflow: ellipsis;
 }
 
-.cc-meta {
-  font-size: 0.78rem;
-  color: var(--meta);
-  margin-top: 2px;
-}
-
 .cc-balance {
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 800;
+  font-size: 1.75rem;
   color: var(--red);
   white-space: nowrap;
 }
@@ -1847,33 +1878,43 @@ input, select, button, textarea {
   border-color: var(--blue);
 }
 
+.filter-chip-active-status {
+  color: #16a34a;
+  border-color: #16a34a;
+}
+
+.filter-chip-active-status.active {
+  background: #16a34a;
+  color: white;
+}
+
 .filter-chip-overdue {
-  color: var(--red);
-  border-color: var(--red);
+  color: #ea580c;
+  border-color: #ea580c;
 }
 
 .filter-chip-overdue.active {
-  background: var(--red);
+  background: #ea580c;
   color: white;
 }
 
 .filter-chip-due {
-  color: var(--orange);
-  border-color: var(--orange);
+  color: #f59e0b;
+  border-color: #f59e0b;
 }
 
 .filter-chip-due.active {
-  background: var(--orange);
+  background: #f59e0b;
   color: white;
 }
 
 .filter-chip-cleared {
-  color: var(--green);
-  border-color: var(--green);
+  color: #2563eb;
+  border-color: #2563eb;
 }
 
 .filter-chip-cleared.active {
-  background: var(--green);
+  background: #2563eb;
   color: white;
 }
 
@@ -1892,25 +1933,18 @@ input, select, button, textarea {
 }
 
 .status-badge.overdue {
-  background: var(--tint-red);
-  color: var(--red);
+  background: #fff7ed;
+  color: #ea580c;
 }
 
 .status-badge.due_today {
-  background: var(--tint-orange);
-  color: var(--orange);
+  background: #fffbeb;
+  color: #f59e0b;
 }
 
 .status-badge.clear {
-  background: var(--tint-green);
-  color: var(--green);
-}
-
-.cc-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  background: #eff6ff;
+  color: #2563eb;
 }
 
 .cc-status-text {
@@ -1919,27 +1953,27 @@ input, select, button, textarea {
 }
 
 .cc-status-text.overdue {
-  color: var(--red);
+  color: #ea580c;
 }
 
 .cc-status-text.due_today {
-  color: var(--orange);
+  color: #f59e0b;
 }
 
 .cc-status-text.clear {
-  color: var(--green);
+  color: #2563eb;
 }
 
 .avatar.overdue {
-  background: linear-gradient(135deg, #f87171, #ef4444);
+  background: linear-gradient(135deg, #fb923c, #ea580c);
 }
 
 .avatar.due_today {
-  background: linear-gradient(135deg, #fb923c, #f97316);
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
 }
 
 .avatar.clear {
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
 }
 
 /* Customer summary strip */
@@ -1982,6 +2016,61 @@ input, select, button, textarea {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
+}
+
+/* Customer table (tablet/desktop) */
+.customer-table-wrap {
+  margin-top: 10px;
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+
+.customer-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.customer-table th {
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.customer-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.customer-table tr:last-child td {
+  border-bottom: none;
+}
+
+.customer-table tr:hover td {
+  background: var(--surface-alt);
+}
+
+.ct-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ct-balance {
+  font-weight: 700;
+}
+
+.ct-actions {
+  display: flex;
+  gap: 8px;
 }
 
 /* Dashboard layout: customer list in column 1, recent transactions in column 2 on desktop */
@@ -2602,7 +2691,11 @@ input, select, button, textarea {
   }
 
   .customer-list {
-    grid-template-columns: repeat(2, 1fr);
+    display: none;
+  }
+
+  .customer-table-wrap {
+    display: block !important;
   }
 }
 
@@ -2620,11 +2713,6 @@ input, select, button, textarea {
   }
 }
 
-@media (min-width: 1024px) {
-  .customer-list {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  }
-}
 
 /* Large desktop (1280px+) */
 @media (min-width: 1280px) {
