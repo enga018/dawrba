@@ -91,14 +91,14 @@ export default function BusinessSettingsPage() {
       <form onSubmit={handleSave}>
         <div className="detail-card">
           <div className="field">
-            <label htmlFor="weeklyReportDay">Week ends on</label>
+            <label htmlFor="weeklyReportDay">Week starts on</label>
             <select
               id="weeklyReportDay"
               value={weeklyReportDay}
               onChange={(e) => setWeeklyReportDay(e.target.value)}
             >
-              <option value="saturday">Saturday</option>
               <option value="sunday">Sunday</option>
+              <option value="monday">Monday</option>
             </select>
           </div>
 

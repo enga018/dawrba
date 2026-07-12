@@ -11,6 +11,11 @@ interface OverdueCustomer {
   balance: number
 }
 
+interface HighestTx {
+  amount: number
+  customerName: string
+}
+
 interface PeriodStats {
   creditGiven: number
   collected: number
@@ -21,6 +26,8 @@ interface PeriodStats {
 interface ReportData extends PeriodStats {
   prev: PeriodStats
   overdueCustomers: OverdueCustomer[]
+  highestCredit: HighestTx | null
+  highestCollection: HighestTx | null
 }
 
 function startOfDay(d: Date): Date {
@@ -82,9 +89,13 @@ export default function ReportsPage() {
             creditGiven: 0, collected: 0, outstanding: 0, collectionRate: 0,
             prev: { creditGiven: 0, collected: 0, outstanding: 0, collectionRate: 0 },
             overdueCustomers: [],
+            highestCredit: null,
+            highestCollection: null,
           })
           return
         }
+
+        const nameById = new Map((customers || []).map((c) => [c.id, c.name]))
 
         const { data: txData } = await supabase
           .from('transactions')
@@ -107,6 +118,8 @@ export default function ReportsPage() {
 
         let creditGiven = 0, collected = 0
         let prevCredit = 0, prevCollected = 0
+        let highestCreditTx: { amount: number; customerId: string } | null = null
+        let highestCollectionTx: { amount: number; customerId: string } | null = null
         const balances: Record<string, number> = {}
         const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
 
@@ -116,8 +129,18 @@ export default function ReportsPage() {
           txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
           const ts = new Date(t.created_at).getTime()
           if (ts >= periodStart) {
-            if (t.amount > 0) creditGiven += t.amount
-            else collected += Math.abs(t.amount)
+            if (t.amount > 0) {
+              creditGiven += t.amount
+              if (!highestCreditTx || t.amount > highestCreditTx.amount) {
+                highestCreditTx = { amount: t.amount, customerId: t.customer_id }
+              }
+            } else {
+              const abs = Math.abs(t.amount)
+              collected += abs
+              if (!highestCollectionTx || abs > highestCollectionTx.amount) {
+                highestCollectionTx = { amount: abs, customerId: t.customer_id }
+              }
+            }
           } else if (ts >= prevStart && ts <= prevEnd) {
             if (t.amount > 0) prevCredit += t.amount
             else prevCollected += Math.abs(t.amount)
@@ -150,6 +173,12 @@ export default function ReportsPage() {
           collectionRate,
           prev: { creditGiven: prevCredit, collected: prevCollected, outstanding, collectionRate: prevRate },
           overdueCustomers: overdueList.slice(0, 3),
+          highestCredit: highestCreditTx
+            ? { amount: highestCreditTx.amount, customerName: nameById.get(highestCreditTx.customerId) || 'Unknown' }
+            : null,
+          highestCollection: highestCollectionTx
+            ? { amount: highestCollectionTx.amount, customerName: nameById.get(highestCollectionTx.customerId) || 'Unknown' }
+            : null,
         })
       } catch {
         // silent
@@ -242,6 +271,32 @@ export default function ReportsPage() {
                 <div className="report-stat-value">Rs.{formatCurrency(data.outstanding)}</div>
                 <div className="report-stat-sub">
                   Still pending
+                </div>
+              </div>
+
+              <div className="report-stat-card">
+                <div className="report-stat-header">
+                  <span className="report-stat-label">Highest Credit Given</span>
+                  <span className="report-stat-icon report-stat-icon-blue">
+                    <i className="fa-solid fa-award"></i>
+                  </span>
+                </div>
+                <div className="report-stat-value">₹{formatCurrency(data.highestCredit?.amount ?? 0)}</div>
+                <div className="report-stat-sub">
+                  {data.highestCredit ? data.highestCredit.customerName : `No credit ${getPeriodLabel(period).toLowerCase()}`}
+                </div>
+              </div>
+
+              <div className="report-stat-card">
+                <div className="report-stat-header">
+                  <span className="report-stat-label">Highest Collected</span>
+                  <span className="report-stat-icon report-stat-icon-green">
+                    <i className="fa-solid fa-award"></i>
+                  </span>
+                </div>
+                <div className="report-stat-value">₹{formatCurrency(data.highestCollection?.amount ?? 0)}</div>
+                <div className="report-stat-sub">
+                  {data.highestCollection ? data.highestCollection.customerName : `No collections ${getPeriodLabel(period).toLowerCase()}`}
                 </div>
               </div>
             </div>
