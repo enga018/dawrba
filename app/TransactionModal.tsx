@@ -196,77 +196,79 @@ export default function TransactionModal({
           </button>
         </div>
 
-        <div className="amount-entry">
-          <div className="amount-display">
-            ₹{amount ? Number(amount).toLocaleString('en-IN') : '0'}
+        <div className="modal-content">
+          <div className="amount-entry">
+            <div className="amount-display">
+              ₹{amount ? Number(amount).toLocaleString('en-IN') : '0'}
+            </div>
+            <div className="amount-target">
+              <span className="amount-target-label">{targetLabel}</span>
+              {fixedCustomer ? (
+                <span className="amount-target-name">{customerName}</span>
+              ) : (
+                <select value={selectedCustomerId} onChange={(e) => setSelectedCustomerId(e.target.value)}>
+                  <option value="">Select customer...</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
-          <div className="amount-target">
-            <span className="amount-target-label">{targetLabel}</span>
-            {fixedCustomer ? (
-              <span className="amount-target-name">{customerName}</span>
-            ) : (
-              <select value={selectedCustomerId} onChange={(e) => setSelectedCustomerId(e.target.value)}>
-                <option value="">Select customer...</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            )}
+
+          <div className="amount-input-desktop">
+            <div className="field">
+              <label>Amount (₹)</label>
+              <input
+                type="number"
+                placeholder="0"
+                min="1"
+                step="1"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
           </div>
+
+          <div className="field">
+            <label>Note <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span></label>
+            <input
+              type="text"
+              placeholder={mode === 'pay' ? 'e.g. Cash payment' : 'e.g. Weekly supply'}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+
+          {selectedCustomer && (
+            <div className="detail-card">
+              <div className="tx-detail-row">
+                <span className="tx-detail-label">Current Balance</span>
+                <span className="tx-detail-value">₹{formatCurrency(selectedCustomer.balance)}</span>
+              </div>
+              <div className="tx-detail-row">
+                <span className="tx-detail-label">{mode === 'pay' ? 'Collecting' : 'Adding'}</span>
+                <span className="tx-detail-value">{mode === 'pay' ? '-' : '+'}₹{formatCurrency(amountValue)}</span>
+              </div>
+              <div className="tx-detail-row total">
+                <span className="tx-detail-label">New Balance</span>
+                <span className="tx-detail-value">₹{formatCurrency(newBalance)}</span>
+              </div>
+            </div>
+          )}
+
+          <button
+            className="btn btn-primary btn-block"
+            disabled={!(customerId || selectedCustomerId) || !amount || submitting}
+            onClick={handleSubmit}
+          >
+            {submitting ? <span className="spinner"></span> : editingTx ? 'Update' : mode === 'pay' ? 'Collect Payment' : 'Add Credit'}
+          </button>
         </div>
 
         <div className="amount-keypad-mobile">
           <AmountKeypad value={amount} onChange={setAmount} />
         </div>
-
-        <div className="amount-input-desktop">
-          <div className="field">
-            <label>Amount (₹)</label>
-            <input
-              type="number"
-              placeholder="0"
-              min="1"
-              step="1"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="field">
-          <label>Note <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span></label>
-          <input
-            type="text"
-            placeholder={mode === 'pay' ? 'e.g. Cash payment' : 'e.g. Weekly supply'}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-        </div>
-
-        {selectedCustomer && (
-          <div className="detail-card">
-            <div className="tx-detail-row">
-              <span className="tx-detail-label">Current Balance</span>
-              <span className="tx-detail-value">₹{formatCurrency(selectedCustomer.balance)}</span>
-            </div>
-            <div className="tx-detail-row">
-              <span className="tx-detail-label">{mode === 'pay' ? 'Collecting' : 'Adding'}</span>
-              <span className="tx-detail-value">{mode === 'pay' ? '-' : '+'}₹{formatCurrency(amountValue)}</span>
-            </div>
-            <div className="tx-detail-row total">
-              <span className="tx-detail-label">New Balance</span>
-              <span className="tx-detail-value">₹{formatCurrency(newBalance)}</span>
-            </div>
-          </div>
-        )}
-
-        <button
-          className="btn btn-primary btn-block"
-          disabled={!(customerId || selectedCustomerId) || !amount || submitting}
-          onClick={handleSubmit}
-        >
-          {submitting ? <span className="spinner"></span> : editingTx ? 'Update' : mode === 'pay' ? 'Collect Payment' : 'Add Credit'}
-        </button>
       </div>
     </div>
   )
