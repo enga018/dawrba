@@ -3438,3 +3438,52 @@ button.profile-menu-item:last-child {
   color: var(--muted);
   line-height: 1.3;
 }
+
+/* ─── Summary feed ──────────────────────────────────────────────── */
+.summary-feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-feed-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--surface-alt);
+  border-radius: 10px;
+}
+
+.summary-feed-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  color: white;
+}
+
+.summary-feed-icon.credit { background: var(--green); }
+.summary-feed-icon.payment { background: var(--blue); }
+.summary-feed-icon.net { background: var(--orange); }
+
+.summary-feed-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.summary-feed-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.summary-feed-time {
+  font-size: 0.75rem;
+  color: var(--meta);
+  margin-top: 2px;
+}
