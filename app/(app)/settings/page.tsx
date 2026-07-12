@@ -14,47 +14,53 @@ export default function SettingsPage() {
   const [isDark, setIsDark] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      const user = (await supabase.auth.getUser()).data.user
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('shop_name, phone, overdue_reminders_enabled')
-          .eq('id', user.id)
-          .single()
-
-        if (error) throw error
-
-        if (data) {
-          setShopName(data.shop_name || '')
-          setPhone(data.phone || '')
-          if (data.overdue_reminders_enabled !== null && data.overdue_reminders_enabled !== undefined) {
-            setOverdueRemindersEnabled(data.overdue_reminders_enabled)
-          }
-        }
-      } catch {
-        // Handle missing column gracefully
-      }
-
-      const stored = localStorage.getItem('theme')
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setIsDark(stored === 'dark' || (stored !== 'light' && systemDark))
-
-      setLoading(false)
+  const loadProfile = async () => {
+    const user = (await supabase.auth.getUser()).data.user
+    if (!user) {
+      router.push('/login')
+      return
     }
-    loadProfile()
 
-    // Refresh when returning from sub-pages
-    const handleFocus = () => loadProfile()
-    window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('shop_name, phone, overdue_reminders_enabled')
+        .eq('id', user.id)
+        .single()
+
+      if (error) throw error
+
+      if (data) {
+        if (data.shop_name) {
+          setShopName(data.shop_name)
+        }
+        if (data.phone) {
+          setPhone(data.phone)
+        }
+        if (data.overdue_reminders_enabled !== null && data.overdue_reminders_enabled !== undefined) {
+          setOverdueRemindersEnabled(data.overdue_reminders_enabled)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load profile:', err)
+    }
+
+    const stored = localStorage.getItem('theme')
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    setIsDark(stored === 'dark' || (stored !== 'light' && systemDark))
+
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadProfile()
   }, [router])
+
+  useEffect(() => {
+    // Refresh when returning from sub-pages
+    window.addEventListener('focus', loadProfile)
+    return () => window.removeEventListener('focus', loadProfile)
+  }, [])
 
   const toggleTheme = () => {
     const next = !isDark
