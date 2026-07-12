@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { offlineWrite, isOnline } from '@/lib/offline'
 import { showToast } from '@/lib/toast'
 import { logActivity } from '@/lib/transactionLog'
+import { formatCurrency } from '@/lib/utils'
 
 interface AddCustomerModalProps {
   show: boolean
@@ -33,6 +34,8 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
 
   const close = () => onClose()
   const refresh = () => window.dispatchEvent(new Event('dawrba:refresh'))
+
+  const totalInitial = (parseFloat(openingBalance) || 0) + (showExtra ? (parseFloat(extraAmount) || 0) : 0)
 
   const handleSubmit = async () => {
     if (!name.trim()) return
@@ -158,6 +161,23 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
                 value={extraNote}
                 onChange={(e) => setExtraNote(e.target.value)}
               />
+            </div>
+          </div>
+        )}
+
+        {totalInitial > 0 && (
+          <div className="detail-card">
+            <div className="tx-detail-row">
+              <span className="tx-detail-label">Starting Balance</span>
+              <span className="tx-detail-value">₹0</span>
+            </div>
+            <div className="tx-detail-row">
+              <span className="tx-detail-label">Initial Credit</span>
+              <span className="tx-detail-value">+₹{formatCurrency(totalInitial)}</span>
+            </div>
+            <div className="tx-detail-row total">
+              <span className="tx-detail-label">New Balance</span>
+              <span className="tx-detail-value" style={{ color: 'var(--red)' }}>₹{formatCurrency(totalInitial)}</span>
             </div>
           </div>
         )}

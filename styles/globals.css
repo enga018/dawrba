@@ -558,6 +558,7 @@ input, select, button, textarea {
 
 .cc-actions .btn {
   width: 100%;
+  min-height: 48px;
   justify-content: center;
 }
 
@@ -1901,6 +1902,7 @@ input, select, button, textarea {
 }
 
 .filter-chip {
+  min-height: 40px;
   padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid var(--border);
@@ -1977,8 +1979,8 @@ input, select, button, textarea {
 }
 
 .status-badge.overdue {
-  background: #fff7ed;
-  color: #ea580c;
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .status-badge.due_today {
@@ -1997,7 +1999,7 @@ input, select, button, textarea {
 }
 
 .cc-status-text.overdue {
-  color: #ea580c;
+  color: #dc2626;
 }
 
 .cc-status-text.due_today {
@@ -2009,7 +2011,7 @@ input, select, button, textarea {
 }
 
 .avatar.overdue {
-  background: linear-gradient(135deg, #fb923c, #ea580c);
+  background: linear-gradient(135deg, #f87171, #dc2626);
 }
 
 .avatar.due_today {
