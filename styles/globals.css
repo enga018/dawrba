@@ -1988,6 +1988,11 @@ input, select, button, textarea {
   color: #f59e0b;
 }
 
+.status-badge.active {
+  background: #ecfdf5;
+  color: #16a34a;
+}
+
 .status-badge.clear {
   background: #eff6ff;
   color: #2563eb;
@@ -2006,6 +2011,10 @@ input, select, button, textarea {
   color: #f59e0b;
 }
 
+.cc-status-text.active {
+  color: #16a34a;
+}
+
 .cc-status-text.clear {
   color: #2563eb;
 }
@@ -2016,6 +2025,10 @@ input, select, button, textarea {
 
 .avatar.due_today {
   background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.avatar.active {
+  background: linear-gradient(135deg, #4ade80, #16a34a);
 }
 
 .avatar.clear {
