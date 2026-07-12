@@ -203,6 +203,11 @@ function CustomerDetailInner() {
     }
   }
 
+  const handleFilterChange = (filter: TxFilter) => {
+    setTxFilter(filter)
+    setVisibleCount(10)
+  }
+
   const openAddModal = (mode: 'credit' | 'pay') => {
     setEditingTx(null)
     setActiveModal(mode)
@@ -235,7 +240,7 @@ function CustomerDetailInner() {
     if (!editName.trim()) return
     setSavingCustomer(true)
     try {
-      const ob = parseFloat(editOpeningBalance) || 0
+      const ob = Math.max(0, parseFloat(editOpeningBalance) || 0)
       const prevOb = customer ? customer.opening_balance : 0
       const updateData: Record<string, unknown> = { name: editName.trim(), phone: editPhone.trim() || null }
       if (ob !== prevOb) updateData.opening_balance = ob
@@ -315,6 +320,11 @@ function CustomerDetailInner() {
             <div className="customer-header-phone">
               {customer.phone || 'No phone'}
             </div>
+            {customer.created_at && (
+              <div className="customer-header-phone">
+                Customer since {formatDate(customer.created_at.slice(0, 10))}
+              </div>
+            )}
           </div>
         </div>
         <div className={`overdue-badge ${overdueDays > 0 ? 'overdue' : 'clear'}`}>
@@ -389,13 +399,13 @@ function CustomerDetailInner() {
           <div className="tx-history-header">
             <h3>Transaction History</h3>
             <div className="tx-tabs">
-              <button className={`tx-tab ${txFilter === 'all' ? 'active' : ''}`} onClick={() => setTxFilter('all')}>
+              <button className={`tx-tab ${txFilter === 'all' ? 'active' : ''}`} onClick={() => handleFilterChange('all')}>
                 All
               </button>
-              <button className={`tx-tab ${txFilter === 'credit' ? 'active' : ''}`} onClick={() => setTxFilter('credit')}>
+              <button className={`tx-tab ${txFilter === 'credit' ? 'active' : ''}`} onClick={() => handleFilterChange('credit')}>
                 Credit
               </button>
-              <button className={`tx-tab ${txFilter === 'payment' ? 'active' : ''}`} onClick={() => setTxFilter('payment')}>
+              <button className={`tx-tab ${txFilter === 'payment' ? 'active' : ''}`} onClick={() => handleFilterChange('payment')}>
                 Payment
               </button>
             </div>
