@@ -3457,23 +3457,23 @@ button.profile-menu-item:last-child {
   line-height: 1.3;
 }
 
-/* ─── Summary feed ──────────────────────────────────────────────── */
-.summary-feed-list {
+/* ─── Insights feed ──────────────────────────────────────────────── */
+.insight-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.summary-feed-item {
+.insight-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 12px;
   background: var(--surface-alt);
   border-radius: 10px;
 }
 
-.summary-feed-icon {
+.insight-icon {
   width: 36px;
   height: 36px;
   border-radius: 10px;
@@ -3485,23 +3485,34 @@ button.profile-menu-item:last-child {
   color: white;
 }
 
-.summary-feed-icon.credit { background: var(--green); }
-.summary-feed-icon.payment { background: var(--blue); }
-.summary-feed-icon.net { background: var(--orange); }
+.insight-icon.red { background: var(--red); }
+.insight-icon.orange { background: var(--orange); }
+.insight-icon.green { background: var(--green); }
+.insight-icon.blue { background: var(--blue); }
+.insight-icon.purple { background: #a855f7; }
 
-.summary-feed-text {
+.insight-text {
   flex: 1;
   min-width: 0;
 }
 
-.summary-feed-label {
+.insight-title {
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.insight-body {
   font-weight: 600;
   font-size: 0.9rem;
   color: var(--text);
+  margin-top: 2px;
 }
 
-.summary-feed-time {
-  font-size: 0.75rem;
+.insight-sub {
+  font-size: 0.78rem;
   color: var(--meta);
   margin-top: 2px;
 }
