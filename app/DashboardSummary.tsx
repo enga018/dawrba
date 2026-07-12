@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { formatCurrency, isCustomerOverdue, type OverdueStrategy } from '@/lib/utils'
+import { formatCurrency, isCustomerOverdue, startOfDay, type OverdueStrategy } from '@/lib/utils'
 
 interface SummaryData {
   todayCredit: number
@@ -11,10 +11,6 @@ interface SummaryData {
   totalCollection: number
   outstanding: number
   overdueCount: number
-}
-
-function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
 
 export default function DashboardSummary() {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, startOfDay } from '@/lib/utils'
 
 interface SummaryData {
   creditsCount: number
@@ -10,10 +10,6 @@ interface SummaryData {
   netChange: number
   loading: boolean
   error: string | null
-}
-
-function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
 
 export default function SummaryFeed() {

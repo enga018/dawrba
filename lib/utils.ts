@@ -34,6 +34,17 @@ export function formatTime(dateStr?: string | null): string {
   })
 }
 
+export function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+}
+
+export function startOfWeek(d: Date, weekStartsOn: 0 | 1 = 0): Date {
+  const s = startOfDay(d)
+  const diff = (s.getDay() - weekStartsOn + 7) % 7
+  s.setDate(s.getDate() - diff)
+  return s
+}
+
 export function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-IN')
 }

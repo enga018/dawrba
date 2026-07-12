@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { formatCurrency, isCustomerOverdue, type OverdueStrategy } from '@/lib/utils'
+import { formatCurrency, isCustomerOverdue, startOfDay, startOfWeek, type OverdueStrategy } from '@/lib/utils'
 
 type Period = 'today' | 'week' | 'month'
 
@@ -28,10 +28,6 @@ interface ReportData extends PeriodStats {
   overdueCustomers: OverdueCustomer[]
   highestCredit: HighestTx | null
   highestCollection: HighestTx | null
-}
-
-function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
 
 function getPeriodLabel(period: Period): string {
@@ -71,12 +67,13 @@ export default function ReportsPage() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('overdue_strategy, overdue_threshold_days')
+          .select('weekly_report_day, overdue_strategy, overdue_threshold_days')
           .eq('id', user.id)
           .single()
 
         const strategy: OverdueStrategy = profileData?.overdue_strategy || 'fixed_period'
         const thresholdDays: number = profileData?.overdue_threshold_days || 7
+        const weekStartDay: 0 | 1 = profileData?.weekly_report_day === 'monday' ? 1 : 0
 
         const { data: customers } = await supabase
           .from('customers')
@@ -105,13 +102,13 @@ export default function ReportsPage() {
         const now = new Date()
         const periodStart = (() => {
           if (period === 'today') return startOfDay(now).getTime()
-          if (period === 'week') return now.getTime() - 7 * 24 * 60 * 60 * 1000
+          if (period === 'week') return startOfWeek(now, weekStartDay).getTime()
           return new Date(now.getFullYear(), now.getMonth(), 1).getTime()
         })()
         const prevEnd = periodStart - 1
         const prevStart = (() => {
           if (period === 'today') return startOfDay(new Date(now.getTime() - 24 * 60 * 60 * 1000)).getTime()
-          if (period === 'week') return now.getTime() - 14 * 24 * 60 * 60 * 1000
+          if (period === 'week') return startOfWeek(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), weekStartDay).getTime()
           const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
           return prevMonth.getTime()
         })()
