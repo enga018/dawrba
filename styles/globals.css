@@ -2764,7 +2764,7 @@ input, select, button, textarea {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 24px;
-  padding: 20px;
+  padding: 16px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
@@ -2890,7 +2890,7 @@ input, select, button, textarea {
   }
 
   .report-stat-card {
-    padding: 20px;
+    padding: 16px;
   }
 
   .report-stat-value {
