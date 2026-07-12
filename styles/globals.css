@@ -1605,6 +1605,7 @@ input, select, button, textarea {
 
 .action-row .btn {
   flex: 1;
+  min-height: 92px;
   padding: 16px;
   border-radius: 12px;
   font-size: 0.95rem;
