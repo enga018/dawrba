@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { setupAutoSync } from '@/lib/offline'
@@ -83,12 +84,13 @@ export default function AppLayout({
           <h1 className="header-mobile-title">DawrBa<span className="dot"></span></h1>
           <div className="header-actions">
             {shopName && (
-              <button
+              <Link
+                href="/settings"
                 className="header-shop-name"
                 title={shopName}
               >
                 {shopName}
-              </button>
+              </Link>
             )}
             <button className="header-logout-btn" onClick={async () => { await supabase.auth.signOut(); router.push('/'); }}>
               <i className="fa-solid fa-right-from-bracket"></i>
