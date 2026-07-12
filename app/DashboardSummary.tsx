@@ -7,6 +7,8 @@ import { formatCurrency, isCustomerOverdue, type OverdueStrategy } from '@/lib/u
 interface SummaryData {
   todayCredit: number
   collectedToday: number
+  totalCredit: number
+  totalCollection: number
   outstanding: number
   overdueCount: number
 }
@@ -40,7 +42,7 @@ export default function DashboardSummary() {
 
         const ids = (customers || []).map((c) => c.id)
         if (ids.length === 0) {
-          setData({ todayCredit: 0, collectedToday: 0, outstanding: 0, overdueCount: 0 })
+          setData({ todayCredit: 0, collectedToday: 0, totalCredit: 0, totalCollection: 0, outstanding: 0, overdueCount: 0 })
           return
         }
 
@@ -52,17 +54,24 @@ export default function DashboardSummary() {
         const todayStart = startOfDay(new Date()).getTime()
         let todayCredit = 0
         let collectedToday = 0
+        let totalCredit = 0
+        let totalCollection = 0
         const balances: Record<string, number> = {}
         const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
 
         for (const t of txData || []) {
-          balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
+          const amount = t.amount || 0
+          balances[t.customer_id] = (balances[t.customer_id] || 0) + amount
           if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
           txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
+
+          if (amount > 0) totalCredit += amount
+          else totalCollection += Math.abs(amount)
+
           const ts = new Date(t.created_at).getTime()
           if (ts >= todayStart) {
-            if (t.amount > 0) todayCredit += t.amount
-            else collectedToday += Math.abs(t.amount)
+            if (amount > 0) todayCredit += amount
+            else collectedToday += Math.abs(amount)
           }
         }
 
@@ -78,7 +87,7 @@ export default function DashboardSummary() {
           }
         }
 
-        setData({ todayCredit, collectedToday, outstanding, overdueCount })
+        setData({ todayCredit, collectedToday, totalCredit, totalCollection, outstanding, overdueCount })
       } catch {
         // silent
       }
@@ -91,7 +100,7 @@ export default function DashboardSummary() {
       <div className="dashboard-hero-skeleton">
         <div className="hero-skeleton" style={{ height: '180px', borderRadius: '24px' }} />
         <div className="summary-grid" style={{ marginTop: 16 }}>
-          {[0, 1, 2].map((i) => (
+          {[0, 1].map((i) => (
             <div key={i} className="summary-card">
               <div className="hero-skeleton" style={{ height: '80px' }} />
             </div>
@@ -100,6 +109,8 @@ export default function DashboardSummary() {
       </div>
     )
   }
+
+  const collectionRate = data.totalCredit > 0 ? Math.round((data.totalCollection / data.totalCredit) * 100) : 0
 
   return (
     <>
@@ -114,20 +125,21 @@ export default function DashboardSummary() {
 
         <div className="dashboard-hero-bottom">
           <div className="dashboard-hero-stat">
-            <span className="dashboard-hero-stat-label">Today Credit</span>
+            <span className="dashboard-hero-stat-label">Total Credit</span>
             <span className="dashboard-hero-stat-value" style={{ color: '#4ade80' }}>
-              ₹{formatCurrency(data.todayCredit)}
+              ₹{formatCurrency(data.totalCredit)}
             </span>
           </div>
 
-          <div className="dashboard-hero-divider"></div>
-
           <div className="dashboard-hero-stat">
-            <span className="dashboard-hero-stat-label">Payment Received</span>
-            <span className="dashboard-hero-stat-value">₹{formatCurrency(data.collectedToday)}</span>
+            <span className="dashboard-hero-stat-label">Total Collection</span>
+            <span className="dashboard-hero-stat-value">₹{formatCurrency(data.totalCollection)}</span>
           </div>
 
-          <div className="dashboard-hero-divider"></div>
+          <div className="dashboard-hero-stat">
+            <span className="dashboard-hero-stat-label">Collection Rate</span>
+            <span className="dashboard-hero-stat-value">{collectionRate}%</span>
+          </div>
 
           <div className="dashboard-hero-stat">
             <span className="dashboard-hero-stat-label">Overdue</span>
@@ -150,24 +162,13 @@ export default function DashboardSummary() {
 
         <div className="summary-card-modern">
           <div className="summary-card-modern-header">
-            <span className="summary-card-modern-label">Collected</span>
+            <span className="summary-card-modern-label">Collected Today</span>
             <div className="summary-card-modern-icon blue">
               <i className="fa-solid fa-hand-holding-dollar"></i>
             </div>
           </div>
           <div className="summary-card-modern-value">₹{formatCurrency(data.collectedToday)}</div>
           <div className="summary-card-modern-sub">Received today</div>
-        </div>
-
-        <div className="summary-card-modern">
-          <div className="summary-card-modern-header">
-            <span className="summary-card-modern-label">Overdue</span>
-            <div className="summary-card-modern-icon orange">
-              <i className="fa-solid fa-triangle-exclamation"></i>
-            </div>
-          </div>
-          <div className="summary-card-modern-value">{overdueCountLabel(data.overdueCount)}</div>
-          <div className="summary-card-modern-sub">Needs follow-up</div>
         </div>
       </div>
 
@@ -212,9 +213,9 @@ export default function DashboardSummary() {
         }
 
         .dashboard-hero-bottom {
-          display: flex;
-          align-items: center;
-          gap: 16px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px 20px;
           background: rgba(255, 255, 255, 0.12);
           border: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 18px;
@@ -223,7 +224,6 @@ export default function DashboardSummary() {
         }
 
         .dashboard-hero-stat {
-          flex: 1;
           display: flex;
           flex-direction: column;
           gap: 4px;
@@ -241,15 +241,9 @@ export default function DashboardSummary() {
           font-weight: 700;
         }
 
-        .dashboard-hero-divider {
-          width: 1px;
-          align-self: stretch;
-          background: rgba(255, 255, 255, 0.2);
-        }
-
         .summary-grid-modern {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 14px;
         }
 
@@ -294,11 +288,6 @@ export default function DashboardSummary() {
           color: #2563eb;
         }
 
-        .summary-card-modern-icon.orange {
-          background: rgba(249, 115, 22, 0.12);
-          color: #ea580c;
-        }
-
         .summary-card-modern-value {
           font-size: 1.45rem;
           font-weight: 800;
@@ -319,26 +308,10 @@ export default function DashboardSummary() {
           }
 
           .dashboard-hero-bottom {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-          }
-
-          .dashboard-hero-divider {
-            width: 100%;
-            height: 1px;
-          }
-
-          .summary-grid-modern {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 14px;
           }
         }
       `}</style>
     </>
   )
-}
-
-function overdueCountLabel(count: number): string {
-  if (count === 0) return 'All clear'
-  return `${count} customer${count === 1 ? '' : 's'}`
 }
