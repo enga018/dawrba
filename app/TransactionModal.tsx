@@ -251,8 +251,10 @@ export default function TransactionModal({
                 <span className="tx-detail-value">{mode === 'pay' ? '-' : '+'}₹{formatCurrency(amountValue)}</span>
               </div>
               <div className="tx-detail-row total">
-                <span className="tx-detail-label">New Balance</span>
-                <span className="tx-detail-value">₹{formatCurrency(newBalance)}</span>
+                <span className="tx-detail-label">{mode === 'pay' ? 'Remaining Balance' : 'New Balance'}</span>
+                <span className="tx-detail-value" style={{ color: mode === 'pay' ? 'var(--green)' : 'var(--red)' }}>
+                  ₹{formatCurrency(newBalance)}
+                </span>
               </div>
             </div>
           )}
@@ -263,7 +265,7 @@ export default function TransactionModal({
         </div>
 
         <button
-          className="btn btn-primary btn-block"
+          className={`btn ${mode === 'pay' ? 'btn-green' : 'btn-primary'} btn-block`}
           disabled={!(customerId || selectedCustomerId) || !amount || submitting}
           onClick={handleSubmit}
           style={{ flexShrink: 0, marginTop: 'auto' }}
