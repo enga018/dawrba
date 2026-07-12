@@ -20,7 +20,6 @@ interface PeriodStats {
   creditGiven: number
   collected: number
   outstanding: number
-  collectionRate: number
 }
 
 interface ReportData extends PeriodStats {
@@ -34,12 +33,6 @@ function getPeriodLabel(period: Period): string {
   if (period === 'today') return 'Today'
   if (period === 'week') return 'This week'
   return 'This month'
-}
-
-function rateLabel(rate: number): string {
-  if (rate >= 75) return 'Good'
-  if (rate >= 50) return 'Fair'
-  return 'Low'
 }
 
 function percentChange(current: number, previous: number): number | null {
@@ -83,8 +76,8 @@ export default function ReportsPage() {
         const ids = (customers || []).map((c) => c.id)
         if (ids.length === 0) {
           setData({
-            creditGiven: 0, collected: 0, outstanding: 0, collectionRate: 0,
-            prev: { creditGiven: 0, collected: 0, outstanding: 0, collectionRate: 0 },
+            creditGiven: 0, collected: 0, outstanding: 0,
+            prev: { creditGiven: 0, collected: 0, outstanding: 0 },
             overdueCustomers: [],
             highestCredit: null,
             highestCollection: null,
@@ -158,17 +151,11 @@ export default function ReportsPage() {
 
         overdueList.sort((a, b) => b.balance - a.balance)
 
-        const total = collected + outstanding
-        const collectionRate = total > 0 ? Math.round((collected / total) * 100) : 0
-        const prevTotal = prevCollected + outstanding
-        const prevRate = prevTotal > 0 ? Math.round((prevCollected / prevTotal) * 100) : 0
-
         setData({
           creditGiven,
           collected,
           outstanding,
-          collectionRate,
-          prev: { creditGiven: prevCredit, collected: prevCollected, outstanding, collectionRate: prevRate },
+          prev: { creditGiven: prevCredit, collected: prevCollected, outstanding },
           overdueCustomers: overdueList.slice(0, 3),
           highestCredit: highestCreditTx
             ? { amount: highestCreditTx.amount, customerName: nameById.get(highestCreditTx.customerId) || 'Unknown' }
@@ -246,15 +233,16 @@ export default function ReportsPage() {
 
               <div className="report-stat-card">
                 <div className="report-stat-header">
-                  <span className="report-stat-label">Collection Rate</span>
+                  <span className="report-stat-label">Net Collection</span>
                   <span className="report-stat-icon report-stat-icon-blue">
-                    <i className="fa-solid fa-chart-column"></i>
+                    <i className="fa-solid fa-scale-balanced"></i>
                   </span>
                 </div>
-                <div className="report-stat-value">{data.collectionRate}%</div>
+                <div className="report-stat-value">
+                  {data.collected - data.creditGiven >= 0 ? '+' : '-'}₹{formatCurrency(Math.abs(data.collected - data.creditGiven))}
+                </div>
                 <div className="report-stat-sub">
-                  {rateLabel(data.collectionRate)}
-                  {renderChange(data.collectionRate, data.prev.collectionRate)}
+                  {getPeriodLabel(period)}
                 </div>
               </div>
 
