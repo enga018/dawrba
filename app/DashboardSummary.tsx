@@ -114,7 +114,16 @@ export default function DashboardSummary() {
 
         <div className="dashboard-hero-bottom">
           <div className="dashboard-hero-stat">
-            <span className="dashboard-hero-stat-label">Collected Today</span>
+            <span className="dashboard-hero-stat-label">Today Credit</span>
+            <span className="dashboard-hero-stat-value" style={{ color: '#4ade80' }}>
+              ₹{formatCurrency(data.todayCredit)}
+            </span>
+          </div>
+
+          <div className="dashboard-hero-divider"></div>
+
+          <div className="dashboard-hero-stat">
+            <span className="dashboard-hero-stat-label">Payment Received</span>
             <span className="dashboard-hero-stat-value">₹{formatCurrency(data.collectedToday)}</span>
           </div>
 
