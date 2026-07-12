@@ -45,6 +45,11 @@ export default function SettingsPage() {
       setLoading(false)
     }
     loadProfile()
+
+    // Refresh when returning from sub-pages
+    const handleFocus = () => loadProfile()
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
   }, [router])
 
   const toggleTheme = () => {
