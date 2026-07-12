@@ -105,7 +105,7 @@ export default function NeedsAttention() {
                   <div className="attention-meta">{c.phone || 'No phone'}</div>
                 </div>
               </div>
-              <div className="attention-amount">Rs.{formatCurrency(c.balance)}</div>
+              <div className="attention-amount">₹{formatCurrency(c.balance)}</div>
             </Link>
           ))}
         </div>

@@ -237,7 +237,7 @@ export default function ReportsPage() {
                     <i className="fa-solid fa-circle-check"></i>
                   </span>
                 </div>
-                <div className="report-stat-value">Rs.{formatCurrency(data.collected)}</div>
+                <div className="report-stat-value">₹{formatCurrency(data.collected)}</div>
                 <div className="report-stat-sub">
                   {getPeriodLabel(period)}
                   {renderChange(data.collected, data.prev.collected)}
@@ -265,7 +265,7 @@ export default function ReportsPage() {
                     <i className="fa-regular fa-calendar"></i>
                   </span>
                 </div>
-                <div className="report-stat-value">Rs.{formatCurrency(data.outstanding)}</div>
+                <div className="report-stat-value">₹{formatCurrency(data.outstanding)}</div>
                 <div className="report-stat-sub">
                   Still pending
                 </div>

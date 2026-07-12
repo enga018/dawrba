@@ -73,7 +73,7 @@ export default function AdminOverviewPage() {
               <i className="fa-solid fa-arrow-right-arrow-left"></i>
             </span>
           </div>
-          <div className="report-stat-value">Rs.{formatCurrency(data.totalTransactionVolume)}</div>
+          <div className="report-stat-value">₹{formatCurrency(data.totalTransactionVolume)}</div>
           <div className="report-stat-sub">Total movement</div>
         </div>
 

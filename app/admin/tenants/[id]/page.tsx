@@ -101,7 +101,7 @@ export default function AdminTenantDetailPage() {
                       <tr key={c.id}>
                         <td>{c.name}</td>
                         <td>{c.phone || '—'}</td>
-                        <td>Rs.{formatCurrency(c.opening_balance || 0)}</td>
+                        <td>₹{formatCurrency(c.opening_balance || 0)}</td>
                         <td>{formatDate(c.created_at?.slice(0, 10))}</td>
                       </tr>
                     ))}
@@ -135,7 +135,7 @@ export default function AdminTenantDetailPage() {
                         <td>{t.customerName}</td>
                         <td>
                           <span className={`tx-amount ${t.amount > 0 ? 'credit' : 'pay'}`}>
-                            {t.amount > 0 ? '+' : '-'}Rs.{formatCurrency(Math.abs(t.amount))}
+                            {t.amount > 0 ? '+' : '-'}₹{formatCurrency(Math.abs(t.amount))}
                           </span>
                         </td>
                         <td>{t.note || '—'}</td>

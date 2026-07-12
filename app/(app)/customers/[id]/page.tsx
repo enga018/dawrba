@@ -340,28 +340,28 @@ function CustomerDetailInner() {
           <div className="balance-stat-body">
             <span className="balance-stat-label">Current Balance</span>
             <span className={`balance-stat-value ${customer.balance <= 0 ? 'green' : 'red'}`}>
-              Rs.{formatCurrency(customer.balance)}
+              ₹{formatCurrency(customer.balance)}
             </span>
           </div>
         </div>
         <div className="balance-stat">
           <div className="balance-stat-body">
             <span className="balance-stat-label">Total Credit</span>
-            <span className="balance-stat-value red">Rs.{formatCurrency(totalCredit)}</span>
+            <span className="balance-stat-value red">₹{formatCurrency(totalCredit)}</span>
           </div>
         </div>
         <div className="balance-stat">
           <div className="balance-stat-body">
             <span className="balance-stat-label">Last Payment</span>
             <span className="balance-stat-value blue">
-              {lastPayment > 0 ? `Rs.${formatCurrency(lastPayment)}` : 'Never'}
+              {lastPayment > 0 ? `₹${formatCurrency(lastPayment)}` : 'Never'}
             </span>
           </div>
         </div>
         <div className="balance-stat">
           <div className="balance-stat-body">
             <span className="balance-stat-label">Total Paid</span>
-            <span className="balance-stat-value green">Rs.{formatCurrency(totalPaid)}</span>
+            <span className="balance-stat-value green">₹{formatCurrency(totalPaid)}</span>
           </div>
         </div>
       </div>
@@ -386,7 +386,7 @@ function CustomerDetailInner() {
           className="btn btn-remind"
           disabled={offline || !customer.phone}
           onClick={() => {
-            const msg = encodeURIComponent(`Hi ${customer.name}, this is a reminder about your pending balance of Rs.${formatCurrency(customer.balance)}. Please pay at your earliest convenience.`)
+            const msg = encodeURIComponent(`Hi ${customer.name}, this is a reminder about your pending balance of ₹${formatCurrency(customer.balance)}. Please pay at your earliest convenience.`)
             window.open(`https://wa.me/${customer.phone?.replace(/[^0-9]/g, '')}?text=${msg}`, '_blank')
           }}
         >
@@ -432,7 +432,7 @@ function CustomerDetailInner() {
                         </div>
                       </div>
                       <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
-                        {isCredit ? '+' : '-'}Rs.{formatCurrency(Math.abs(tx.amount))}
+                        {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
                       </div>
                     </div>
                   )
@@ -545,7 +545,7 @@ function CustomerDetailInner() {
               </div>
               <div className="tx-detail-row">
                 <span className="tx-detail-label">Amount</span>
-                <span className="tx-detail-value">Rs.{formatCurrency(Math.abs(selectedTx.amount))}</span>
+                <span className="tx-detail-value">₹{formatCurrency(Math.abs(selectedTx.amount))}</span>
               </div>
               <div className="tx-detail-row">
                 <span className="tx-detail-label">Description</span>
@@ -590,7 +590,7 @@ function CustomerDetailInner() {
               onChange={(e) => setEditPhone(e.target.value)} />
           </div>
           <div className="field">
-            <label>Opening Balance (Rs.)</label>
+            <label>Opening Balance (₹)</label>
             <input type="number" placeholder="0" min="0" value={editOpeningBalance}
               onChange={(e) => setEditOpeningBalance(e.target.value)} />
           </div>
