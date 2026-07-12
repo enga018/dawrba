@@ -98,11 +98,14 @@ export default function CustomerList() {
     return () => window.removeEventListener('online', handleOnline)
   }, [loadData])
 
-  const getCustomerStatus = (c: Customer): { label: string; type: 'overdue' | 'due_today' | 'clear'; overdueDays: number } => {
-    const overdueDays = calculateOverdueDays(c.balance || 0, c.transactions, overdueStrategy, overdueThresholdDays)
+  const getCustomerStatus = (c: Customer): { label: string; type: 'overdue' | 'due_today' | 'active' | 'clear'; overdueDays: number } => {
+    const balance = c.balance || 0
+    const overdueDays = calculateOverdueDays(balance, c.transactions, overdueStrategy, overdueThresholdDays)
     if (overdueDays > 0) return { label: 'Overdue', type: 'overdue', overdueDays }
 
-    // Check if customer received credit today
+    if (balance <= 0) return { label: 'Settled', type: 'clear', overdueDays: 0 }
+
+    // Customer still owes money but hasn't crossed the overdue threshold yet
     const today = new Date().toISOString().split('T')[0]
     const hasCreditToday = c.transactions?.some(t => {
       const txDate = t.date || t.created_at
@@ -110,7 +113,7 @@ export default function CustomerList() {
     })
     if (hasCreditToday) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
 
-    return { label: 'Settled', type: 'clear', overdueDays: 0 }
+    return { label: 'Active', type: 'active', overdueDays: 0 }
   }
 
   const getFilteredSorted = () => {
@@ -126,20 +129,17 @@ export default function CustomerList() {
     list = list.filter((c) => {
       if (activeFilter === 'all') return true
       const status = getCustomerStatus(c)
-      if (activeFilter === 'active') return status.type === 'overdue' || status.type === 'due_today'
+      if (activeFilter === 'active') return status.type === 'active'
       if (activeFilter === 'overdue') return status.type === 'overdue'
       if (activeFilter === 'due_today') return status.type === 'due_today'
       if (activeFilter === 'cleared') return status.type === 'clear'
       return true
     })
 
+    const statusPriority: Record<string, number> = { overdue: 0, due_today: 1, active: 2, clear: 3 }
     list.sort((a, b) => {
-      const aStatus = getCustomerStatus(a)
-      const bStatus = getCustomerStatus(b)
-      if (aStatus.type === 'overdue' && bStatus.type !== 'overdue') return -1
-      if (aStatus.type !== 'overdue' && bStatus.type === 'overdue') return 1
-      if (aStatus.type === 'due_today' && bStatus.type === 'clear') return -1
-      if (aStatus.type === 'clear' && bStatus.type === 'due_today') return 1
+      const diff = statusPriority[getCustomerStatus(a).type] - statusPriority[getCustomerStatus(b).type]
+      if (diff !== 0) return diff
       return (b.balance || 0) - (a.balance || 0)
     })
 
