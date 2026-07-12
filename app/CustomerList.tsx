@@ -101,7 +101,15 @@ export default function CustomerList() {
   const getCustomerStatus = (c: Customer): { label: string; type: 'overdue' | 'due_today' | 'clear'; overdueDays: number } => {
     const overdueDays = calculateOverdueDays(c.balance || 0, c.transactions, overdueStrategy, overdueThresholdDays)
     if (overdueDays > 0) return { label: 'Overdue', type: 'overdue', overdueDays }
-    if ((c.balance || 0) > 0) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
+
+    // Check if customer received credit today
+    const today = new Date().toISOString().split('T')[0]
+    const hasCreditToday = c.transactions?.some(t => {
+      const txDate = t.date || t.created_at
+      return txDate?.startsWith(today) && (t.amount || 0) > 0
+    })
+    if (hasCreditToday) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
+
     return { label: 'Settled', type: 'clear', overdueDays: 0 }
   }
 
