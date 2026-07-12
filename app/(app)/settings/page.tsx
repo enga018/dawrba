@@ -21,28 +21,31 @@ export default function SettingsPage() {
       return
     }
 
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('shop_name, phone')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      console.error('Failed to load profile:', error)
+    } else if (data) {
+      setShopName(data.shop_name || '')
+      setPhone(data.phone || '')
+    }
+
     try {
-      const { data, error } = await supabase
+      const { data: notifData } = await supabase
         .from('profiles')
-        .select('shop_name, phone, overdue_reminders_enabled')
+        .select('overdue_reminders_enabled')
         .eq('id', user.id)
         .single()
 
-      if (error) throw error
-
-      if (data) {
-        if (data.shop_name) {
-          setShopName(data.shop_name)
-        }
-        if (data.phone) {
-          setPhone(data.phone)
-        }
-        if (data.overdue_reminders_enabled !== null && data.overdue_reminders_enabled !== undefined) {
-          setOverdueRemindersEnabled(data.overdue_reminders_enabled)
-        }
+      if (notifData?.overdue_reminders_enabled !== null && notifData?.overdue_reminders_enabled !== undefined) {
+        setOverdueRemindersEnabled(notifData.overdue_reminders_enabled)
       }
-    } catch (err) {
-      console.error('Failed to load profile:', err)
+    } catch {
+      // Column may not exist yet - default value already set
     }
 
     const stored = localStorage.getItem('theme')
