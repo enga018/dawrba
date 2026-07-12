@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { getInitials, formatCurrency, formatDate, isCustomerOverdue, calculateOverdueDays, type OverdueStrategy } from '@/lib/utils'
+import { getInitials, formatCurrency, formatDate, calculateOverdueDays, daysUntilOverdue, type OverdueStrategy } from '@/lib/utils'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
 import { formatRelativeTime } from '@/lib/utils'
 import TransactionModal from '@/app/TransactionModal'
@@ -98,7 +98,7 @@ export default function CustomerList() {
     return () => window.removeEventListener('online', handleOnline)
   }, [loadData])
 
-  const getCustomerStatus = (c: Customer): { label: string; type: 'overdue' | 'due_today' | 'active' | 'clear'; overdueDays: number } => {
+  const getCustomerStatus = (c: Customer): { label: string; type: 'overdue' | 'due_today' | 'due_soon' | 'active' | 'clear'; overdueDays: number } => {
     const balance = c.balance || 0
     const overdueDays = calculateOverdueDays(balance, c.transactions, overdueStrategy, overdueThresholdDays)
     if (overdueDays > 0) return { label: 'Overdue', type: 'overdue', overdueDays }
@@ -106,12 +106,9 @@ export default function CustomerList() {
     if (balance <= 0) return { label: 'Settled', type: 'clear', overdueDays: 0 }
 
     // Customer still owes money but hasn't crossed the overdue threshold yet
-    const today = new Date().toISOString().split('T')[0]
-    const hasCreditToday = c.transactions?.some(t => {
-      const txDate = t.date || t.created_at
-      return txDate?.startsWith(today) && (t.amount || 0) > 0
-    })
-    if (hasCreditToday) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
+    const remaining = daysUntilOverdue(balance, c.transactions, overdueStrategy, overdueThresholdDays)
+    if (remaining === 0) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
+    if (remaining !== null && remaining <= 2) return { label: 'Due soon', type: 'due_soon', overdueDays: 0 }
 
     return { label: 'Active', type: 'active', overdueDays: 0 }
   }
@@ -129,14 +126,14 @@ export default function CustomerList() {
     list = list.filter((c) => {
       if (activeFilter === 'all') return true
       const status = getCustomerStatus(c)
-      if (activeFilter === 'active') return status.type === 'active'
+      if (activeFilter === 'active') return status.type === 'active' || status.type === 'due_soon'
       if (activeFilter === 'overdue') return status.type === 'overdue'
       if (activeFilter === 'due_today') return status.type === 'due_today'
       if (activeFilter === 'cleared') return status.type === 'clear'
       return true
     })
 
-    const statusPriority: Record<string, number> = { overdue: 0, due_today: 1, active: 2, clear: 3 }
+    const statusPriority: Record<string, number> = { overdue: 0, due_today: 1, due_soon: 2, active: 3, clear: 4 }
     list.sort((a, b) => {
       const diff = statusPriority[getCustomerStatus(a).type] - statusPriority[getCustomerStatus(b).type]
       if (diff !== 0) return diff
