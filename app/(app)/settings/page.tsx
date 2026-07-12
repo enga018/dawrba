@@ -23,16 +23,20 @@ export default function SettingsPage() {
       }
 
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('shop_name, phone, overdue_reminders_enabled')
           .eq('id', user.id)
           .single()
 
-        if (data?.shop_name) setShopName(data.shop_name)
-        if (data?.phone) setPhone(data.phone)
-        if (data?.overdue_reminders_enabled !== null && data?.overdue_reminders_enabled !== undefined) {
-          setOverdueRemindersEnabled(data.overdue_reminders_enabled)
+        if (error) throw error
+
+        if (data) {
+          setShopName(data.shop_name || '')
+          setPhone(data.phone || '')
+          if (data.overdue_reminders_enabled !== null && data.overdue_reminders_enabled !== undefined) {
+            setOverdueRemindersEnabled(data.overdue_reminders_enabled)
+          }
         }
       } catch {
         // Handle missing column gracefully
