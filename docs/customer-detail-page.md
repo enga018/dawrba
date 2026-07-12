@@ -1,13 +1,13 @@
 # Customer Detail Page – DawrBa
 
 ## Purpose
-The Customer Detail Page provides a complete overview of a single customer, including outstanding balance, payment history, quick actions, and recent activity.
+The Customer Detail Page provides a complete overview of a customer’s balance, transaction history, payment activity, and quick actions.
 
-This page is designed to be mobile-first while remaining responsive on tablet and desktop.
+The design follows the official DawrBa color system and mobile-first layout.
 
 ---
 
-# Page Structure
+## Page Structure
 
 1. Customer Header
 2. Summary Cards
@@ -17,21 +17,21 @@ This page is designed to be mobile-first while remaining responsive on tablet an
 
 ---
 
-# Customer Header
+## 1. Customer Header
 
-## Layout
+### Layout
 ```
 [Avatar]  Customer Name        [Status Badge]
           Phone Number
 ```
 
-## Elements
+### Elements
 - Avatar / Initials
 - Customer name
 - Phone number
 - Status badge
 
-## Status Colors
+### Status Colors
 | Status | Color |
 |--------|--------|
 | All Clear | Green |
@@ -41,15 +41,15 @@ This page is designed to be mobile-first while remaining responsive on tablet an
 
 ---
 
-# Summary Cards
+## 2. Summary Cards
 
-## Mobile Layout
-2 × 2 grid
+### Mobile Layout
+- 2 × 2 grid
 
-## Desktop Layout
-4 columns in a single row
+### Desktop Layout
+- 4 columns in a single row
 
-## Cards
+### Cards
 
 | Card | Value Color | Meaning |
 |------|-------------|---------|
@@ -68,7 +68,7 @@ Total Paid:     ₹21,600
 
 ---
 
-# Quick Actions
+## 3. Quick Actions
 
 | Action | Background | Icon/Text Color |
 |--------|------------|-----------------|
@@ -76,7 +76,7 @@ Total Paid:     ₹21,600
 | Collect | Light Green | Green |
 | Remind | Light Blue | Blue |
 
-## Card Height
+### Card Height
 Quick action cards must use the official token height:
 ```
 92px
@@ -84,28 +84,28 @@ Quick action cards must use the official token height:
 
 ---
 
-# Transaction History
+## 4. Transaction History
 
-## Filter Tabs
+### Filter Tabs
 - All
 - Credit
 - Payment
 
-## Transaction Row Structure
+### Transaction Row Structure
 ```
 [Icon]  Title
         Date · Time
                     Amount
 ```
 
-## Colors
+### Colors
 | Type | Icon | Amount |
 |------|------|--------|
 | Credit | Red Plus | Red |
 | Payment | Green Check | Green |
 | Edit | Blue Edit | Blue |
 
-## Example
+### Example
 ```
 Credit added
 12 Jul 2026 · 1:26 PM
@@ -114,14 +114,14 @@ Credit added
 
 ---
 
-# Recent Activity
+## 5. Recent Activity
 
-## Header
+### Header
 ```
 Recent Activity              View all
 ```
 
-## Activity Types
+### Activity Types
 | Activity | Color |
 |----------|-------|
 | Credit given | Red |
@@ -130,52 +130,54 @@ Recent Activity              View all
 | Reminder sent | Blue |
 | Customer deleted | Red |
 
-## Note
-Keep the **View all** link in the header and do not add a duplicate **See more** button at the bottom of the card.
+### Note
+Keep only the **View all** link in the header.
+Do not add a duplicate **See more** button.
 
 ---
 
-# Responsive Behavior
+## Responsive Behavior
 
-## Mobile (<768px)
+### Mobile (&lt;768px)
 - 2 × 2 summary grid
 - 3 quick action cards
 - Single-column transaction list
 - Bottom navigation visible
 
-## Tablet (768px–1023px)
+### Tablet (768px–1023px)
 - 2 × 2 summary grid
 - Larger action cards
 - Bottom navigation remains visible
 
-## Desktop (1024px+)
+### Desktop (1024px+)
 - 4 summary cards in one row
 - Sidebar navigation
 - Max content width: 1200px
 
 ---
 
-# Final Design Decisions
+## Final Design Decisions
 
-## Keep
+### Keep
 - Blue brand header
 - Red current balance
 - Green total paid
-- Filter tabs in transaction history
+- Transaction filter tabs
 - View all link in Recent Activity
 - Bottom navigation on tablet
 
-## Improve
+### Improve
 - Add timestamps everywhere
 - Use consistent currency format (`₹2,500`)
 - Align amounts using tabular numbers
+- Maintain consistent spacing
 
-## Remove
+### Remove
 - Duplicate “See more” button in Recent Activity
 
 ---
 
-# Final Layout Order
+## Final Layout Order
 
 ```
 Customer Header
@@ -185,4 +187,4 @@ Transaction History
 Recent Activity
 ```
 
-This structure provides the best balance of visibility, usability, and financial clarity for DawrBa users and is fully aligned with the official DawrBa color system and design tokens.
+This specification is fully aligned with the DawrBa design system and serves as the official reference for implementing the Customer Detail Page.
