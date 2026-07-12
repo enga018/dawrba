@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import LandingPage from './LandingPage'
 import DashboardPage from './DashboardPage'
@@ -28,7 +27,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const [showPicker, setShowPicker] = useState(false)
   const [activeModal, setActiveModal] = useState<'credit' | 'pay' | 'add-customer' | null>(null)
-  const router = useRouter()
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -85,11 +83,6 @@ export default function Home() {
             <div className="header-left">
               <h1 className="header-greeting">{getGreeting()}</h1>
               {shopName && <div className="header-shop-label">{shopName}</div>}
-            </div>
-            <div className="header-actions">
-              <button className="header-logout-btn" onClick={async () => { await supabase.auth.signOut(); router.push('/'); }}>
-                <i className="fa-solid fa-right-from-bracket"></i>
-              </button>
             </div>
           </div>
           <div className="content content-wide">
