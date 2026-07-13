@@ -105,7 +105,7 @@ function Trend({ value }: { value?: number }) {
 
 export default function DashboardHero() {
   const [txns, setTxns] = useState<Tx[] | null>(null)
-  const [endDay, setEndDay] = useState(0) // 0 = Sunday
+  const [endDay, setEndDay] = useState(6) // week starts Sunday by default, ends Saturday
   const [period, setPeriod] = useState<Period>('daily')
 
   useEffect(() => {
@@ -119,7 +119,9 @@ export default function DashboardHero() {
           supabase.from('profiles').select('weekly_report_day').eq('id', user.id).single(),
         ])
 
-        setEndDay(profile?.weekly_report_day === 'saturday' ? 6 : 0)
+        // weekly_report_day stores which day the week starts on ('sunday' or
+        // 'monday'); endDay is the day it ends on, 6 days later.
+        setEndDay(profile?.weekly_report_day === 'monday' ? 0 : 6)
 
         const ids = (customers || []).map((c) => c.id)
         if (ids.length === 0) {
