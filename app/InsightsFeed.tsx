@@ -455,7 +455,7 @@ function buildInsights(
       insight: {
         id: 'outstanding-trend-improved',
         icon: 'fa-arrow-trend-down',
-        iconColor: 'blue',
+        iconColor: 'orange',
         title: 'Outstanding Reduced',
         body: `Outstanding dropped from ₹${formatCurrency(outstandingBeforeMonth)} to ₹${formatCurrency(outstandingNow)}`,
         sub: `-${pct}% this month`,
