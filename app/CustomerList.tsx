@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { supabase } from '@/lib/supabase'
 import { getInitials, formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils'
 import { calculateCustomerListMetrics } from '@/lib/customerListCalculations'
@@ -222,9 +223,14 @@ export default function CustomerList() {
   }, [customers, searchQuery, activeFilter, statusByCustomerId])
 
 
-  useEffect(() => {
-    setVisibleCount(20)
-  }, [searchQuery, activeFilter])
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  const virtualizer = useVirtualizer({
+    count: filteredList.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 160, // Approximate height of customer card
+    overscan: 5, // Render 5 extra items above/below visible area
+  })
 
   const openModal: OpenModal = useCallback((e, customer, mode) => {
     e.preventDefault()
@@ -299,42 +305,37 @@ export default function CustomerList() {
           <p>No customers match your search.</p>
         </div>
       ) : (
-        <>
-          <div className="customer-list">
-            {filteredList.slice(0, visibleCount).map((customer) => (
-              <CustomerCard key={customer.id} customer={customer} status={getCustomerStatus(customer)} onOpenModal={openModal} />
-            ))}
+        <div
+          ref={parentRef}
+          className="customer-list"
+          style={{ height: 'calc(100vh - 400px)', overflow: 'auto' }}
+        >
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const customer = filteredList[virtualItem.index]
+              return (
+                <div
+                  key={virtualItem.key}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                >
+                  <CustomerCard customer={customer} status={getCustomerStatus(customer)} onOpenModal={openModal} />
+                </div>
+              )
+            })}
           </div>
-
-          <div className="customer-table-wrap" style={{ display: 'none' }}>
-            <table className="customer-table">
-              <thead>
-                <tr>
-                  <th>Customer</th>
-                  <th>Phone</th>
-                  <th>Outstanding</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredList.slice(0, visibleCount).map((customer) => (
-                  <CustomerTableRow key={customer.id} customer={customer} status={getCustomerStatus(customer)} onOpenModal={openModal} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {filteredList.length > visibleCount && (
-            <button
-              className="btn btn-secondary btn-sm btn-block"
-              style={{ marginTop: '12px' }}
-              onClick={() => setVisibleCount((prev) => prev + 20)}
-            >
-              See more ({filteredList.length - visibleCount} remaining)
-            </button>
-          )}
-        </>
+        </div>
       )}
 
       <TransactionModal
