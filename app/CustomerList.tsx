@@ -27,6 +27,7 @@ export default function CustomerList() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [visibleCount, setVisibleCount] = useState(20)
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
+  const [overdueResetThresholdPct, setOverdueResetThresholdPct] = useState(50)
   const [modalTarget, setModalTarget] = useState<{ id: string; name: string; balance: number } | null>(null)
   const [modalMode, setModalMode] = useState<'credit' | 'pay' | null>(null)
 
@@ -37,11 +38,12 @@ export default function CustomerList() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('overdue_threshold_days')
+        .select('overdue_threshold_days, overdue_reset_threshold_pct')
         .eq('id', user.id)
         .single()
 
       if (profileData?.overdue_threshold_days) setOverdueThresholdDays(profileData.overdue_threshold_days)
+      if (profileData?.overdue_reset_threshold_pct) setOverdueResetThresholdPct(profileData.overdue_reset_threshold_pct)
 
       const { data: customersData, error: customersError } = await supabase
         .from('customers')
@@ -98,13 +100,13 @@ export default function CustomerList() {
 
   const getCustomerStatus = (c: Customer): { label: string; type: 'overdue' | 'due_today' | 'due_soon' | 'active' | 'clear'; overdueDays: number } => {
     const balance = c.balance || 0
-    const overdueDays = calculateOverdueDays(balance, c.transactions, overdueThresholdDays)
+    const overdueDays = calculateOverdueDays(balance, c.transactions, overdueThresholdDays, overdueResetThresholdPct)
     if (overdueDays > 0) return { label: 'Overdue', type: 'overdue', overdueDays }
 
     if (balance <= 0) return { label: 'Settled', type: 'clear', overdueDays: 0 }
 
     // Customer still owes money but hasn't crossed the overdue threshold yet
-    const remaining = daysUntilOverdue(balance, c.transactions, overdueThresholdDays)
+    const remaining = daysUntilOverdue(balance, c.transactions, overdueThresholdDays, overdueResetThresholdPct)
     if (remaining === 0) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
     if (remaining !== null && remaining <= 2) return { label: 'Due soon', type: 'due_soon', overdueDays: 0 }
 

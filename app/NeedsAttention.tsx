@@ -24,11 +24,12 @@ export default function NeedsAttention() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('overdue_threshold_days')
+          .select('overdue_threshold_days, overdue_reset_threshold_pct')
           .eq('id', user.id)
           .single()
 
         const thresholdDays: number = profileData?.overdue_threshold_days || 7
+        const resetThresholdPct: number = profileData?.overdue_reset_threshold_pct || 50
 
         const { data: customersData } = await supabase
           .from('customers')
@@ -59,7 +60,7 @@ export default function NeedsAttention() {
             balance: (c.opening_balance || 0) + (balances[c.id] || 0),
             transactions: txByCustomer[c.id] || [],
           }))
-          .filter((c) => isCustomerOverdue(c.balance, c.transactions, thresholdDays))
+          .filter((c) => isCustomerOverdue(c.balance, c.transactions, thresholdDays, resetThresholdPct))
           .sort((a, b) => b.balance - a.balance)
           .slice(0, 3)
           .map(({ transactions, ...rest }) => rest)

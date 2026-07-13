@@ -102,13 +102,19 @@ interface Transaction {
 }
 
 /* Days since the customer's balance most recently went from settled (<= 0)
-   to owing (> 0) - the start of the current unpaid streak. This is NOT
-   just "days since the last transaction": taking on more credit while
-   already owing money doesn't reset the clock (the debt has been aging
-   the whole time), but paying off in full and being given new credit
-   later correctly starts a fresh clock. Null if there's no active streak
-   (already settled, or no transactions to anchor to). */
-function daysSinceStreakStart(balance: number, transactions: Transaction[]): number | null {
+   to owing (> 0), or since their last "meaningful" payment - the start of
+   the current unpaid streak. This is NOT just "days since the last
+   transaction": taking on more credit while already owing money never
+   resets the clock (the debt has been aging the whole time), but paying
+   off in full, or paying down at least resetThresholdPct of the current
+   balance, correctly starts a fresh clock. A token payment (below the
+   threshold) doesn't reset it. Null if there's no active streak (already
+   settled, or no transactions to anchor to). */
+function daysSinceStreakStart(
+  balance: number,
+  transactions: Transaction[],
+  resetThresholdPct: number = 50
+): number | null {
   if (balance <= 0) return null
 
   const sorted = [...transactions].sort((a, b) => {
@@ -123,11 +129,17 @@ function daysSinceStreakStart(balance: number, transactions: Transaction[]): num
 
   for (const t of sorted) {
     const prevBalance = runningBalance
-    runningBalance += t.amount || 0
-    if (prevBalance <= 0 && runningBalance > 0) {
-      streakStart = t.date || t.created_at
-    } else if (runningBalance <= 0) {
+    const amount = t.amount || 0
+    runningBalance += amount
+    if (runningBalance <= 0) {
       streakStart = null
+    } else if (prevBalance <= 0) {
+      streakStart = t.date || t.created_at
+    } else if (amount < 0) {
+      const ratio = Math.abs(amount) / prevBalance
+      if (ratio >= resetThresholdPct / 100) {
+        streakStart = t.date || t.created_at
+      }
     }
   }
 
@@ -137,10 +149,11 @@ function daysSinceStreakStart(balance: number, transactions: Transaction[]): num
 export function calculateOverdueDays(
   balance: number,
   transactions: Transaction[],
-  thresholdDays: number = 7
+  thresholdDays: number = 7,
+  resetThresholdPct: number = 50
 ): number {
   if (balance <= 0) return 0
-  const days = daysSinceStreakStart(balance, transactions)
+  const days = daysSinceStreakStart(balance, transactions, resetThresholdPct)
   if (days === null) return 0
   return days > thresholdDays ? days - thresholdDays : 0
 }
@@ -148,9 +161,10 @@ export function calculateOverdueDays(
 export function isCustomerOverdue(
   balance: number,
   transactions: Transaction[],
-  thresholdDays: number = 7
+  thresholdDays: number = 7,
+  resetThresholdPct: number = 50
 ): boolean {
-  return calculateOverdueDays(balance, transactions, thresholdDays) > 0
+  return calculateOverdueDays(balance, transactions, thresholdDays, resetThresholdPct) > 0
 }
 
 /* Days of grace period left before a customer becomes overdue (0 = last day
@@ -159,10 +173,11 @@ export function isCustomerOverdue(
 export function daysUntilOverdue(
   balance: number,
   transactions: Transaction[],
-  thresholdDays: number = 7
+  thresholdDays: number = 7,
+  resetThresholdPct: number = 50
 ): number | null {
   if (balance <= 0) return null
-  const days = daysSinceStreakStart(balance, transactions)
+  const days = daysSinceStreakStart(balance, transactions, resetThresholdPct)
   if (days === null) return null
   const remaining = thresholdDays - days
   return remaining >= 0 ? remaining : null

@@ -55,6 +55,7 @@ function CustomerDetailInner() {
   const [editOpeningBalance, setEditOpeningBalance] = useState('')
   const [savingCustomer, setSavingCustomer] = useState(false)
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
+  const [overdueResetThresholdPct, setOverdueResetThresholdPct] = useState(50)
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
   const [logLoading, setLogLoading] = useState(true)
@@ -87,11 +88,12 @@ function CustomerDetailInner() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('overdue_threshold_days')
+        .select('overdue_threshold_days, overdue_reset_threshold_pct')
         .eq('id', user.id)
         .single()
 
       if (profileData?.overdue_threshold_days) setOverdueThresholdDays(profileData.overdue_threshold_days)
+      if (profileData?.overdue_reset_threshold_pct) setOverdueResetThresholdPct(profileData.overdue_reset_threshold_pct)
 
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
@@ -297,12 +299,14 @@ function CustomerDetailInner() {
   const overdueDays = calculateOverdueDays(
     customer.balance,
     transactions,
-    overdueThresholdDays
+    overdueThresholdDays,
+    overdueResetThresholdPct
   )
   const daysRemaining = daysUntilOverdue(
     customer.balance,
     transactions,
-    overdueThresholdDays
+    overdueThresholdDays,
+    overdueResetThresholdPct
   )
 
   const filteredTransactions = transactions.filter((tx) => {
