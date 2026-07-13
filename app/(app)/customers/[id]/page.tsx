@@ -81,6 +81,9 @@ function CustomerDetailInner() {
     if (searchParams.get('addCredit') === '1') {
       setActiveModal('credit')
     }
+    if (searchParams.get('tab') === 'payment') {
+      handleFilterChange('payment')
+    }
   }, [])
 
   const loadData = useCallback(async () => {
@@ -166,6 +169,13 @@ function CustomerDetailInner() {
     return () => window.removeEventListener('online', handleOnline)
   }, [loadData])
 
+  useEffect(() => {
+    const txId = searchParams.get('tx')
+    if (!txId || transactions.length === 0) return
+    const match = transactions.find((t) => t.id === txId)
+    if (match) setSelectedTx(match)
+  }, [transactions])
+
   const handleEdit = (tx: Transaction) => {
     setEditingTx(tx)
     setActiveModal(tx.amount > 0 ? 'credit' : 'pay')
@@ -196,6 +206,7 @@ function CustomerDetailInner() {
       setDeleteConfirm(null)
       showToast('Transaction deleted')
       await loadData()
+      window.dispatchEvent(new Event('dawrba:refresh'))
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to delete transaction'
       setError(msg)
@@ -269,6 +280,7 @@ function CustomerDetailInner() {
       showToast('Customer updated')
       setShowEditCustomerModal(false)
       await loadData()
+      window.dispatchEvent(new Event('dawrba:refresh'))
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to update customer', 'error')
     } finally {

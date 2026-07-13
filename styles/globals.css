@@ -3477,6 +3477,21 @@ button.profile-menu-item:last-child {
   padding: 12px;
   background: var(--surface-alt);
   border-radius: 10px;
+  min-height: 56px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.insight-item:hover { background: var(--border); }
+
+.insight-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .insight-icon {

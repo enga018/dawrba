@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency, startOfDay, startOfWeek, daysSince, daysUntilOverdue } from '@/lib/utils'
 
@@ -13,6 +14,7 @@ interface Insight {
   title: string
   body: string
   sub?: string
+  href: string
 }
 
 interface CustomerRow {
@@ -23,6 +25,7 @@ interface CustomerRow {
 }
 
 interface TxRow {
+  id: string
   customer_id: string
   amount: number
   date?: string
@@ -76,7 +79,7 @@ export default function InsightsFeed() {
 
       const { data: txData, error: txError } = await supabase
         .from('transactions')
-        .select('customer_id, amount, date, created_at')
+        .select('id, customer_id, amount, date, created_at')
         .in('customer_id', ids)
       if (txError) throw txError
 
@@ -101,7 +104,7 @@ export default function InsightsFeed() {
     return (
       <div className="home-section-card">
         <div className="home-section-header">
-          <h3>Insights</h3>
+          <h3>Business Insights</h3>
         </div>
         <div style={{ textAlign: 'center', padding: '20px' }}>
           <div className="spinner" style={{ margin: '0 auto' }}></div>
@@ -117,12 +120,12 @@ export default function InsightsFeed() {
   return (
     <div className="home-section-card">
       <div className="home-section-header">
-        <h3>Insights</h3>
+        <h3>Business Insights</h3>
       </div>
 
       <div className="insight-list">
         {insights.map((insight) => (
-          <div key={insight.id} className="insight-item">
+          <Link key={insight.id} href={insight.href} className="insight-item">
             <div className={`insight-icon ${insight.iconColor}`}>
               <i className={`fa-solid ${insight.icon}`}></i>
             </div>
@@ -131,7 +134,10 @@ export default function InsightsFeed() {
               <div className="insight-body">{insight.body}</div>
               {insight.sub && <div className="insight-sub">{insight.sub}</div>}
             </div>
-          </div>
+            <div className="insight-chevron">
+              <i className="fa-solid fa-chevron-right"></i>
+            </div>
+          </Link>
         ))}
       </div>
 
@@ -170,7 +176,7 @@ function buildInsights(
 
   let creditsTodayAmount = 0
   let paymentsTodayAmount = 0
-  let todayLargePayment: { amount: number; customerId: string } | null = null
+  let todayLargePayment: { amount: number; customerId: string; txId: string } | null = null
 
   const sorted = [...txData].sort((a, b) => new Date(a.date || a.created_at).getTime() - new Date(b.date || b.created_at).getTime())
 
@@ -212,7 +218,7 @@ function buildInsights(
         const abs = Math.abs(amount)
         paymentsTodayAmount += abs
         if (abs >= thresholds.largePaymentThreshold && (!todayLargePayment || abs > todayLargePayment.amount)) {
-          todayLargePayment = { amount: abs, customerId: cid }
+          todayLargePayment = { amount: abs, customerId: cid, txId: t.id }
         }
       }
     }
@@ -247,9 +253,10 @@ function buildInsights(
         id: 'credit-limit-exceeded',
         icon: 'fa-ban',
         iconColor: 'red',
-        title: 'Credit limit exceeded',
+        title: 'Credit Limit Exceeded',
         body: `${nameById.get(creditLimitBreach.customerId) || 'A customer'} owes ₹${formatCurrency(creditLimitBreach.balance)}, limit ₹${formatCurrency(creditLimitBreach.limit)}`,
         sub: `Exceeded by ₹${formatCurrency(creditLimitBreach.overage)}`,
+        href: `/customers/${creditLimitBreach.customerId}`,
       },
     })
   }
@@ -274,8 +281,9 @@ function buildInsights(
         id: 'slow-paying-customer',
         icon: 'fa-hourglass-half',
         iconColor: 'red',
-        title: 'Slow paying customer',
+        title: 'Slow Payment Pattern',
         body: `${nameById.get(slowestPayer.customerId) || 'A customer'}: only ₹${formatCurrency(slowestPayer.paid)} paid against ₹${formatCurrency(slowestPayer.credit)} in 3 months`,
+        href: `/customers/${slowestPayer.customerId}?tab=payment`,
       },
     })
   }
@@ -294,8 +302,9 @@ function buildInsights(
         id: 'due-this-week',
         icon: 'fa-clock',
         iconColor: 'red',
-        title: 'Due this week',
+        title: 'Due Soon',
         body: `${dueThisWeekCount} customer${dueThisWeekCount === 1 ? '' : 's'} will become overdue in 3 days`,
+        href: '/customers?filter=due_soon',
       },
     })
   }
@@ -317,8 +326,9 @@ function buildInsights(
         id: 'balance-rising-fast',
         icon: 'fa-chart-line',
         iconColor: 'red',
-        title: 'Balance rising fast',
+        title: 'Balance Increasing',
         body: `${nameById.get(fastestRiser.customerId) || 'A customer'}'s balance rose ₹${formatCurrency(fastestRiser.rise)} this week`,
+        href: `/customers/${fastestRiser.customerId}`,
       },
     })
   }
@@ -344,8 +354,9 @@ function buildInsights(
         id: 'no-payment-30-days',
         icon: 'fa-calendar-xmark',
         iconColor: 'red',
-        title: 'No payment in a while',
+        title: 'No Recent Payment',
         body: `${nameById.get(staleCustomer.customerId) || 'A customer'} hasn't paid in ${staleCustomer.days} days`,
+        href: `/customers/${staleCustomer.customerId}`,
       },
     })
   }
@@ -359,29 +370,31 @@ function buildInsights(
         id: 'net-recovery',
         icon: 'fa-arrow-trend-up',
         iconColor: 'green',
-        title: 'Strong recovery day',
+        title: 'Strong Recovery Day',
         body: `Collected ₹${formatCurrency(paymentsTodayAmount)} · Credit given ₹${formatCurrency(creditsTodayAmount)}`,
         sub: `Net recovery: +₹${formatCurrency(netToday)}`,
+        href: '/reports?period=today',
       },
     })
   }
 
   // 7. Large Payment Received
   if (todayLargePayment) {
-    const payment = todayLargePayment as { amount: number; customerId: string }
+    const payment = todayLargePayment as { amount: number; customerId: string; txId: string }
     candidates.push({
       priority: 7,
       insight: {
         id: 'large-payment-received',
         icon: 'fa-sack-dollar',
         iconColor: 'purple',
-        title: 'Large payment received',
+        title: 'Large Payment Received',
         body: `${nameById.get(payment.customerId) || 'A customer'} paid ₹${formatCurrency(payment.amount)}`,
+        href: `/customers/${payment.customerId}?tx=${payment.txId}`,
       },
     })
   }
 
-  // 8. Customer Fully Settled
+  // 8. Balance Cleared
   const fullySettledToday = customers.filter((c) => {
     const before = balancesBeforeToday[c.id] ?? (c.opening_balance || 0)
     const current = balances[c.id] || 0
@@ -395,9 +408,10 @@ function buildInsights(
         id: 'customer-fully-settled',
         icon: 'fa-circle-check',
         iconColor: 'blue',
-        title: 'Customer fully settled',
+        title: 'Balance Cleared',
         body: `${featured.name} fully settled their balance`,
         sub: fullySettledToday.length > 1 ? `+${fullySettledToday.length - 1} more customer${fullySettledToday.length - 1 === 1 ? '' : 's'} settled today` : undefined,
+        href: `/customers/${featured.id}`,
       },
     })
   }
@@ -416,9 +430,10 @@ function buildInsights(
         id: 'best-collection-week',
         icon: 'fa-trophy',
         iconColor: 'orange',
-        title: 'Best collection week',
+        title: 'Best Collection Week',
         body: `Collected ₹${formatCurrency(currentWeekCollection)} this week`,
         sub: `Previous best: ₹${formatCurrency(bestPastWeek)}`,
+        href: '/reports?period=week',
       },
     })
   }
@@ -441,9 +456,10 @@ function buildInsights(
         id: 'outstanding-trend-improved',
         icon: 'fa-arrow-trend-down',
         iconColor: 'blue',
-        title: 'Outstanding trend improved',
+        title: 'Outstanding Reduced',
         body: `Outstanding dropped from ₹${formatCurrency(outstandingBeforeMonth)} to ₹${formatCurrency(outstandingNow)}`,
         sub: `-${pct}% this month`,
+        href: '/reports?period=month',
       },
     })
   }

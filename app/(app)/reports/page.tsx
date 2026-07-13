@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency, isCustomerOverdue, daysUntilOverdue, startOfDay, startOfWeek } from '@/lib/utils'
 
@@ -63,8 +64,14 @@ function formatChange(pct: number | null): { text: string; className: string } |
   return { text: `${pct}%`, className: 'down' }
 }
 
+function isPeriod(value: string | null): value is Period {
+  return value === 'today' || value === 'week' || value === 'month'
+}
+
 export default function ReportsPage() {
-  const [period, setPeriod] = useState<Period>('today')
+  const searchParams = useSearchParams()
+  const initialPeriod = searchParams.get('period')
+  const [period, setPeriod] = useState<Period>(isPeriod(initialPeriod) ? initialPeriod : 'today')
   const [data, setData] = useState<ReportData | null>(null)
 
   useEffect(() => {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getInitials, formatCurrency, formatDate, calculateOverdueDays, daysUntilOverdue } from '@/lib/utils'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
@@ -18,13 +19,19 @@ interface Customer {
   transactions: Array<{ amount: number; date?: string; created_at: string }>
 }
 
-type FilterType = 'all' | 'active' | 'overdue' | 'due_today' | 'cleared'
+type FilterType = 'all' | 'active' | 'overdue' | 'due_today' | 'due_soon' | 'cleared'
+
+function isFilterType(value: string | null): value is FilterType {
+  return value === 'all' || value === 'active' || value === 'overdue' || value === 'due_today' || value === 'due_soon' || value === 'cleared'
+}
 
 export default function CustomerList() {
+  const searchParams = useSearchParams()
+  const initialFilter = searchParams.get('filter')
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  const [activeFilter, setActiveFilter] = useState<FilterType>(isFilterType(initialFilter) ? initialFilter : 'all')
   const [visibleCount, setVisibleCount] = useState(20)
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
   const [overdueResetThresholdPct, setOverdueResetThresholdPct] = useState(50)
@@ -108,7 +115,7 @@ export default function CustomerList() {
     // Customer still owes money but hasn't crossed the overdue threshold yet
     const remaining = daysUntilOverdue(balance, c.transactions, overdueThresholdDays, overdueResetThresholdPct)
     if (remaining === 0) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
-    if (remaining !== null && remaining <= 2) return { label: 'Due soon', type: 'due_soon', overdueDays: 0 }
+    if (remaining !== null && remaining <= 3) return { label: 'Due soon', type: 'due_soon', overdueDays: 0 }
 
     return { label: 'Active', type: 'active', overdueDays: 0 }
   }
@@ -129,6 +136,7 @@ export default function CustomerList() {
       if (activeFilter === 'active') return status.type === 'active' || status.type === 'due_soon'
       if (activeFilter === 'overdue') return status.type === 'overdue'
       if (activeFilter === 'due_today') return status.type === 'due_today'
+      if (activeFilter === 'due_soon') return status.type === 'due_soon'
       if (activeFilter === 'cleared') return status.type === 'clear'
       return true
     })
@@ -210,6 +218,9 @@ export default function CustomerList() {
         </button>
         <button className={`filter-chip filter-chip-due ${activeFilter === 'due_today' ? 'active' : ''}`} onClick={() => setActiveFilter('due_today')}>
           Due Today
+        </button>
+        <button className={`filter-chip filter-chip-due ${activeFilter === 'due_soon' ? 'active' : ''}`} onClick={() => setActiveFilter('due_soon')}>
+          Due Soon
         </button>
         <button className={`filter-chip filter-chip-cleared ${activeFilter === 'cleared' ? 'active' : ''}`} onClick={() => setActiveFilter('cleared')}>
           Settled
