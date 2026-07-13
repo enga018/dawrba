@@ -1,18 +1,24 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { calculateReportMetrics } from '@/lib/reportsCalculations'
+import { recordApiCall } from '@/lib/performanceMonitoring'
 
 /**
  * Server-side report aggregation endpoint
  * Offloads heavy calculations to the backend for better performance
  */
 export async function GET(req: Request) {
+  const startTime = Date.now()
+  const url = new URL(req.url).pathname
+
   try {
     const { searchParams } = new URL(req.url)
     const userId = searchParams.get('user_id')
     const period = (searchParams.get('period') || 'today') as 'today' | 'week' | 'month'
 
     if (!userId) {
+      const duration = Date.now() - startTime
+      recordApiCall(url, 'GET', duration, 400, userId || undefined)
       return NextResponse.json({ error: 'user_id required' }, { status: 400 })
     }
 
@@ -27,11 +33,19 @@ export async function GET(req: Request) {
     const resetThresholdPct = profileData?.overdue_reset_threshold_pct || 50
     const weekStartDay: 0 | 1 = profileData?.weekly_report_day === 'monday' ? 1 : 0
 
-    // Fetch customers
-    const { data: customers } = await supabase
+    // Fetch customers (with optional search filtering)
+    const search = searchParams.get('search') || ''
+    let customerQuery = supabase
       .from('customers')
       .select('id, name, opening_balance, created_at')
       .eq('user_id', userId)
+
+    // Add search filter if provided
+    if (search) {
+      customerQuery = customerQuery.or(`name.ilike.%${search}%`)
+    }
+
+    const { data: customers } = await customerQuery
 
     const customerIds = (customers || []).map(c => c.id)
 
@@ -78,8 +92,19 @@ export async function GET(req: Request) {
       weekStartDay
     )
 
+    const duration = Date.now() - startTime
+    recordApiCall(url, 'GET', duration, 200, userId, {
+      period,
+      customersCount: (customers || []).length,
+      transactionsCount: (transactions || []).length,
+    })
+
     return NextResponse.json(metrics)
   } catch (error) {
+    const duration = Date.now() - startTime
+    recordApiCall(url, 'GET', duration, 500, undefined, {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
     console.error('Error calculating report metrics:', error)
     return NextResponse.json(
       { error: 'Failed to calculate report metrics' },

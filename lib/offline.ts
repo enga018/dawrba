@@ -21,6 +21,13 @@ interface TransactionRecord {
   updated_at?: string
 }
 
+interface CachedApiResponse {
+  url: string
+  data: unknown
+  timestamp: number
+  ttl: number
+}
+
 export interface PendingMutation {
   id?: number
   table: string
@@ -35,6 +42,7 @@ class DawrbaDB extends Dexie {
   customers!: Table<CustomerRecord, string>
   transactions!: Table<TransactionRecord, string>
   pendingMutations!: Table<PendingMutation, number>
+  apiCache!: Table<CachedApiResponse, string>
 
   constructor() {
     super('dawrba')
@@ -46,6 +54,12 @@ class DawrbaDB extends Dexie {
       customers: 'id',
       transactions: 'id, customerId',
       pendingMutations: '++id, createdAt',
+    })
+    this.version(3).stores({
+      customers: 'id',
+      transactions: 'id, customerId',
+      pendingMutations: '++id, createdAt',
+      apiCache: 'url',
     })
   }
 }
@@ -207,10 +221,61 @@ export async function processQueue(): Promise<void> {
   }
 }
 
+// ─── API Response Caching ───────────────────────────────────
+
+export async function cacheApiResponse(
+  url: string,
+  data: unknown,
+  ttlMinutes = 60
+) {
+  try {
+    await getDb().apiCache.put({
+      url,
+      data,
+      timestamp: Date.now(),
+      ttl: ttlMinutes * 60 * 1000,
+    })
+  } catch {
+    // IndexedDB unavailable
+  }
+}
+
+export async function getCachedApiResponse<T>(url: string): Promise<T | null> {
+  try {
+    const cached = await getDb().apiCache.get(url)
+    if (!cached) return null
+
+    const now = Date.now()
+    const age = now - cached.timestamp
+    if (age > cached.ttl) {
+      await getDb().apiCache.delete(url)
+      return null
+    }
+
+    return cached.data as T
+  } catch {
+    return null
+  }
+}
+
+export async function clearExpiredApiCache() {
+  try {
+    const all = await getDb().apiCache.toArray()
+    const now = Date.now()
+    const expired = all.filter(c => now - c.timestamp > c.ttl).map(c => c.url)
+    if (expired.length > 0) {
+      await getDb().apiCache.bulkDelete(expired)
+    }
+  } catch {
+    // IndexedDB unavailable
+  }
+}
+
 export function setupAutoSync() {
   if (typeof window === 'undefined') return
   window.addEventListener('online', () => { processQueue() })
   setTimeout(() => { processQueue() }, 1000)
+  setInterval(() => { clearExpiredApiCache() }, 5 * 60 * 1000) // Every 5 minutes
 }
 
 type WriteResult = { data: any; error: any } | null
