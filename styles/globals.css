@@ -3391,6 +3391,145 @@ button.profile-menu-item:last-child {
   gap: 4px 14px;
 }
 
+.admin-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--tint-blue);
+  color: var(--blue);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  word-break: break-all;
+}
+
+.admin-notice button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.admin-sort-select {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.tenant-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tenant-status-badge.active {
+  background: rgba(34, 197, 94, 0.14);
+  color: #16a34a;
+}
+
+.tenant-status-badge.pending {
+  background: rgba(249, 115, 22, 0.14);
+  color: #ea580c;
+}
+
+.tenant-status-badge.suspended {
+  background: rgba(239, 68, 68, 0.14);
+  color: #dc2626;
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.quick-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.quick-action-btn:hover {
+  background: var(--border);
+}
+
+.quick-action-btn i {
+  font-size: 1.1rem;
+  color: var(--blue);
+}
+
+.recent-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recent-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface-alt);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.12s;
+}
+
+.recent-activity-item:hover {
+  background: var(--border);
+}
+
+.recent-activity-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--tint-blue);
+  color: var(--blue);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.recent-activity-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.recent-activity-name {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.recent-activity-time {
+  font-size: 0.75rem;
+  color: var(--meta);
+  white-space: nowrap;
+}
+
 /* ============================================
    Settings Tab System
    ============================================ */

@@ -1,9 +1,9 @@
 import 'server-only'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-let supabaseAdminInstance: ReturnType<typeof createClient> | null = null
+let supabaseAdminInstance: SupabaseClient | null = null
 
-function getSupabaseAdmin() {
+function getSupabaseAdmin(): SupabaseClient {
   if (supabaseAdminInstance) return supabaseAdminInstance
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -27,4 +27,4 @@ export const supabaseAdmin = new Proxy(
       return (admin as any)[prop]
     },
   }
-) as ReturnType<typeof createClient>
+) as SupabaseClient

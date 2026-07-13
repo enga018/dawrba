@@ -21,9 +21,9 @@ export default function AdminBottomNav() {
         <span>Tenants</span>
       </Link>
 
-      <Link href="/admin/reports" className={`admin-bottom-nav-item ${isActive('/admin/reports') ? 'active' : ''}`}>
-        <i className="fa-solid fa-chart-pie"></i>
-        <span>Reports</span>
+      <Link href="/admin/activity" className={`admin-bottom-nav-item ${isActive('/admin/activity') ? 'active' : ''}`}>
+        <i className="fa-solid fa-bolt"></i>
+        <span>Activity</span>
       </Link>
 
       <Link href="/admin/settings" className={`admin-bottom-nav-item ${isActive('/admin/settings') ? 'active' : ''}`}>

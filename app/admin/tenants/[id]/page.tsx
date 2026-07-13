@@ -1,26 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { adminFetchJson } from '@/lib/adminApiClient'
-import { formatCurrency, formatDate, formatTimestampDate } from '@/lib/utils'
+import { formatDate, formatTimestampDate, formatRelativeTime } from '@/lib/utils'
+
+type TenantStatus = 'active' | 'suspended' | 'pending'
 
 interface TenantCustomer {
   id: string
   name: string
   phone: string | null
-  opening_balance: number
-  created_at: string
-}
-
-interface TenantTransaction {
-  id: string
-  customer_id: string
-  customerName: string
-  amount: number
-  note: string | null
-  date: string | null
   created_at: string
 }
 
@@ -29,24 +20,74 @@ interface TenantDetail {
     id: string
     email: string | null
     signupDate: string | null
+    lastSignInAt: string | null
+    emailConfirmed: boolean
     shopName: string | null
+    ownerName: string | null
     phone: string | null
+    status: TenantStatus
   }
   customers: TenantCustomer[]
-  recentTransactions: TenantTransaction[]
+}
+
+const STATUS_LABEL: Record<TenantStatus, string> = {
+  active: 'Active',
+  suspended: 'Suspended',
+  pending: 'Pending',
 }
 
 export default function AdminTenantDetailPage() {
   const params = useParams<{ id: string }>()
+  const router = useRouter()
   const [data, setData] = useState<TenantDetail | null>(null)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState('')
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!params?.id) return
-    adminFetchJson<TenantDetail>(`/api/admin/tenants/${params.id}`)
+    return adminFetchJson<TenantDetail>(`/api/admin/tenants/${params.id}`)
       .then(setData)
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load tenant'))
   }, [params?.id])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const handleAction = async (action: 'activate' | 'suspend' | 'reset') => {
+    if (!params?.id) return
+    setBusy(true)
+    setNotice('')
+    try {
+      const res = await adminFetchJson<{ ok: boolean; resetLink?: string | null }>(`/api/admin/tenants/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      if (action === 'reset') {
+        setNotice(res.resetLink ? `Password reset link: ${res.resetLink}` : 'Password reset link generated.')
+      }
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Action failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!params?.id || !data) return
+    if (!confirm(`Delete tenant "${data.profile.shopName || data.profile.email}"? This permanently removes their account and cannot be undone.`)) return
+    setBusy(true)
+    try {
+      await adminFetchJson(`/api/admin/tenants/${params.id}`, { method: 'DELETE' })
+      router.push('/admin/tenants')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete tenant')
+      setBusy(false)
+    }
+  }
 
   return (
     <>
@@ -69,13 +110,49 @@ export default function AdminTenantDetailPage() {
 
       {data && (
         <>
-          <div className="admin-detail-header">
-            <h2>{data.profile.shopName || '(No shop name)'}</h2>
+          <div className="admin-detail-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+            <h2>{data.profile.shopName || '(No business name)'}</h2>
+            <span className={`tenant-status-badge ${data.profile.status}`}>
+              {STATUS_LABEL[data.profile.status]}
+            </span>
           </div>
           <div className="admin-detail-meta">
-            <span>{data.profile.email || 'No email'}</span>
+            <span>{data.profile.ownerName || 'Owner not set'}</span>
             <span>{data.profile.phone || 'No phone'}</span>
-            <span>Signed up {formatDate(data.profile.signupDate?.slice(0, 10))}</span>
+            <span>{data.profile.email || 'No email'}</span>
+            <span>Registered {formatDate(data.profile.signupDate?.slice(0, 10))}</span>
+            <span>Last active {data.profile.lastSignInAt ? formatRelativeTime(data.profile.lastSignInAt) : 'Never'}</span>
+            {!data.profile.emailConfirmed && <span style={{ color: 'var(--orange)' }}>Email unverified</span>}
+          </div>
+
+          {notice && (
+            <div className="admin-notice" style={{ marginBottom: 16 }}>
+              <span>{notice}</span>
+              <button onClick={() => setNotice('')} aria-label="Dismiss">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          )}
+
+          <div className="admin-section">
+            <h3 className="admin-section-title">Account Actions</h3>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {data.profile.status === 'suspended' ? (
+                <button className="btn btn-secondary" disabled={busy} onClick={() => handleAction('activate')}>
+                  Activate Tenant
+                </button>
+              ) : (
+                <button className="btn btn-secondary" disabled={busy} onClick={() => handleAction('suspend')}>
+                  Suspend Tenant
+                </button>
+              )}
+              <button className="btn btn-secondary" disabled={busy} onClick={() => handleAction('reset')}>
+                Reset Account
+              </button>
+              <button className="btn btn-danger" disabled={busy} onClick={handleDelete}>
+                Delete Tenant
+              </button>
+            </div>
           </div>
 
           <div className="admin-section">
@@ -92,7 +169,6 @@ export default function AdminTenantDetailPage() {
                     <tr>
                       <th>Name</th>
                       <th>Phone</th>
-                      <th>Opening Balance</th>
                       <th>Added</th>
                     </tr>
                   </thead>
@@ -101,45 +177,7 @@ export default function AdminTenantDetailPage() {
                       <tr key={c.id}>
                         <td>{c.name}</td>
                         <td>{c.phone || '—'}</td>
-                        <td>₹{formatCurrency(c.opening_balance || 0)}</td>
-                        <td>{formatDate(c.created_at?.slice(0, 10))}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          <div className="admin-section">
-            <h3 className="admin-section-title">Recent Transactions</h3>
-            {data.recentTransactions.length === 0 ? (
-              <div className="empty">
-                <i className="fa-solid fa-receipt"></i>
-                <p>No transactions yet</p>
-              </div>
-            ) : (
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Customer</th>
-                      <th>Amount</th>
-                      <th>Note</th>
-                      <th>Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.recentTransactions.map((t) => (
-                      <tr key={t.id}>
-                        <td>{t.customerName}</td>
-                        <td>
-                          <span className={`tx-amount ${t.amount > 0 ? 'credit' : 'pay'}`}>
-                            {t.amount > 0 ? '+' : '-'}₹{formatCurrency(Math.abs(t.amount))}
-                          </span>
-                        </td>
-                        <td>{t.note || '—'}</td>
-                        <td>{formatTimestampDate(t.created_at)}</td>
+                        <td>{formatTimestampDate(c.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>
