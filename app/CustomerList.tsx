@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -105,22 +105,39 @@ export default function CustomerList() {
     return () => window.removeEventListener('online', handleOnline)
   }, [loadData])
 
-  const getCustomerStatus = (c: Customer): { label: string; type: 'overdue' | 'due_today' | 'due_soon' | 'active' | 'clear'; overdueDays: number } => {
-    const balance = c.balance || 0
-    const overdueDays = calculateOverdueDays(balance, c.transactions, overdueThresholdDays, overdueResetThresholdPct)
-    if (overdueDays > 0) return { label: 'Overdue', type: 'overdue', overdueDays }
+  type Status = { label: string; type: 'overdue' | 'due_today' | 'due_soon' | 'active' | 'clear'; overdueDays: number }
 
-    if (balance <= 0) return { label: 'Settled', type: 'clear', overdueDays: 0 }
+  const statusByCustomerId = useMemo(() => {
+    const map = new Map<string, Status>()
+    for (const c of customers) {
+      const balance = c.balance || 0
+      const overdueDays = calculateOverdueDays(balance, c.transactions, overdueThresholdDays, overdueResetThresholdPct)
+      if (overdueDays > 0) {
+        map.set(c.id, { label: 'Overdue', type: 'overdue', overdueDays })
+        continue
+      }
+      if (balance <= 0) {
+        map.set(c.id, { label: 'Settled', type: 'clear', overdueDays: 0 })
+        continue
+      }
+      // Customer still owes money but hasn't crossed the overdue threshold yet
+      const remaining = daysUntilOverdue(balance, c.transactions, overdueThresholdDays, overdueResetThresholdPct)
+      if (remaining === 0) {
+        map.set(c.id, { label: 'Due today', type: 'due_today', overdueDays: 0 })
+        continue
+      }
+      if (remaining !== null && remaining <= 3) {
+        map.set(c.id, { label: 'Due soon', type: 'due_soon', overdueDays: 0 })
+        continue
+      }
+      map.set(c.id, { label: 'Active', type: 'active', overdueDays: 0 })
+    }
+    return map
+  }, [customers, overdueThresholdDays, overdueResetThresholdPct])
 
-    // Customer still owes money but hasn't crossed the overdue threshold yet
-    const remaining = daysUntilOverdue(balance, c.transactions, overdueThresholdDays, overdueResetThresholdPct)
-    if (remaining === 0) return { label: 'Due today', type: 'due_today', overdueDays: 0 }
-    if (remaining !== null && remaining <= 3) return { label: 'Due soon', type: 'due_soon', overdueDays: 0 }
+  const getCustomerStatus = (c: Customer): Status => statusByCustomerId.get(c.id)!
 
-    return { label: 'Active', type: 'active', overdueDays: 0 }
-  }
-
-  const getFilteredSorted = () => {
+  const filteredList = useMemo(() => {
     let list = [...customers]
 
     if (searchQuery) {
@@ -132,7 +149,7 @@ export default function CustomerList() {
 
     list = list.filter((c) => {
       if (activeFilter === 'all') return true
-      const status = getCustomerStatus(c)
+      const status = statusByCustomerId.get(c.id)!
       if (activeFilter === 'active') return status.type === 'active' || status.type === 'due_soon'
       if (activeFilter === 'overdue') return status.type === 'overdue'
       if (activeFilter === 'due_today') return status.type === 'due_today'
@@ -143,18 +160,20 @@ export default function CustomerList() {
 
     const statusPriority: Record<string, number> = { overdue: 0, due_today: 1, due_soon: 2, active: 3, clear: 4 }
     list.sort((a, b) => {
-      const diff = statusPriority[getCustomerStatus(a).type] - statusPriority[getCustomerStatus(b).type]
+      const diff = statusPriority[statusByCustomerId.get(a.id)!.type] - statusPriority[statusByCustomerId.get(b.id)!.type]
       if (diff !== 0) return diff
       return (b.balance || 0) - (a.balance || 0)
     })
 
     return list
-  }
+  }, [customers, searchQuery, activeFilter, statusByCustomerId])
 
-  const filteredList = getFilteredSorted()
-  const overdueCount = customers.filter((c) => getCustomerStatus(c).type === 'overdue').length
-  const dueTodayCount = customers.filter((c) => getCustomerStatus(c).type === 'due_today').length
-  const clearedCount = customers.filter((c) => getCustomerStatus(c).type === 'clear').length
+  let overdueCount = 0, dueTodayCount = 0, clearedCount = 0
+  for (const status of statusByCustomerId.values()) {
+    if (status.type === 'overdue') overdueCount++
+    else if (status.type === 'due_today') dueTodayCount++
+    else if (status.type === 'clear') clearedCount++
+  }
 
   useEffect(() => {
     setVisibleCount(20)
