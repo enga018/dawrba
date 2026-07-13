@@ -292,7 +292,7 @@ function buildInsights(
       insight: {
         id: 'large-payment-received',
         icon: 'fa-sack-dollar',
-        iconColor: 'purple',
+        iconColor: 'green',
         title: 'Large Payment Received',
         body: `${nameById.get(payment.customerId) || 'A customer'} paid ₹${formatCurrency(payment.amount)}`,
         href: `/customers/${payment.customerId}?tx=${payment.txId}`,
@@ -313,7 +313,7 @@ function buildInsights(
       insight: {
         id: 'customer-fully-settled',
         icon: 'fa-circle-check',
-        iconColor: 'blue',
+        iconColor: 'green',
         title: 'Balance Cleared',
         body: `${featured.name} fully settled their balance`,
         sub: fullySettledToday.length > 1 ? `+${fullySettledToday.length - 1} more customer${fullySettledToday.length - 1 === 1 ? '' : 's'} settled today` : undefined,
@@ -335,7 +335,7 @@ function buildInsights(
       insight: {
         id: 'best-collection-week',
         icon: 'fa-trophy',
-        iconColor: 'orange',
+        iconColor: 'green',
         title: 'Best Collection Week',
         body: `Collected ₹${formatCurrency(currentWeekCollection)} this week`,
         sub: `Previous best: ₹${formatCurrency(bestPastWeek)}`,
@@ -361,7 +361,7 @@ function buildInsights(
       insight: {
         id: 'outstanding-trend-improved',
         icon: 'fa-arrow-trend-down',
-        iconColor: 'orange',
+        iconColor: 'green',
         title: 'Outstanding Reduced',
         body: `Outstanding dropped from ₹${formatCurrency(outstandingBeforeMonth)} to ₹${formatCurrency(outstandingNow)}`,
         sub: `-${pct}% this month`,
