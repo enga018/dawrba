@@ -9,6 +9,7 @@ import { showToast } from '@/lib/toast'
 export default function BusinessSettingsPage() {
   const [weeklyReportDay, setWeeklyReportDay] = useState('sunday')
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
+  const [overdueResetThresholdPct, setOverdueResetThresholdPct] = useState(50)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -24,13 +25,14 @@ export default function BusinessSettingsPage() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('weekly_report_day, overdue_threshold_days')
+        .select('weekly_report_day, overdue_threshold_days, overdue_reset_threshold_pct')
         .eq('id', user.id)
         .single()
 
       if (data) {
         if (data.weekly_report_day) setWeeklyReportDay(data.weekly_report_day)
         if (data.overdue_threshold_days) setOverdueThresholdDays(data.overdue_threshold_days)
+        if (data.overdue_reset_threshold_pct) setOverdueResetThresholdPct(data.overdue_reset_threshold_pct)
       }
       setLoading(false)
     }
@@ -53,6 +55,7 @@ export default function BusinessSettingsPage() {
             .update({
               weekly_report_day: weeklyReportDay,
               overdue_threshold_days: overdueThresholdDays,
+              overdue_reset_threshold_pct: overdueResetThresholdPct,
             })
             .eq('id', user.id)
           if (error) throw error
@@ -64,6 +67,7 @@ export default function BusinessSettingsPage() {
           data: {
             weekly_report_day: weeklyReportDay,
             overdue_threshold_days: overdueThresholdDays,
+            overdue_reset_threshold_pct: overdueResetThresholdPct,
           },
           filters: { id: user.id },
         }
@@ -114,6 +118,21 @@ export default function BusinessSettingsPage() {
             />
             <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '6px' }}>
               Customer is marked overdue if they&apos;ve owed money for longer than this many days.
+            </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="overdueResetThresholdPct">Payment reset threshold (%)</label>
+            <input
+              type="number"
+              id="overdueResetThresholdPct"
+              min="1"
+              max="100"
+              value={overdueResetThresholdPct}
+              onChange={(e) => setOverdueResetThresholdPct(parseInt(e.target.value) || 50)}
+            />
+            <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '6px' }}>
+              A payment covering at least this percentage of a customer&apos;s current balance resets the overdue clock. Smaller payments don&apos;t.
             </div>
           </div>
         </div>

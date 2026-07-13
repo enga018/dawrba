@@ -75,11 +75,12 @@ export default function ReportsPage() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('weekly_report_day, overdue_threshold_days')
+          .select('weekly_report_day, overdue_threshold_days, overdue_reset_threshold_pct')
           .eq('id', user.id)
           .single()
 
         const thresholdDays: number = profileData?.overdue_threshold_days || 7
+        const resetThresholdPct: number = profileData?.overdue_reset_threshold_pct || 50
         const weekStartDay: 0 | 1 = profileData?.weekly_report_day === 'monday' ? 1 : 0
 
         const { data: customers } = await supabase
@@ -218,9 +219,9 @@ export default function ReportsPage() {
 
           if (balance > 0) {
             outstanding += balance
-            if (isCustomerOverdue(balance, txByCustomer[c.id] || [], thresholdDays)) {
+            if (isCustomerOverdue(balance, txByCustomer[c.id] || [], thresholdDays, resetThresholdPct)) {
               overdueList.push({ name: c.name, balance })
-            } else if (daysUntilOverdue(balance, txByCustomer[c.id] || [], thresholdDays) === 0) {
+            } else if (daysUntilOverdue(balance, txByCustomer[c.id] || [], thresholdDays, resetThresholdPct) === 0) {
               dueTodayCount += 1
             }
           }

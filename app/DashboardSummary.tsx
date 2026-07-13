@@ -24,11 +24,12 @@ export default function DashboardSummary() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('overdue_threshold_days')
+          .select('overdue_threshold_days, overdue_reset_threshold_pct')
           .eq('id', user.id)
           .single()
 
         const thresholdDays: number = profileData?.overdue_threshold_days || 7
+        const resetThresholdPct: number = profileData?.overdue_reset_threshold_pct || 50
 
         const { data: customers } = await supabase
           .from('customers')
@@ -77,7 +78,7 @@ export default function DashboardSummary() {
           const balance = (c.opening_balance || 0) + (balances[c.id] || 0)
           if (balance > 0) {
             outstanding += balance
-            if (isCustomerOverdue(balance, txByCustomer[c.id] || [], thresholdDays)) {
+            if (isCustomerOverdue(balance, txByCustomer[c.id] || [], thresholdDays, resetThresholdPct)) {
               overdueCount += 1
             }
           }

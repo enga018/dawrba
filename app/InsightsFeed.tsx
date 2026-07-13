@@ -40,10 +40,11 @@ export default function InsightsFeed() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('overdue_threshold_days')
+        .select('overdue_threshold_days, overdue_reset_threshold_pct')
         .eq('id', user.id)
         .single()
       const thresholdDays: number = profileData?.overdue_threshold_days || 7
+      const resetThresholdPct: number = profileData?.overdue_reset_threshold_pct || 50
 
       const { data: customers, error: custError } = await supabase
         .from('customers')
@@ -64,7 +65,7 @@ export default function InsightsFeed() {
         .in('customer_id', ids)
       if (txError) throw txError
 
-      setInsights(buildInsights(customers as CustomerRow[], (txData || []) as TxRow[], thresholdDays))
+      setInsights(buildInsights(customers as CustomerRow[], (txData || []) as TxRow[], thresholdDays, resetThresholdPct))
       setLoading(false)
     } catch (err) {
       console.error('Error loading insights feed:', err)
@@ -127,7 +128,8 @@ export default function InsightsFeed() {
 function buildInsights(
   customers: CustomerRow[],
   txData: TxRow[],
-  thresholdDays: number
+  thresholdDays: number,
+  resetThresholdPct: number
 ): Insight[] {
   const nameById = new Map(customers.map((c) => [c.id, c.name]))
   const now = new Date()
@@ -197,7 +199,7 @@ function buildInsights(
 
   // Priority 0: Overdue alert - customers who crossed into overdue for the first time today
   const newlyOverdue = customers.filter((c) => {
-    const days = calculateOverdueDays(balances[c.id] || 0, txByCustomer[c.id] || [], thresholdDays)
+    const days = calculateOverdueDays(balances[c.id] || 0, txByCustomer[c.id] || [], thresholdDays, resetThresholdPct)
     return days === 1
   })
   if (newlyOverdue.length > 0) {
