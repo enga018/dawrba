@@ -48,22 +48,24 @@ export default function BusinessSettingsPage() {
 
       const result = await offlineWrite(
         async () => {
-          const { error } = await supabase.from('profiles').upsert({
-            id: user.id,
-            weekly_report_day: weeklyReportDay,
-            overdue_threshold_days: overdueThresholdDays,
-          })
+          const { error } = await supabase
+            .from('profiles')
+            .update({
+              weekly_report_day: weeklyReportDay,
+              overdue_threshold_days: overdueThresholdDays,
+            })
+            .eq('id', user.id)
           if (error) throw error
           return { data: null, error: null }
         },
         {
           table: 'profiles',
-          operation: 'upsert',
+          operation: 'update',
           data: {
-            id: user.id,
             weekly_report_day: weeklyReportDay,
             overdue_threshold_days: overdueThresholdDays,
           },
+          filters: { id: user.id },
         }
       )
       if (result?.error) throw result.error
