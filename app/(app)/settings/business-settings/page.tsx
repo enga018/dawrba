@@ -111,7 +111,7 @@ export default function BusinessSettingsPage() {
               onChange={(e) => setOverdueThresholdDays(parseInt(e.target.value) || 7)}
             />
             <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '6px' }}>
-              Customer is marked overdue if their last transaction is older than this many days.
+              Customer is marked overdue if they&apos;ve owed money for longer than this many days.
             </div>
           </div>
         </div>
