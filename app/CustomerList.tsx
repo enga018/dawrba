@@ -132,39 +132,19 @@ export default function CustomerList() {
       if (profileData?.overdue_threshold_days) setOverdueThresholdDays(profileData.overdue_threshold_days)
       if (profileData?.overdue_reset_threshold_pct) setOverdueResetThresholdPct(profileData.overdue_reset_threshold_pct)
 
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('id, name, phone, opening_balance, created_at')
-        .eq('user_id', user.id)
+      // Use server-side summary API for faster balance calculations
+      const response = await fetch(`/api/customers/summary?user_id=${user.id}&pageSize=10000`)
+      if (!response.ok) throw new Error('Failed to fetch summaries')
+      const { data: summaries } = await response.json()
 
-      if (customersError) throw customersError
-
-      const ids = (customersData || []).map((c) => c.id)
-      const balances: Record<string, number> = {}
-      const lastTx: Record<string, string> = {}
-      const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
-
-      if (ids.length > 0) {
-        const { data: txData } = await supabase
-          .from('transactions')
-          .select('customer_id, amount, date, created_at')
-          .in('customer_id', ids)
-
-        for (const t of txData || []) {
-          balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
-          if (!lastTx[t.customer_id] || t.created_at > lastTx[t.customer_id]) {
-            lastTx[t.customer_id] = t.created_at
-          }
-          if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
-          txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
-        }
-      }
-
-      const withBalance = (customersData || []).map((c) => ({
-        ...c,
-        balance: (c.opening_balance || 0) + (balances[c.id] || 0),
-        lastTxDate: lastTx[c.id] || undefined,
-        transactions: txByCustomer[c.id] || [],
+      const withBalance = (summaries || []).map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        phone: s.phone,
+        created_at: s.created_at,
+        balance: s.balance,
+        lastTxDate: s.lastTxDate || undefined,
+        transactions: [],
       }))
 
       setCustomers(withBalance)

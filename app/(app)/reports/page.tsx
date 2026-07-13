@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
-import { calculateReportMetrics } from '@/lib/reportsCalculations'
 
 type Period = 'today' | 'week' | 'month'
 
@@ -78,55 +76,9 @@ export default function ReportsPage() {
 useEffect(() => {
     const fetchReport = async () => {
       try {
-        const user = (await supabase.auth.getUser()).data.user
-        if (!user) return
-
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('weekly_report_day, overdue_threshold_days, overdue_reset_threshold_pct')
-          .eq('id', user.id)
-          .single()
-
-        const thresholdDays: number = profileData?.overdue_threshold_days || 7
-        const resetThresholdPct: number = profileData?.overdue_reset_threshold_pct || 50
-        const weekStartDay: 0 | 1 = profileData?.weekly_report_day === 'monday' ? 1 : 0
-
-        const { data: customersData } = await supabase
-          .from('customers')
-          .select('id, name, opening_balance, created_at')
-          .eq('user_id', user.id)
-
-        const ids = (customersData || []).map((c) => c.id)
-        if (ids.length === 0) {
-          setData({
-            creditGiven: 0, collected: 0, outstanding: 0, txCount: 0, avgTransactionSize: 0, newCustomers: 0,
-            prev: { creditGiven: 0, collected: 0, outstanding: 0, txCount: 0, avgTransactionSize: 0, newCustomers: 0 },
-            overdueCustomers: [],
-            highestCredit: null,
-            highestCollection: null,
-            collectionRateAllTime: 0,
-            totalCreditAllTime: 0,
-            totalCollectedAllTime: 0,
-            overduePercent: 0,
-            allTimeHighestCredit: null,
-            allTimeHighestCollection: null,
-            highestOutstanding: null,
-            mostPayments: null,
-            fullySettledThisMonth: 0,
-            overdueCount: 0,
-            dueTodayCount: 0,
-            overdueAmount: 0,
-          })
-          return
-        }
-
-        const { data: txData } = await supabase
-          .from('transactions')
-          .select('customer_id, amount, date, created_at')
-          .in('customer_id', ids)
-
-        const metrics = calculateReportMetrics(customersData || [], txData || [], period, thresholdDays, resetThresholdPct, weekStartDay)
-        
+        const response = await fetch(`/api/reports/aggregated?period=${period}`)
+        if (!response.ok) throw new Error('Failed to fetch report')
+        const metrics = await response.json()
         setData(metrics)
       } catch {
         // silent
