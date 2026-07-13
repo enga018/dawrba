@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
+import { calculateDashboardMetrics } from '@/lib/dashboardCalculations'
 import DashboardSummary from './DashboardSummary'
 import NeedsAttention from './NeedsAttention'
 import RecentTransactions from './RecentTransactions'
@@ -44,6 +45,10 @@ export default function DashboardPage() {
   const [customers, setCustomers] = useState<DashboardCustomer[]>([])
   const [transactions, setTransactions] = useState<DashboardTx[]>([])
   const [thresholds, setThresholds] = useState<DashboardThresholds>(defaultThresholds)
+
+  const metrics = useMemo(() => {
+    return calculateDashboardMetrics(customers, transactions, thresholds)
+  }, [customers, transactions, thresholds])
 
   const loadData = useCallback(async () => {
     try {
@@ -117,15 +122,15 @@ export default function DashboardPage() {
 
   return (
     <>
-      <DashboardSummary customers={customers} transactions={transactions} thresholds={thresholds} />
+      <DashboardSummary metrics={metrics} />
 
       <div className="home-grid">
         <div className="home-grid-main">
-          <NeedsAttention customers={customers} transactions={transactions} thresholds={thresholds} />
+          <NeedsAttention metrics={metrics} />
           <RecentTransactions limit={5} title="Recent Transactions" />
         </div>
         <div className="home-grid-side">
-          <InsightsFeed customers={customers} transactions={transactions} thresholds={thresholds} />
+          <InsightsFeed metrics={metrics} customers={customers} />
         </div>
       </div>
     </>

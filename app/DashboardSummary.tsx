@@ -1,58 +1,14 @@
 'use client'
 
-import { useMemo } from 'react'
-import { formatCurrency, isCustomerOverdue, startOfDay } from '@/lib/utils'
-import type { DashboardCustomer, DashboardTx, DashboardThresholds } from './DashboardPage'
+import { formatCurrency } from '@/lib/utils'
+import type { DashboardMetrics } from '@/lib/dashboardCalculations'
 
 interface Props {
-  customers: DashboardCustomer[]
-  transactions: DashboardTx[]
-  thresholds: DashboardThresholds
+  metrics: DashboardMetrics
 }
 
-export default function DashboardSummary({ customers, transactions, thresholds }: Props) {
-  const { todayCredit, collectedToday, totalCredit, totalCollection, outstanding, overdueCount, collectionRate } = useMemo(() => {
-    const todayStart = startOfDay(new Date()).getTime()
-    let todayCredit = 0
-    let collectedToday = 0
-    let totalCredit = 0
-    let totalCollection = 0
-    const balances: Record<string, number> = {}
-    const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
-
-    for (const t of transactions) {
-      const amount = t.amount || 0
-      balances[t.customer_id] = (balances[t.customer_id] || 0) + amount
-      if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
-      txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
-
-      if (amount > 0) totalCredit += amount
-      else totalCollection += Math.abs(amount)
-
-      const ts = new Date(t.created_at).getTime()
-      if (ts >= todayStart) {
-        if (amount > 0) todayCredit += amount
-        else collectedToday += Math.abs(amount)
-      }
-    }
-
-    let outstanding = 0
-    let overdueCount = 0
-    for (const c of customers) {
-      totalCredit += c.opening_balance || 0
-      const balance = (c.opening_balance || 0) + (balances[c.id] || 0)
-      if (balance > 0) {
-        outstanding += balance
-        if (isCustomerOverdue(balance, txByCustomer[c.id] || [], thresholds.thresholdDays, thresholds.resetThresholdPct)) {
-          overdueCount += 1
-        }
-      }
-    }
-
-    const collectionRate = totalCredit > 0 ? Math.round((totalCollection / totalCredit) * 100) : 0
-
-    return { todayCredit, collectedToday, totalCredit, totalCollection, outstanding, overdueCount, collectionRate }
-  }, [customers, transactions, thresholds])
+export default function DashboardSummary({ metrics }: Props) {
+  const { todayCredit, collectedToday, totalCredit, totalCollection, outstanding, overdueCount, collectionRate } = metrics
 
   return (
     <>

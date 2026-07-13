@@ -1,9 +1,10 @@
 'use client'
 
-import { memo, useMemo } from 'react'
+import { memo } from 'react'
 import Link from 'next/link'
-import { formatCurrency, startOfDay, startOfWeek, daysSince, daysUntilOverdue } from '@/lib/utils'
-import type { DashboardCustomer, DashboardTx, DashboardThresholds } from './DashboardPage'
+import { formatCurrency } from '@/lib/utils'
+import type { DashboardMetrics } from '@/lib/dashboardCalculations'
+import type { DashboardCustomer } from './DashboardPage'
 
 type IconColor = 'red' | 'orange' | 'green' | 'purple' | 'blue'
 
@@ -18,9 +19,8 @@ interface Insight {
 }
 
 interface Props {
+  metrics: DashboardMetrics
   customers: DashboardCustomer[]
-  transactions: DashboardTx[]
-  thresholds: DashboardThresholds
 }
 
 const InsightCard = memo(function InsightCard({ insight }: { insight: Insight }) {
@@ -41,11 +41,8 @@ const InsightCard = memo(function InsightCard({ insight }: { insight: Insight })
   )
 })
 
-export default function InsightsFeed({ customers, transactions, thresholds }: Props) {
-  const insights = useMemo(
-    () => buildInsights(customers, transactions, thresholds),
-    [customers, transactions, thresholds]
-  )
+export default function InsightsFeed({ metrics, customers }: Props) {
+  const insights = buildInsights(metrics, customers)
 
   if (insights.length === 0) {
     return null
@@ -66,102 +63,12 @@ export default function InsightsFeed({ customers, transactions, thresholds }: Pr
   )
 }
 
-function buildInsights(
-  customers: DashboardCustomer[],
-  txData: DashboardTx[],
-  thresholds: DashboardThresholds
-): Insight[] {
-  const nameById = new Map(customers.map((c) => [c.id, c.name]))
-  const now = new Date()
-  const todayStart = startOfDay(now)
-  const sevenDaysAgoStart = startOfDay(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000))
-  const ninetyDaysAgoStart = startOfDay(new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000))
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const currentWeekKey = startOfWeek(now).getTime()
-
-  const balances: Record<string, number> = {}
-  const balancesBeforeToday: Record<string, number> = {}
-  const balances7DaysAgo: Record<string, number> = {}
-  const balancesBeforeMonth: Record<string, number> = {}
-  const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
-  const creditGiven90d: Record<string, number> = {}
-  const paid90d: Record<string, number> = {}
-  const lastPaymentDate: Record<string, string> = {}
-  const firstTxDate: Record<string, string> = {}
-  const weeklyCollections: Record<number, number> = {}
-
-  let creditsTodayAmount = 0
-  let paymentsTodayAmount = 0
-  let todayLargePayment: { amount: number; customerId: string; txId: string } | null = null
-
-  const sorted = [...txData].sort((a, b) => new Date(a.date || a.created_at).getTime() - new Date(b.date || b.created_at).getTime())
-
-  for (const t of sorted) {
-    const cid = t.customer_id
-    const amount = t.amount || 0
-    const txDate = t.date || t.created_at
-    balances[cid] = (balances[cid] || 0) + amount
-    if (!txByCustomer[cid]) txByCustomer[cid] = []
-    txByCustomer[cid].push({ amount: t.amount, date: t.date, created_at: t.created_at })
-    if (!firstTxDate[cid]) firstTxDate[cid] = txDate
-
-    const ts = new Date(txDate).getTime()
-
-    if (ts < todayStart.getTime()) {
-      balancesBeforeToday[cid] = (balancesBeforeToday[cid] || 0) + amount
-    }
-    if (ts < sevenDaysAgoStart.getTime()) {
-      balances7DaysAgo[cid] = (balances7DaysAgo[cid] || 0) + amount
-    }
-    if (ts < monthStart.getTime()) {
-      balancesBeforeMonth[cid] = (balancesBeforeMonth[cid] || 0) + amount
-    }
-    if (ts >= ninetyDaysAgoStart.getTime()) {
-      if (amount > 0) creditGiven90d[cid] = (creditGiven90d[cid] || 0) + amount
-      else paid90d[cid] = (paid90d[cid] || 0) + Math.abs(amount)
-    }
-
-    if (amount < 0) {
-      lastPaymentDate[cid] = txDate
-      const weekKey = startOfWeek(new Date(txDate)).getTime()
-      weeklyCollections[weekKey] = (weeklyCollections[weekKey] || 0) + Math.abs(amount)
-    }
-
-    if (ts >= todayStart.getTime()) {
-      if (amount > 0) {
-        creditsTodayAmount += amount
-      } else {
-        const abs = Math.abs(amount)
-        paymentsTodayAmount += abs
-        if (abs >= thresholds.largePaymentThreshold && (!todayLargePayment || abs > todayLargePayment.amount)) {
-          todayLargePayment = { amount: abs, customerId: cid, txId: t.id }
-        }
-      }
-    }
-  }
-
-  for (const c of customers) {
-    const ob = c.opening_balance || 0
-    balances[c.id] = ob + (balances[c.id] || 0)
-    balancesBeforeToday[c.id] = ob + (balancesBeforeToday[c.id] || 0)
-    balances7DaysAgo[c.id] = ob + (balances7DaysAgo[c.id] || 0)
-    balancesBeforeMonth[c.id] = ob + (balancesBeforeMonth[c.id] || 0)
-  }
+function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]): Insight[] {
+  const { nameById, creditLimitBreach, slowestPayer, dueThisWeekCount, fastestRiser, staleCustomer, netToday, paymentsTodayAmount, creditsTodayAmount, todayLargePayment, fullySettledToday, bestCollectionWeek, outstandingBeforeMonth, outstandingNow } = metrics
 
   const candidates: Array<{ priority: number; insight: Insight }> = []
 
   // 1. Credit Limit Exceeded
-  let creditLimitBreach: { customerId: string; balance: number; limit: number; overage: number } | null = null
-  for (const c of customers) {
-    if (c.credit_limit == null) continue
-    const balance = balances[c.id] || 0
-    if (balance > c.credit_limit) {
-      const overage = balance - c.credit_limit
-      if (!creditLimitBreach || overage > creditLimitBreach.overage) {
-        creditLimitBreach = { customerId: c.id, balance, limit: c.credit_limit, overage }
-      }
-    }
-  }
   if (creditLimitBreach) {
     candidates.push({
       priority: 1,
@@ -178,18 +85,6 @@ function buildInsights(
   }
 
   // 2. Slow Paying Customer
-  let slowestPayer: { customerId: string; ratio: number; credit: number; paid: number } | null = null
-  for (const c of customers) {
-    const credit = creditGiven90d[c.id] || 0
-    if (credit <= 0) continue
-    const paid = paid90d[c.id] || 0
-    const ratio = paid / credit
-    if (ratio * 100 < thresholds.slowPayingRatioPct) {
-      if (!slowestPayer || ratio < slowestPayer.ratio) {
-        slowestPayer = { customerId: c.id, ratio, credit, paid }
-      }
-    }
-  }
   if (slowestPayer) {
     candidates.push({
       priority: 2,
@@ -205,12 +100,6 @@ function buildInsights(
   }
 
   // 3. Due This Week
-  const dueThisWeekCount = customers.filter((c) => {
-    const balance = balances[c.id] || 0
-    if (balance <= 0) return false
-    const remaining = daysUntilOverdue(balance, txByCustomer[c.id] || [], thresholds.thresholdDays, thresholds.resetThresholdPct)
-    return remaining !== null && remaining >= 0 && remaining <= 3
-  }).length
   if (dueThisWeekCount > 0) {
     candidates.push({
       priority: 3,
@@ -226,15 +115,6 @@ function buildInsights(
   }
 
   // 4. Balance Rising Fast
-  let fastestRiser: { customerId: string; rise: number } | null = null
-  for (const c of customers) {
-    const rise = (balances[c.id] || 0) - (balances7DaysAgo[c.id] || 0)
-    if (rise > thresholds.balanceRiseThreshold) {
-      if (!fastestRiser || rise > fastestRiser.rise) {
-        fastestRiser = { customerId: c.id, rise }
-      }
-    }
-  }
   if (fastestRiser) {
     candidates.push({
       priority: 4,
@@ -250,19 +130,6 @@ function buildInsights(
   }
 
   // 5. No Payment for 30+ Days
-  let staleCustomer: { customerId: string; days: number } | null = null
-  for (const c of customers) {
-    const balance = balances[c.id] || 0
-    if (balance <= 0) continue
-    const anchor = lastPaymentDate[c.id] || firstTxDate[c.id]
-    if (!anchor) continue
-    const days = daysSince(anchor)
-    if (days >= 30) {
-      if (!staleCustomer || days > staleCustomer.days) {
-        staleCustomer = { customerId: c.id, days }
-      }
-    }
-  }
   if (staleCustomer) {
     candidates.push({
       priority: 5,
@@ -278,7 +145,6 @@ function buildInsights(
   }
 
   // 6. Strong Recovery Day
-  const netToday = paymentsTodayAmount - creditsTodayAmount
   if (netToday > 0) {
     candidates.push({
       priority: 6,
@@ -296,7 +162,7 @@ function buildInsights(
 
   // 7. Large Payment Received
   if (todayLargePayment) {
-    const payment = todayLargePayment as { amount: number; customerId: string; txId: string }
+    const payment = todayLargePayment
     candidates.push({
       priority: 7,
       insight: {
@@ -311,11 +177,6 @@ function buildInsights(
   }
 
   // 8. Balance Cleared
-  const fullySettledToday = customers.filter((c) => {
-    const before = balancesBeforeToday[c.id] ?? (c.opening_balance || 0)
-    const current = balances[c.id] || 0
-    return before > 0 && current <= 0
-  })
   if (fullySettledToday.length > 0) {
     const featured = fullySettledToday[0]
     candidates.push({
@@ -333,13 +194,8 @@ function buildInsights(
   }
 
   // 9. Best Collection Week
-  const currentWeekCollection = weeklyCollections[currentWeekKey] || 0
-  let bestPastWeek = 0
-  for (const [weekKey, amount] of Object.entries(weeklyCollections)) {
-    if (Number(weekKey) === currentWeekKey) continue
-    if (amount > bestPastWeek) bestPastWeek = amount
-  }
-  if (bestPastWeek > 0 && currentWeekCollection > bestPastWeek) {
+  const { currentWeek, bestPastWeek } = bestCollectionWeek
+  if (bestPastWeek > 0 && currentWeek > bestPastWeek) {
     candidates.push({
       priority: 9,
       insight: {
@@ -347,7 +203,7 @@ function buildInsights(
         icon: 'fa-trophy',
         iconColor: 'green',
         title: 'Best Collection Week',
-        body: `Collected ₹${formatCurrency(currentWeekCollection)} this week`,
+        body: `Collected ₹${formatCurrency(currentWeek)} this week`,
         sub: `Previous best: ₹${formatCurrency(bestPastWeek)}`,
         href: '/reports?period=week',
       },
@@ -355,14 +211,6 @@ function buildInsights(
   }
 
   // 10. Outstanding Trend Improved
-  let outstandingNow = 0
-  let outstandingBeforeMonth = 0
-  for (const c of customers) {
-    const now2 = balances[c.id] || 0
-    const before = balancesBeforeMonth[c.id] || 0
-    if (now2 > 0) outstandingNow += now2
-    if (before > 0) outstandingBeforeMonth += before
-  }
   if (outstandingBeforeMonth > 0 && outstandingNow < outstandingBeforeMonth) {
     const drop = outstandingBeforeMonth - outstandingNow
     const pct = Math.round((drop / outstandingBeforeMonth) * 100)
