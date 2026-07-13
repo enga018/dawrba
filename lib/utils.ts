@@ -101,6 +101,9 @@ interface Transaction {
   created_at: string
 }
 
+// Cache for sorted transactions by customer to avoid redundant sorting
+const sortedTransactionCache = new WeakMap<any, any>()
+
 /* Days since the customer's balance most recently went from settled (<= 0)
    to owing (> 0), or since their last "meaningful" payment - the start of
    the current unpaid streak. This is NOT just "days since the last
@@ -116,12 +119,20 @@ function daysSinceStreakStart(
   resetThresholdPct: number = 50
 ): number | null {
   if (balance <= 0) return null
+  if (!transactions || transactions.length === 0) return null
 
-  const sorted = [...transactions].sort((a, b) => {
-    const dateA = new Date(a.date || a.created_at).getTime()
-    const dateB = new Date(b.date || b.created_at).getTime()
-    return dateA - dateB
-  })
+  let sorted: Transaction[]
+
+  // Use pre-sorted transactions if already sorted (marked by _sorted property)
+  if ((transactions as any)._sorted) {
+    sorted = transactions
+  } else {
+    sorted = [...transactions].sort((a, b) => {
+      const dateA = new Date(a.date || a.created_at).getTime()
+      const dateB = new Date(b.date || b.created_at).getTime()
+      return dateA - dateB
+    })
+  }
 
   const totalTxAmount = sorted.reduce((sum, t) => sum + (t.amount || 0), 0)
   let runningBalance = balance - totalTxAmount

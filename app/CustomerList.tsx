@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { getInitials, formatCurrency, formatDate, calculateOverdueDays, daysUntilOverdue } from '@/lib/utils'
+import { getInitials, formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils'
+import { calculateCustomerListMetrics } from '@/lib/customerListCalculations'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
-import { formatRelativeTime } from '@/lib/utils'
 import TransactionModal from '@/app/TransactionModal'
 
 interface Customer {
@@ -184,32 +184,8 @@ export default function CustomerList() {
     return () => window.removeEventListener('online', handleOnline)
   }, [loadData])
 
-  const statusByCustomerId = useMemo(() => {
-    const map = new Map<string, Status>()
-    for (const c of customers) {
-      const balance = c.balance || 0
-      const overdueDays = calculateOverdueDays(balance, c.transactions, overdueThresholdDays, overdueResetThresholdPct)
-      if (overdueDays > 0) {
-        map.set(c.id, { label: 'Overdue', type: 'overdue', overdueDays })
-        continue
-      }
-      if (balance <= 0) {
-        map.set(c.id, { label: 'Settled', type: 'clear', overdueDays: 0 })
-        continue
-      }
-      // Customer still owes money but hasn't crossed the overdue threshold yet
-      const remaining = daysUntilOverdue(balance, c.transactions, overdueThresholdDays, overdueResetThresholdPct)
-      if (remaining === 0) {
-        map.set(c.id, { label: 'Due today', type: 'due_today', overdueDays: 0 })
-        continue
-      }
-      if (remaining !== null && remaining <= 3) {
-        map.set(c.id, { label: 'Due soon', type: 'due_soon', overdueDays: 0 })
-        continue
-      }
-      map.set(c.id, { label: 'Active', type: 'active', overdueDays: 0 })
-    }
-    return map
+  const { statusByCustomerId, overdueCount: calculatedOverdueCount, dueTodayCount: calculatedDueTodayCount, clearedCount } = useMemo(() => {
+    return calculateCustomerListMetrics(customers, overdueThresholdDays, overdueResetThresholdPct)
   }, [customers, overdueThresholdDays, overdueResetThresholdPct])
 
   const getCustomerStatus = (c: Customer): Status => statusByCustomerId.get(c.id)!
@@ -245,12 +221,6 @@ export default function CustomerList() {
     return list
   }, [customers, searchQuery, activeFilter, statusByCustomerId])
 
-  let overdueCount = 0, dueTodayCount = 0, clearedCount = 0
-  for (const status of statusByCustomerId.values()) {
-    if (status.type === 'overdue') overdueCount++
-    else if (status.type === 'due_today') dueTodayCount++
-    else if (status.type === 'clear') clearedCount++
-  }
 
   useEffect(() => {
     setVisibleCount(20)
