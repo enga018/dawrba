@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { formatCurrency, isCustomerOverdue, daysUntilOverdue, startOfDay, startOfWeek } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
+import { calculateReportMetrics } from '@/lib/reportsCalculations'
 
 type Period = 'today' | 'week' | 'month'
 
@@ -74,7 +75,7 @@ export default function ReportsPage() {
   const [period, setPeriod] = useState<Period>(isPeriod(initialPeriod) ? initialPeriod : 'today')
   const [data, setData] = useState<ReportData | null>(null)
 
-  useEffect(() => {
+useEffect(() => {
     const fetchReport = async () => {
       try {
         const user = (await supabase.auth.getUser()).data.user
@@ -90,12 +91,12 @@ export default function ReportsPage() {
         const resetThresholdPct: number = profileData?.overdue_reset_threshold_pct || 50
         const weekStartDay: 0 | 1 = profileData?.weekly_report_day === 'monday' ? 1 : 0
 
-        const { data: customers } = await supabase
+        const { data: customersData } = await supabase
           .from('customers')
           .select('id, name, opening_balance, created_at')
           .eq('user_id', user.id)
 
-        const ids = (customers || []).map((c) => c.id)
+        const ids = (customersData || []).map((c) => c.id)
         if (ids.length === 0) {
           setData({
             creditGiven: 0, collected: 0, outstanding: 0, txCount: 0, avgTransactionSize: 0, newCustomers: 0,
@@ -119,189 +120,21 @@ export default function ReportsPage() {
           return
         }
 
-        const nameById = new Map((customers || []).map((c) => [c.id, c.name]))
-
         const { data: txData } = await supabase
           .from('transactions')
           .select('customer_id, amount, date, created_at')
           .in('customer_id', ids)
 
-        const now = new Date()
-        const periodStart = (() => {
-          if (period === 'today') return startOfDay(now).getTime()
-          if (period === 'week') return startOfWeek(now, weekStartDay).getTime()
-          return new Date(now.getFullYear(), now.getMonth(), 1).getTime()
-        })()
-        const prevEnd = periodStart - 1
-        const prevStart = (() => {
-          if (period === 'today') return startOfDay(new Date(now.getTime() - 24 * 60 * 60 * 1000)).getTime()
-          if (period === 'week') return startOfWeek(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), weekStartDay).getTime()
-          const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-          return prevMonth.getTime()
-        })()
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
-
-        let creditGiven = 0, collected = 0
-        let prevCredit = 0, prevCollected = 0
-        let txCount = 0, prevTxCount = 0
-        let highestCreditTx: { amount: number; customerId: string } | null = null
-        let highestCollectionTx: { amount: number; customerId: string } | null = null
-
-        let totalCreditAllTime = 0, totalCollectedAllTime = 0
-        let allTimeHighestCreditTx: { amount: number; customerId: string } | null = null
-        let allTimeHighestCollectionTx: { amount: number; customerId: string } | null = null
-        const collectedByCustomer: Record<string, number> = {}
-
-        const balances: Record<string, number> = {}
-        const balancesBeforeMonth: Record<string, number> = {}
-        const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
-
-        for (const t of txData || []) {
-          const amount = t.amount || 0
-          balances[t.customer_id] = (balances[t.customer_id] || 0) + amount
-          if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
-          txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
-          const ts = new Date(t.created_at).getTime()
-
-          if (ts < monthStart) {
-            balancesBeforeMonth[t.customer_id] = (balancesBeforeMonth[t.customer_id] || 0) + amount
-          }
-
-          if (amount > 0) {
-            totalCreditAllTime += amount
-            if (!allTimeHighestCreditTx || amount > allTimeHighestCreditTx.amount) {
-              allTimeHighestCreditTx = { amount, customerId: t.customer_id }
-            }
-          } else {
-            const abs = Math.abs(amount)
-            totalCollectedAllTime += abs
-            collectedByCustomer[t.customer_id] = (collectedByCustomer[t.customer_id] || 0) + abs
-            if (!allTimeHighestCollectionTx || abs > allTimeHighestCollectionTx.amount) {
-              allTimeHighestCollectionTx = { amount: abs, customerId: t.customer_id }
-            }
-          }
-
-          if (ts >= periodStart) {
-            txCount += 1
-            if (amount > 0) {
-              creditGiven += amount
-              if (!highestCreditTx || amount > highestCreditTx.amount) {
-                highestCreditTx = { amount, customerId: t.customer_id }
-              }
-            } else {
-              const abs = Math.abs(amount)
-              collected += abs
-              if (!highestCollectionTx || abs > highestCollectionTx.amount) {
-                highestCollectionTx = { amount: abs, customerId: t.customer_id }
-              }
-            }
-          } else if (ts >= prevStart && ts <= prevEnd) {
-            prevTxCount += 1
-            if (amount > 0) prevCredit += amount
-            else prevCollected += Math.abs(amount)
-          }
-        }
-
-        let newCustomers = 0, prevNewCustomers = 0
-        for (const c of customers || []) {
-          if (!c.created_at) continue
-          const createdTs = new Date(c.created_at).getTime()
-          if (createdTs >= periodStart) newCustomers += 1
-          else if (createdTs >= prevStart && createdTs <= prevEnd) prevNewCustomers += 1
-        }
-
-        let outstanding = 0
-        let fullySettledThisMonth = 0
-        let dueTodayCount = 0
-        let highestOutstandingTx: { amount: number; customerId: string } | null = null
-        let mostPaymentsTx: { amount: number; customerId: string } | null = null
-        const overdueList: OverdueCustomer[] = []
-
-        for (const c of customers || []) {
-          const ob = c.opening_balance || 0
-          totalCreditAllTime += ob
-
-          const balance = ob + (balances[c.id] || 0)
-          const balanceBeforeMonth = ob + (balancesBeforeMonth[c.id] || 0)
-
-          if (balance > 0) {
-            outstanding += balance
-            if (isCustomerOverdue(balance, txByCustomer[c.id] || [], thresholdDays, resetThresholdPct)) {
-              overdueList.push({ name: c.name, balance })
-            } else if (daysUntilOverdue(balance, txByCustomer[c.id] || [], thresholdDays, resetThresholdPct) === 0) {
-              dueTodayCount += 1
-            }
-          }
-
-          if (balanceBeforeMonth > 0 && balance <= 0) fullySettledThisMonth += 1
-
-          if (!highestOutstandingTx || balance > highestOutstandingTx.amount) {
-            highestOutstandingTx = { amount: balance, customerId: c.id }
-          }
-
-          const totalPaidByCustomer = collectedByCustomer[c.id] || 0
-          if (totalPaidByCustomer > 0 && (!mostPaymentsTx || totalPaidByCustomer > mostPaymentsTx.amount)) {
-            mostPaymentsTx = { amount: totalPaidByCustomer, customerId: c.id }
-          }
-        }
-
-        overdueList.sort((a, b) => b.balance - a.balance)
-
-        const collectionRateAllTime = totalCreditAllTime > 0 ? Math.round((totalCollectedAllTime / totalCreditAllTime) * 100) : 0
-        const overduePercent = (customers || []).length > 0 ? Math.round((overdueList.length / (customers || []).length) * 100) : 0
-        const overdueAmount = overdueList.reduce((sum, c) => sum + c.balance, 0)
-        const avgTransactionSize = txCount > 0 ? Math.round((creditGiven + collected) / txCount) : 0
-        const prevAvgTransactionSize = prevTxCount > 0 ? Math.round((prevCredit + prevCollected) / prevTxCount) : 0
-
-        setData({
-          creditGiven,
-          collected,
-          outstanding,
-          txCount,
-          avgTransactionSize,
-          newCustomers,
-          prev: {
-            creditGiven: prevCredit,
-            collected: prevCollected,
-            outstanding,
-            txCount: prevTxCount,
-            avgTransactionSize: prevAvgTransactionSize,
-            newCustomers: prevNewCustomers,
-          },
-          overdueCustomers: overdueList.slice(0, 3),
-          highestCredit: highestCreditTx
-            ? { amount: highestCreditTx.amount, customerName: nameById.get(highestCreditTx.customerId) || 'Unknown' }
-            : null,
-          highestCollection: highestCollectionTx
-            ? { amount: highestCollectionTx.amount, customerName: nameById.get(highestCollectionTx.customerId) || 'Unknown' }
-            : null,
-          collectionRateAllTime,
-          totalCreditAllTime,
-          totalCollectedAllTime,
-          overduePercent,
-          allTimeHighestCredit: allTimeHighestCreditTx
-            ? { amount: allTimeHighestCreditTx.amount, customerName: nameById.get(allTimeHighestCreditTx.customerId) || 'Unknown' }
-            : null,
-          allTimeHighestCollection: allTimeHighestCollectionTx
-            ? { amount: allTimeHighestCollectionTx.amount, customerName: nameById.get(allTimeHighestCollectionTx.customerId) || 'Unknown' }
-            : null,
-          highestOutstanding: highestOutstandingTx && highestOutstandingTx.amount > 0
-            ? { amount: highestOutstandingTx.amount, customerName: nameById.get(highestOutstandingTx.customerId) || 'Unknown' }
-            : null,
-          mostPayments: mostPaymentsTx
-            ? { amount: mostPaymentsTx.amount, customerName: nameById.get(mostPaymentsTx.customerId) || 'Unknown' }
-            : null,
-          fullySettledThisMonth,
-          overdueCount: overdueList.length,
-          dueTodayCount,
-          overdueAmount,
-        })
+        const metrics = calculateReportMetrics(customersData || [], txData || [], period, thresholdDays, resetThresholdPct, weekStartDay)
+        
+        setData(metrics)
       } catch {
         // silent
       }
     }
     fetchReport()
   }, [period])
+
 
   const renderChange = (current: number, previous: number, invert?: boolean) => {
     const pct = percentChange(current, previous)

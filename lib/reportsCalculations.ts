@@ -1,4 +1,4 @@
-import { startOfDay, startOfWeek, calculateOverdueDays } from './utils'
+import { startOfDay, startOfWeek, calculateOverdueDays, daysUntilOverdue } from './utils'
 
 export interface Customer {
   id: string
@@ -34,11 +34,16 @@ export interface PeriodStats {
 }
 
 export interface ReportMetrics {
-  current: PeriodStats
-  previous: PeriodStats
+  creditGiven: number
+  collected: number
+  outstanding: number
+  txCount: number
+  avgTransactionSize: number
+  newCustomers: number
+  prev: PeriodStats
   overdueCustomers: OverdueCustomer[]
-  highestCreditThisPeriod: HighestTx | null
-  highestCollectionThisPeriod: HighestTx | null
+  highestCredit: HighestTx | null
+  highestCollection: HighestTx | null
   collectionRateAllTime: number
   totalCreditAllTime: number
   totalCollectedAllTime: number
@@ -69,22 +74,16 @@ export function calculateReportMetrics(
   // Calculate period boundaries
   const periodStart = getPeriodStart(now, period, weekStartDay)
   const prevEnd = periodStart - 1
-  const prevStart = getPreviousPeriodStart(now, period, weekStartDay, prevEnd)
+  const prevStart = getPreviousPeriodStart(now, period, weekStartDay)
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
 
-  // Initialize maps for calculations
+  // Initialize data structures for single-pass calculation
   const balances: Record<string, number> = {}
+  const balancesBeforeMonth: Record<string, number> = {}
   const txByCustomer: Record<string, Transaction[]> = {}
-  const customerCreatedDates: Record<string, number> = {}
+  const collectedByCustomer: Record<string, number> = {}
 
-  // Pre-populate customer data
-  for (const c of customers) {
-    balances[c.id] = c.opening_balance || 0
-    txByCustomer[c.id] = []
-    customerCreatedDates[c.id] = new Date(c.created_at).getTime()
-  }
-
-  // Aggregate transaction data
+  // Aggregate all transaction data in single pass
   let creditGiven = 0,
     collected = 0
   let prevCredit = 0,
@@ -95,141 +94,156 @@ export function calculateReportMetrics(
   let highestCollectionTx: { amount: number; customerId: string } | null = null
   let totalCreditAllTime = 0,
     totalCollectedAllTime = 0
-  let allTimeHighestCredit: { amount: number; customerId: string } | null = null
-  let allTimeHighestCollection: { amount: number; customerId: string } | null = null
-
+  let allTimeHighestCreditTx: { amount: number; customerId: string } | null = null
+  let allTimeHighestCollectionTx: { amount: number; customerId: string } | null = null
   const newCustomersThisPeriod = new Set<string>()
   const newCustomersPrevPeriod = new Set<string>()
-  const settledThisMonth = new Set<string>()
 
+  // Initialize customer data
+  for (const c of customers) {
+    balances[c.id] = c.opening_balance || 0
+    txByCustomer[c.id] = []
+    const createdTs = new Date(c.created_at).getTime()
+    if (createdTs >= periodStart) newCustomersThisPeriod.add(c.id)
+    else if (createdTs >= prevStart && createdTs <= prevEnd) newCustomersPrevPeriod.add(c.id)
+  }
+
+  // Single pass through all transactions
   for (const t of transactions) {
     const cid = t.customer_id
     const amount = t.amount || 0
     const ts = new Date(t.date || t.created_at).getTime()
 
-    // Update running balance
     balances[cid] = (balances[cid] || 0) + amount
     txByCustomer[cid].push(t)
+
+    // Track balances before month
+    if (ts < monthStart) {
+      balancesBeforeMonth[cid] = (balancesBeforeMonth[cid] || 0) + amount
+    }
 
     // All-time aggregations
     if (amount > 0) {
       totalCreditAllTime += amount
-      if (!allTimeHighestCredit || amount > allTimeHighestCredit.amount) {
-        allTimeHighestCredit = { amount, customerId: cid }
+      if (!allTimeHighestCreditTx || amount > allTimeHighestCreditTx.amount) {
+        allTimeHighestCreditTx = { amount, customerId: cid }
       }
     } else {
-      totalCollectedAllTime += Math.abs(amount)
-      if (!allTimeHighestCollection || Math.abs(amount) > allTimeHighestCollection.amount) {
-        allTimeHighestCollection = { amount: Math.abs(amount), customerId: cid }
+      const abs = Math.abs(amount)
+      totalCollectedAllTime += abs
+      collectedByCustomer[cid] = (collectedByCustomer[cid] || 0) + abs
+      if (!allTimeHighestCollectionTx || abs > allTimeHighestCollectionTx.amount) {
+        allTimeHighestCollectionTx = { amount: abs, customerId: cid }
       }
     }
 
-    // Current period aggregations
+    // Current period
     if (ts >= periodStart) {
+      txCount++
       if (amount > 0) {
         creditGiven += amount
         if (!highestCreditTx || amount > highestCreditTx.amount) {
           highestCreditTx = { amount, customerId: cid }
         }
       } else {
-        collected += Math.abs(amount)
-        if (!highestCollectionTx || Math.abs(amount) > highestCollectionTx.amount) {
-          highestCollectionTx = { amount: Math.abs(amount), customerId: cid }
+        const abs = Math.abs(amount)
+        collected += abs
+        if (!highestCollectionTx || abs > highestCollectionTx.amount) {
+          highestCollectionTx = { amount: abs, customerId: cid }
         }
       }
-      txCount++
-      if (customerCreatedDates[cid] >= periodStart) {
-        newCustomersThisPeriod.add(cid)
-      }
-    }
-
-    // Previous period aggregations
-    if (ts >= prevStart && ts <= prevEnd) {
-      if (amount > 0) {
-        prevCredit += amount
-      } else {
-        prevCollected += Math.abs(amount)
-      }
+    } else if (ts >= prevStart && ts <= prevEnd) {
       prevTxCount++
-      if (customerCreatedDates[cid] >= prevStart && customerCreatedDates[cid] <= prevEnd) {
-        newCustomersPrevPeriod.add(cid)
-      }
-    }
-
-    // Track settlements this month
-    if (ts >= monthStart && amount < 0) {
-      if ((balances[cid] || 0) <= 0) {
-        settledThisMonth.add(cid)
-      }
+      if (amount > 0) prevCredit += amount
+      else prevCollected += Math.abs(amount)
     }
   }
 
-  // Calculate overdue customers and outstanding amount
-  const overdueCustomers: OverdueCustomer[] = []
-  let overdueCount = 0
-  let dueTodayCount = 0
+  // Calculate customer-level metrics
+  let outstanding = 0
+  let fullySettledThisMonth = 0
   let overdueAmount = 0
-  let totalOutstanding = 0
   let highestOutstandingData: { amount: number; customerId: string } | null = null
+  let mostPaymentsTx: { amount: number; customerId: string } | null = null
+  const overdueList: OverdueCustomer[] = []
+  let dueTodayCount = 0
 
   for (const c of customers) {
-    const balance = balances[c.id] || 0
+    const balance = balances[c.id]
+    const balanceBeforeMonth = (c.opening_balance || 0) + (balancesBeforeMonth[c.id] || 0)
+
     if (balance > 0) {
-      totalOutstanding += balance
+      outstanding += balance
+
+      // Check overdue status
+      const overdueDays = calculateOverdueDays(balance, txByCustomer[c.id], thresholdDays, resetThresholdPct)
+      if (overdueDays > 0) {
+        overdueAmount += balance
+        overdueList.push({ name: c.name, balance })
+      } else {
+        // Check if due today
+        const daysRemaining = daysUntilOverdue(balance, txByCustomer[c.id], thresholdDays, resetThresholdPct)
+        if (daysRemaining === 0) {
+          dueTodayCount++
+        }
+      }
+
       if (!highestOutstandingData || balance > highestOutstandingData.amount) {
         highestOutstandingData = { amount: balance, customerId: c.id }
       }
+    }
 
-      const overdueDays = calculateOverdueDays(balance, txByCustomer[c.id], thresholdDays, resetThresholdPct)
-      if (overdueDays > 0) {
-        overdueCount++
-        overdueAmount += balance
-        overdueCustomers.push({ name: c.name, balance })
-      } else if (balance > 0) {
-        // Check if due today
-        // (implementation of daysUntilOverdue would go here if needed)
-        // For now, we focus on the overdue vs active distinction
-      }
+    // Check if settled this month
+    if (balanceBeforeMonth > 0 && balance <= 0) {
+      fullySettledThisMonth++
+    }
+
+    // Track highest payer
+    const totalPaidByCustomer = collectedByCustomer[c.id] || 0
+    if (totalPaidByCustomer > 0 && (!mostPaymentsTx || totalPaidByCustomer > mostPaymentsTx.amount)) {
+      mostPaymentsTx = { amount: totalPaidByCustomer, customerId: c.id }
     }
   }
 
-  // Sort overdueCustomers by balance descending
-  overdueCustomers.sort((a, b) => b.balance - a.balance)
+  // Sort overdue by balance descending
+  overdueList.sort((a, b) => b.balance - a.balance)
 
-  // Calculate rates and percentages
+  // Calculate rates
+  totalCreditAllTime = (customers || []).reduce((sum, c) => sum + (c.opening_balance || 0), totalCreditAllTime)
   const collectionRateAllTime = totalCreditAllTime > 0 ? Math.round((totalCollectedAllTime / totalCreditAllTime) * 100) : 0
-  const overduePercent = totalOutstanding > 0 ? Math.round((overdueAmount / totalOutstanding) * 100) : 0
+  const overduePercent = outstanding > 0 ? Math.round((overdueAmount / outstanding) * 100) : 0
+
+  const avgTransactionSize = txCount > 0 ? Math.round((creditGiven + collected) / txCount) : 0
+  const prevAvgTransactionSize = prevTxCount > 0 ? Math.round((prevCredit + prevCollected) / prevTxCount) : 0
 
   return {
-    current: {
-      creditGiven,
-      collected,
-      outstanding: totalOutstanding,
-      txCount,
-      avgTransactionSize: txCount > 0 ? Math.round(creditGiven / txCount) : 0,
-      newCustomers: newCustomersThisPeriod.size,
-    },
-    previous: {
+    creditGiven,
+    collected,
+    outstanding,
+    txCount,
+    avgTransactionSize,
+    newCustomers: newCustomersThisPeriod.size,
+    prev: {
       creditGiven: prevCredit,
       collected: prevCollected,
-      outstanding: 0, // Not calculated for previous period
+      outstanding: 0,
       txCount: prevTxCount,
-      avgTransactionSize: prevTxCount > 0 ? Math.round(prevCredit / prevTxCount) : 0,
+      avgTransactionSize: prevAvgTransactionSize,
       newCustomers: newCustomersPrevPeriod.size,
     },
-    overdueCustomers,
-    highestCreditThisPeriod: highestCreditTx ? { amount: highestCreditTx.amount, customerName: nameById.get(highestCreditTx.customerId) || 'Unknown' } : null,
-    highestCollectionThisPeriod: highestCollectionTx ? { amount: highestCollectionTx.amount, customerName: nameById.get(highestCollectionTx.customerId) || 'Unknown' } : null,
+    overdueCustomers: overdueList.slice(0, 3),
+    highestCredit: highestCreditTx ? { amount: highestCreditTx.amount, customerName: nameById.get(highestCreditTx.customerId) || 'Unknown' } : null,
+    highestCollection: highestCollectionTx ? { amount: highestCollectionTx.amount, customerName: nameById.get(highestCollectionTx.customerId) || 'Unknown' } : null,
     collectionRateAllTime,
     totalCreditAllTime,
     totalCollectedAllTime,
     overduePercent,
-    allTimeHighestCredit: allTimeHighestCredit ? { amount: allTimeHighestCredit.amount, customerName: nameById.get(allTimeHighestCredit.customerId) || 'Unknown' } : null,
-    allTimeHighestCollection: allTimeHighestCollection ? { amount: allTimeHighestCollection.amount, customerName: nameById.get(allTimeHighestCollection.customerId) || 'Unknown' } : null,
-    highestOutstanding: highestOutstandingData ? { amount: highestOutstandingData.amount, customerName: nameById.get(highestOutstandingData.customerId) || 'Unknown' } : null,
-    mostPayments: null, // Would need more specific tracking
-    fullySettledThisMonth: settledThisMonth.size,
-    overdueCount,
+    allTimeHighestCredit: allTimeHighestCreditTx ? { amount: allTimeHighestCreditTx.amount, customerName: nameById.get(allTimeHighestCreditTx.customerId) || 'Unknown' } : null,
+    allTimeHighestCollection: allTimeHighestCollectionTx ? { amount: allTimeHighestCollectionTx.amount, customerName: nameById.get(allTimeHighestCollectionTx.customerId) || 'Unknown' } : null,
+    highestOutstanding: highestOutstandingData && highestOutstandingData.amount > 0 ? { amount: highestOutstandingData.amount, customerName: nameById.get(highestOutstandingData.customerId) || 'Unknown' } : null,
+    mostPayments: mostPaymentsTx ? { amount: mostPaymentsTx.amount, customerName: nameById.get(mostPaymentsTx.customerId) || 'Unknown' } : null,
+    fullySettledThisMonth,
+    overdueCount: overdueList.length,
     dueTodayCount,
     overdueAmount,
   }
@@ -241,9 +255,8 @@ function getPeriodStart(now: Date, period: Period, weekStartDay: 0 | 1): number 
   return new Date(now.getFullYear(), now.getMonth(), 1).getTime()
 }
 
-function getPreviousPeriodStart(now: Date, period: Period, weekStartDay: 0 | 1, prevEnd: number): number {
+function getPreviousPeriodStart(now: Date, period: Period, weekStartDay: 0 | 1): number {
   if (period === 'today') return startOfDay(new Date(now.getTime() - 24 * 60 * 60 * 1000)).getTime()
   if (period === 'week') return startOfWeek(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), weekStartDay).getTime()
-  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  return prevMonth.getTime()
+  return new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime()
 }
