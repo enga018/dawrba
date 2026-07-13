@@ -1,113 +1,53 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
 import { formatCurrency, isCustomerOverdue, startOfDay } from '@/lib/utils'
+import type { DashboardCustomer, DashboardTx, DashboardThresholds } from './DashboardPage'
 
-interface SummaryData {
-  todayCredit: number
-  collectedToday: number
-  totalCredit: number
-  totalCollection: number
-  outstanding: number
-  overdueCount: number
+interface Props {
+  customers: DashboardCustomer[]
+  transactions: DashboardTx[]
+  thresholds: DashboardThresholds
 }
 
-export default function DashboardSummary() {
-  const [data, setData] = useState<SummaryData | null>(null)
+export default function DashboardSummary({ customers, transactions, thresholds }: Props) {
+  const todayStart = startOfDay(new Date()).getTime()
+  let todayCredit = 0
+  let collectedToday = 0
+  let totalCredit = 0
+  let totalCollection = 0
+  const balances: Record<string, number> = {}
+  const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
 
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        const user = (await supabase.auth.getUser()).data.user
-        if (!user) return
+  for (const t of transactions) {
+    const amount = t.amount || 0
+    balances[t.customer_id] = (balances[t.customer_id] || 0) + amount
+    if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
+    txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
 
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('overdue_threshold_days, overdue_reset_threshold_pct')
-          .eq('id', user.id)
-          .single()
+    if (amount > 0) totalCredit += amount
+    else totalCollection += Math.abs(amount)
 
-        const thresholdDays: number = profileData?.overdue_threshold_days || 7
-        const resetThresholdPct: number = profileData?.overdue_reset_threshold_pct || 50
-
-        const { data: customers } = await supabase
-          .from('customers')
-          .select('id, opening_balance')
-          .eq('user_id', user.id)
-
-        const ids = (customers || []).map((c) => c.id)
-        if (ids.length === 0) {
-          setData({ todayCredit: 0, collectedToday: 0, totalCredit: 0, totalCollection: 0, outstanding: 0, overdueCount: 0 })
-          return
-        }
-
-        const { data: txData } = await supabase
-          .from('transactions')
-          .select('customer_id, amount, date, created_at')
-          .in('customer_id', ids)
-
-        const todayStart = startOfDay(new Date()).getTime()
-        let todayCredit = 0
-        let collectedToday = 0
-        let totalCredit = 0
-        let totalCollection = 0
-        const balances: Record<string, number> = {}
-        const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
-
-        for (const t of txData || []) {
-          const amount = t.amount || 0
-          balances[t.customer_id] = (balances[t.customer_id] || 0) + amount
-          if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
-          txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
-
-          if (amount > 0) totalCredit += amount
-          else totalCollection += Math.abs(amount)
-
-          const ts = new Date(t.created_at).getTime()
-          if (ts >= todayStart) {
-            if (amount > 0) todayCredit += amount
-            else collectedToday += Math.abs(amount)
-          }
-        }
-
-        let outstanding = 0
-        let overdueCount = 0
-        for (const c of customers || []) {
-          totalCredit += c.opening_balance || 0
-          const balance = (c.opening_balance || 0) + (balances[c.id] || 0)
-          if (balance > 0) {
-            outstanding += balance
-            if (isCustomerOverdue(balance, txByCustomer[c.id] || [], thresholdDays, resetThresholdPct)) {
-              overdueCount += 1
-            }
-          }
-        }
-
-        setData({ todayCredit, collectedToday, totalCredit, totalCollection, outstanding, overdueCount })
-      } catch {
-        // silent
-      }
+    const ts = new Date(t.created_at).getTime()
+    if (ts >= todayStart) {
+      if (amount > 0) todayCredit += amount
+      else collectedToday += Math.abs(amount)
     }
-    fetchSummary()
-  }, [])
-
-  if (!data) {
-    return (
-      <div className="dashboard-hero-skeleton">
-        <div className="hero-skeleton" style={{ height: '180px', borderRadius: '24px' }} />
-        <div className="summary-grid" style={{ marginTop: 16 }}>
-          {[0, 1].map((i) => (
-            <div key={i} className="summary-card">
-              <div className="hero-skeleton" style={{ height: '80px' }} />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
   }
 
-  const collectionRate = data.totalCredit > 0 ? Math.round((data.totalCollection / data.totalCredit) * 100) : 0
+  let outstanding = 0
+  let overdueCount = 0
+  for (const c of customers) {
+    totalCredit += c.opening_balance || 0
+    const balance = (c.opening_balance || 0) + (balances[c.id] || 0)
+    if (balance > 0) {
+      outstanding += balance
+      if (isCustomerOverdue(balance, txByCustomer[c.id] || [], thresholds.thresholdDays, thresholds.resetThresholdPct)) {
+        overdueCount += 1
+      }
+    }
+  }
+
+  const collectionRate = totalCredit > 0 ? Math.round((totalCollection / totalCredit) * 100) : 0
 
   return (
     <>
@@ -115,7 +55,7 @@ export default function DashboardSummary() {
         <div className="dashboard-hero-top">
           <div>
             <div className="dashboard-hero-label">Total Outstanding</div>
-            <div className="dashboard-hero-value">₹{formatCurrency(data.outstanding)}</div>
+            <div className="dashboard-hero-value">₹{formatCurrency(outstanding)}</div>
           </div>
           <div className="dashboard-hero-badge">Live</div>
         </div>
@@ -124,13 +64,13 @@ export default function DashboardSummary() {
           <div className="dashboard-hero-stat">
             <span className="dashboard-hero-stat-label">Total Credit</span>
             <span className="dashboard-hero-stat-value" style={{ color: '#4ade80' }}>
-              ₹{formatCurrency(data.totalCredit)}
+              ₹{formatCurrency(totalCredit)}
             </span>
           </div>
 
           <div className="dashboard-hero-stat">
             <span className="dashboard-hero-stat-label">Total Collection</span>
-            <span className="dashboard-hero-stat-value">₹{formatCurrency(data.totalCollection)}</span>
+            <span className="dashboard-hero-stat-value">₹{formatCurrency(totalCollection)}</span>
           </div>
 
           <div className="dashboard-hero-stat">
@@ -140,7 +80,7 @@ export default function DashboardSummary() {
 
           <div className="dashboard-hero-stat">
             <span className="dashboard-hero-stat-label">Overdue</span>
-            <span className="dashboard-hero-stat-value">{data.overdueCount}</span>
+            <span className="dashboard-hero-stat-value">{overdueCount}</span>
           </div>
         </div>
       </div>
@@ -153,7 +93,7 @@ export default function DashboardSummary() {
               <i className="fa-solid fa-plus"></i>
             </div>
           </div>
-          <div className="summary-card-modern-value">₹{formatCurrency(data.todayCredit)}</div>
+          <div className="summary-card-modern-value">₹{formatCurrency(todayCredit)}</div>
           <div className="summary-card-modern-sub">Added today</div>
         </div>
 
@@ -164,7 +104,7 @@ export default function DashboardSummary() {
               <i className="fa-solid fa-hand-holding-dollar"></i>
             </div>
           </div>
-          <div className="summary-card-modern-value">₹{formatCurrency(data.collectedToday)}</div>
+          <div className="summary-card-modern-value">₹{formatCurrency(collectedToday)}</div>
           <div className="summary-card-modern-sub">Received today</div>
         </div>
       </div>

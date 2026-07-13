@@ -1,9 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
 import { formatCurrency, startOfDay, startOfWeek, daysSince, daysUntilOverdue } from '@/lib/utils'
+import type { DashboardCustomer, DashboardTx, DashboardThresholds } from './DashboardPage'
 
 type IconColor = 'red' | 'orange' | 'green' | 'purple' | 'blue'
 
@@ -17,103 +16,16 @@ interface Insight {
   href: string
 }
 
-interface CustomerRow {
-  id: string
-  name: string
-  opening_balance: number
-  credit_limit: number | null
+interface Props {
+  customers: DashboardCustomer[]
+  transactions: DashboardTx[]
+  thresholds: DashboardThresholds
 }
 
-interface TxRow {
-  id: string
-  customer_id: string
-  amount: number
-  date?: string
-  created_at: string
-}
+export default function InsightsFeed({ customers, transactions, thresholds }: Props) {
+  const insights = buildInsights(customers, transactions, thresholds)
 
-interface Thresholds {
-  thresholdDays: number
-  resetThresholdPct: number
-  slowPayingRatioPct: number
-  balanceRiseThreshold: number
-  largePaymentThreshold: number
-}
-
-export default function InsightsFeed() {
-  const [insights, setInsights] = useState<Insight[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const loadData = useCallback(async () => {
-    try {
-      const user = (await supabase.auth.getUser()).data.user
-      if (!user) { setLoading(false); return }
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('overdue_threshold_days, overdue_reset_threshold_pct, slow_paying_ratio_pct, balance_rise_threshold, large_payment_threshold')
-        .eq('id', user.id)
-        .single()
-
-      const thresholds: Thresholds = {
-        thresholdDays: profileData?.overdue_threshold_days || 7,
-        resetThresholdPct: profileData?.overdue_reset_threshold_pct || 50,
-        slowPayingRatioPct: profileData?.slow_paying_ratio_pct || 30,
-        balanceRiseThreshold: profileData?.balance_rise_threshold || 5000,
-        largePaymentThreshold: profileData?.large_payment_threshold || 5000,
-      }
-
-      const { data: customers, error: custError } = await supabase
-        .from('customers')
-        .select('id, name, opening_balance, credit_limit')
-        .eq('user_id', user.id)
-      if (custError) throw custError
-
-      const ids = (customers || []).map((c) => c.id)
-      if (ids.length === 0) {
-        setInsights([])
-        setLoading(false)
-        return
-      }
-
-      const { data: txData, error: txError } = await supabase
-        .from('transactions')
-        .select('id, customer_id, amount, date, created_at')
-        .in('customer_id', ids)
-      if (txError) throw txError
-
-      setInsights(buildInsights(customers as CustomerRow[], (txData || []) as TxRow[], thresholds))
-      setLoading(false)
-    } catch (err) {
-      console.error('Error loading insights feed:', err)
-      setError('Failed to load insights')
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { loadData() }, [loadData])
-
-  useEffect(() => {
-    const onRefresh = () => loadData()
-    window.addEventListener('dawrba:refresh', onRefresh)
-    return () => window.removeEventListener('dawrba:refresh', onRefresh)
-  }, [loadData])
-
-  if (loading) {
-    return (
-      <div className="home-section-card">
-        <div className="home-section-header">
-          <h3>Business Insights</h3>
-        </div>
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-          <div className="spinner" style={{ margin: '0 auto' }}></div>
-        </div>
-      </div>
-    )
-  }
-
-  if (insights.length === 0 && !error) {
+  if (insights.length === 0) {
     return null
   }
 
@@ -140,20 +52,14 @@ export default function InsightsFeed() {
           </Link>
         ))}
       </div>
-
-      {error && (
-        <div style={{ padding: '12px', color: '#dc2626', fontSize: '0.85rem', textAlign: 'center' }}>
-          {error}
-        </div>
-      )}
     </div>
   )
 }
 
 function buildInsights(
-  customers: CustomerRow[],
-  txData: TxRow[],
-  thresholds: Thresholds
+  customers: DashboardCustomer[],
+  txData: DashboardTx[],
+  thresholds: DashboardThresholds
 ): Insight[] {
   const nameById = new Map(customers.map((c) => [c.id, c.name]))
   const now = new Date()

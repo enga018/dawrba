@@ -1,79 +1,36 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
 import { formatCurrency, getInitials, isCustomerOverdue } from '@/lib/utils'
+import type { DashboardCustomer, DashboardTx, DashboardThresholds } from './DashboardPage'
 
-interface AttentionCustomer {
-  id: string
-  name: string
-  balance: number
-  phone?: string
+interface Props {
+  customers: DashboardCustomer[]
+  transactions: DashboardTx[]
+  thresholds: DashboardThresholds
 }
 
-export default function NeedsAttention() {
-  const [customers, setCustomers] = useState<AttentionCustomer[]>([])
-  const [loading, setLoading] = useState(true)
+export default function NeedsAttention({ customers, transactions, thresholds }: Props) {
+  const balances: Record<string, number> = {}
+  const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
+  for (const t of transactions) {
+    balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
+    if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
+    txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
+  }
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const user = (await supabase.auth.getUser()).data.user
-        if (!user) { setLoading(false); return }
-
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('overdue_threshold_days, overdue_reset_threshold_pct')
-          .eq('id', user.id)
-          .single()
-
-        const thresholdDays: number = profileData?.overdue_threshold_days || 7
-        const resetThresholdPct: number = profileData?.overdue_reset_threshold_pct || 50
-
-        const { data: customersData } = await supabase
-          .from('customers')
-          .select('id, name, phone, opening_balance')
-          .eq('user_id', user.id)
-
-        const ids = (customersData || []).map((c) => c.id)
-        if (ids.length === 0) { setLoading(false); return }
-
-        const { data: txData } = await supabase
-          .from('transactions')
-          .select('customer_id, amount, date, created_at')
-          .in('customer_id', ids)
-
-        const balances: Record<string, number> = {}
-        const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
-        for (const t of txData || []) {
-          balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
-          if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
-          txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
-        }
-
-        const withBalance = (customersData || [])
-          .map((c) => ({
-            id: c.id,
-            name: c.name,
-            phone: c.phone,
-            balance: (c.opening_balance || 0) + (balances[c.id] || 0),
-            transactions: txByCustomer[c.id] || [],
-          }))
-          .filter((c) => isCustomerOverdue(c.balance, c.transactions, thresholdDays, resetThresholdPct))
-          .sort((a, b) => b.balance - a.balance)
-          .slice(0, 3)
-          .map(({ transactions, ...rest }) => rest)
-
-        setCustomers(withBalance)
-      } catch {
-        // silent
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
+  const attentionList = customers
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      balance: (c.opening_balance || 0) + (balances[c.id] || 0),
+      customerTx: txByCustomer[c.id] || [],
+    }))
+    .filter((c) => isCustomerOverdue(c.balance, c.customerTx, thresholds.thresholdDays, thresholds.resetThresholdPct))
+    .sort((a, b) => b.balance - a.balance)
+    .slice(0, 3)
+    .map(({ customerTx, ...rest }) => rest)
 
   return (
     <div className="home-section-card">
@@ -81,18 +38,14 @@ export default function NeedsAttention() {
         <h3>Needs Attention</h3>
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-          <div className="spinner" style={{ margin: '0 auto' }}></div>
-        </div>
-      ) : customers.length === 0 ? (
+      {attentionList.length === 0 ? (
         <div className="empty" style={{ padding: '20px' }}>
           <i className="fa-solid fa-check-circle" style={{ color: 'var(--green)' }}></i>
           <p>All clear! No overdue customers.</p>
         </div>
       ) : (
         <div className="attention-list">
-          {customers.map((c) => (
+          {attentionList.map((c) => (
             <Link
               key={c.id}
               href={`/customers/${c.id}`}
