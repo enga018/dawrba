@@ -15,6 +15,7 @@ interface Customer {
   name: string
   phone?: string
   opening_balance: number
+  credit_limit?: number | null
   balance: number
   created_at?: string
 }
@@ -53,6 +54,7 @@ function CustomerDetailInner() {
   const [editName, setEditName] = useState('')
   const [editPhone, setEditPhone] = useState('')
   const [editOpeningBalance, setEditOpeningBalance] = useState('')
+  const [editCreditLimit, setEditCreditLimit] = useState('')
   const [savingCustomer, setSavingCustomer] = useState(false)
   const [overdueThresholdDays, setOverdueThresholdDays] = useState(7)
   const [overdueResetThresholdPct, setOverdueResetThresholdPct] = useState(50)
@@ -97,7 +99,7 @@ function CustomerDetailInner() {
 
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
-        .select('id, name, phone, opening_balance, created_at')
+        .select('id, name, phone, opening_balance, credit_limit, created_at')
         .eq('id', customerId)
         .eq('user_id', user.id)
         .single()
@@ -242,8 +244,11 @@ function CustomerDetailInner() {
     try {
       const ob = Math.max(0, parseFloat(editOpeningBalance) || 0)
       const prevOb = customer ? customer.opening_balance : 0
+      const limit = editCreditLimit ? parseFloat(editCreditLimit) : null
+      const prevLimit = customer?.credit_limit ?? null
       const updateData: Record<string, unknown> = { name: editName.trim(), phone: editPhone.trim() || null }
       if (ob !== prevOb) updateData.opening_balance = ob
+      if (limit !== prevLimit) updateData.credit_limit = limit
       const result = await offlineWrite(
         async () => {
           const { error } = await supabase.from('customers').update(updateData).eq('id', customerId)
@@ -276,6 +281,7 @@ function CustomerDetailInner() {
     setEditName(customer.name)
     setEditPhone(customer.phone || '')
     setEditOpeningBalance(String(customer.opening_balance))
+    setEditCreditLimit(customer.credit_limit != null ? String(customer.credit_limit) : '')
     setShowEditCustomerModal(true)
   }
 
@@ -598,6 +604,11 @@ function CustomerDetailInner() {
             <label>Opening Balance (₹)</label>
             <input type="number" placeholder="0" min="0" value={editOpeningBalance}
               onChange={(e) => setEditOpeningBalance(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Credit limit (₹, optional)</label>
+            <input type="number" placeholder="No limit" min="0" value={editCreditLimit}
+              onChange={(e) => setEditCreditLimit(e.target.value)} />
           </div>
           <button className="btn btn-primary btn-block" disabled={!editName.trim() || savingCustomer} onClick={handleSaveCustomer}>
             {savingCustomer ? <span className="spinner"></span> : 'Save'}

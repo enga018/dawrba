@@ -27,6 +27,7 @@ export default function AddCustomer() {
     name: '',
     phone: '',
     openingBalance: '',
+    creditLimit: '',
     amount: '',
     note: '',
   })
@@ -121,11 +122,12 @@ export default function AddCustomer() {
       if (!user) throw new Error('Not authenticated')
 
       const ob = parseFloat(formData.openingBalance) || 0
+      const limit = formData.creditLimit ? parseFloat(formData.creditLimit) : null
 
       if (isOnline()) {
         const { data: customer, error: customerError } = await supabase
           .from('customers').insert({
-            user_id: user.id, name: formData.name, phone: formData.phone || null, opening_balance: ob,
+            user_id: user.id, name: formData.name, phone: formData.phone || null, opening_balance: ob, credit_limit: limit,
           }).select().single()
         if (customerError) throw customerError
         if (ob > 0) logActivity({ eventType: 'opening_balance', amount: ob, customerId: customer.id })
@@ -139,7 +141,7 @@ export default function AddCustomer() {
       } else {
         await offlineWrite(
           async () => ({ data: null, error: null }),
-          { table: 'customers', operation: 'insert', data: { user_id: user.id, name: formData.name, phone: formData.phone || null, opening_balance: ob } }
+          { table: 'customers', operation: 'insert', data: { user_id: user.id, name: formData.name, phone: formData.phone || null, opening_balance: ob, credit_limit: limit } }
         )
         if (formData.amount && parseFloat(formData.amount) > 0) {
           await offlineWrite(
@@ -256,6 +258,19 @@ export default function AddCustomer() {
               min="0"
               step="1"
               value={formData.openingBalance}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="creditLimit">Credit limit (₹) <span style={{ color: 'var(--meta)', fontWeight: 400 }}>(optional)</span></label>
+            <input
+              type="number"
+              id="creditLimit"
+              name="creditLimit"
+              placeholder="No limit"
+              min="0"
+              step="1"
+              value={formData.creditLimit}
               onChange={handleChange}
             />
           </div>

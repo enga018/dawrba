@@ -16,6 +16,7 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [openingBalance, setOpeningBalance] = useState('')
+  const [creditLimit, setCreditLimit] = useState('')
   const [showExtra, setShowExtra] = useState(false)
   const [extraAmount, setExtraAmount] = useState('')
   const [extraNote, setExtraNote] = useState('')
@@ -26,6 +27,7 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
       setName('')
       setPhone('')
       setOpeningBalance('')
+      setCreditLimit('')
       setShowExtra(false)
       setExtraAmount('')
       setExtraNote('')
@@ -45,6 +47,7 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
       if (!user) throw new Error('Not authenticated')
       const trimmedName = name.trim()
       const ob = parseFloat(openingBalance) || 0
+      const limit = creditLimit ? parseFloat(creditLimit) : null
 
       if (isOnline()) {
         const { data: customer, error } = await supabase.from('customers').insert({
@@ -52,6 +55,7 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
           name: trimmedName,
           phone: phone.trim() || null,
           opening_balance: ob,
+          credit_limit: limit,
         }).select().single()
         if (error) throw error
 
@@ -75,7 +79,7 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
       } else {
         await offlineWrite(
           async () => ({ data: null, error: null }),
-          { table: 'customers', operation: 'insert', data: { user_id: user.id, name: trimmedName, phone: phone.trim() || null, opening_balance: ob } }
+          { table: 'customers', operation: 'insert', data: { user_id: user.id, name: trimmedName, phone: phone.trim() || null, opening_balance: ob, credit_limit: limit } }
         )
         if (extraAmount && parseFloat(extraAmount) > 0) {
           await offlineWrite(
@@ -130,6 +134,16 @@ export default function AddCustomerModal({ show, onClose }: AddCustomerModalProp
             placeholder="0"
             value={openingBalance}
             onChange={(e) => setOpeningBalance(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label>Credit limit (optional)</label>
+          <input
+            type="number"
+            placeholder="No limit"
+            min="0"
+            value={creditLimit}
+            onChange={(e) => setCreditLimit(e.target.value)}
           />
         </div>
 
