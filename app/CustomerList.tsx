@@ -16,6 +16,7 @@ interface Customer {
   phone?: string
   created_at: string
   balance?: number
+  opening_balance: number
   lastTxDate?: string
   transactions: Array<{ amount: number; date?: string; created_at: string }>
 }
