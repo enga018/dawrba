@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useMemo } from 'react'
 import Link from 'next/link'
 import { formatCurrency, getInitials, isCustomerOverdue } from '@/lib/utils'
 import type { DashboardCustomer, DashboardTx, DashboardThresholds } from './DashboardPage'
@@ -10,27 +11,51 @@ interface Props {
   thresholds: DashboardThresholds
 }
 
-export default function NeedsAttention({ customers, transactions, thresholds }: Props) {
-  const balances: Record<string, number> = {}
-  const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
-  for (const t of transactions) {
-    balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
-    if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
-    txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
-  }
+interface AttentionCustomer {
+  id: string
+  name: string
+  phone?: string
+  balance: number
+}
 
-  const attentionList = customers
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      phone: c.phone,
-      balance: (c.opening_balance || 0) + (balances[c.id] || 0),
-      customerTx: txByCustomer[c.id] || [],
-    }))
-    .filter((c) => isCustomerOverdue(c.balance, c.customerTx, thresholds.thresholdDays, thresholds.resetThresholdPct))
-    .sort((a, b) => b.balance - a.balance)
-    .slice(0, 3)
-    .map(({ customerTx, ...rest }) => rest)
+const AttentionItem = memo(function AttentionItem({ c }: { c: AttentionCustomer }) {
+  return (
+    <Link href={`/customers/${c.id}`} className="attention-item">
+      <div className="attention-left">
+        <div className="avatar-sm">{getInitials(c.name)}</div>
+        <div>
+          <div className="attention-name">{c.name}</div>
+          <div className="attention-meta">{c.phone || 'No phone'}</div>
+        </div>
+      </div>
+      <div className="attention-amount">₹{formatCurrency(c.balance)}</div>
+    </Link>
+  )
+})
+
+export default function NeedsAttention({ customers, transactions, thresholds }: Props) {
+  const attentionList = useMemo<AttentionCustomer[]>(() => {
+    const balances: Record<string, number> = {}
+    const txByCustomer: Record<string, Array<{ amount: number; date?: string; created_at: string }>> = {}
+    for (const t of transactions) {
+      balances[t.customer_id] = (balances[t.customer_id] || 0) + (t.amount || 0)
+      if (!txByCustomer[t.customer_id]) txByCustomer[t.customer_id] = []
+      txByCustomer[t.customer_id].push({ amount: t.amount, date: t.date, created_at: t.created_at })
+    }
+
+    return customers
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        balance: (c.opening_balance || 0) + (balances[c.id] || 0),
+        customerTx: txByCustomer[c.id] || [],
+      }))
+      .filter((c) => isCustomerOverdue(c.balance, c.customerTx, thresholds.thresholdDays, thresholds.resetThresholdPct))
+      .sort((a, b) => b.balance - a.balance)
+      .slice(0, 3)
+      .map(({ customerTx, ...rest }) => rest)
+  }, [customers, transactions, thresholds])
 
   return (
     <div className="home-section-card">
@@ -46,20 +71,7 @@ export default function NeedsAttention({ customers, transactions, thresholds }: 
       ) : (
         <div className="attention-list">
           {attentionList.map((c) => (
-            <Link
-              key={c.id}
-              href={`/customers/${c.id}`}
-              className="attention-item"
-            >
-              <div className="attention-left">
-                <div className="avatar-sm">{getInitials(c.name)}</div>
-                <div>
-                  <div className="attention-name">{c.name}</div>
-                  <div className="attention-meta">{c.phone || 'No phone'}</div>
-                </div>
-              </div>
-              <div className="attention-amount">₹{formatCurrency(c.balance)}</div>
-            </Link>
+            <AttentionItem key={c.id} c={c} />
           ))}
         </div>
       )}

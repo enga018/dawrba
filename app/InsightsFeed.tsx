@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useMemo } from 'react'
 import Link from 'next/link'
 import { formatCurrency, startOfDay, startOfWeek, daysSince, daysUntilOverdue } from '@/lib/utils'
 import type { DashboardCustomer, DashboardTx, DashboardThresholds } from './DashboardPage'
@@ -22,8 +23,29 @@ interface Props {
   thresholds: DashboardThresholds
 }
 
+const InsightCard = memo(function InsightCard({ insight }: { insight: Insight }) {
+  return (
+    <Link href={insight.href} className="insight-item">
+      <div className={`insight-icon ${insight.iconColor}`}>
+        <i className={`fa-solid ${insight.icon}`}></i>
+      </div>
+      <div className="insight-text">
+        <div className="insight-title">{insight.title}</div>
+        <div className="insight-body">{insight.body}</div>
+        {insight.sub && <div className="insight-sub">{insight.sub}</div>}
+      </div>
+      <div className="insight-chevron">
+        <i className="fa-solid fa-chevron-right"></i>
+      </div>
+    </Link>
+  )
+})
+
 export default function InsightsFeed({ customers, transactions, thresholds }: Props) {
-  const insights = buildInsights(customers, transactions, thresholds)
+  const insights = useMemo(
+    () => buildInsights(customers, transactions, thresholds),
+    [customers, transactions, thresholds]
+  )
 
   if (insights.length === 0) {
     return null
@@ -37,19 +59,7 @@ export default function InsightsFeed({ customers, transactions, thresholds }: Pr
 
       <div className="insight-list">
         {insights.map((insight) => (
-          <Link key={insight.id} href={insight.href} className="insight-item">
-            <div className={`insight-icon ${insight.iconColor}`}>
-              <i className={`fa-solid ${insight.icon}`}></i>
-            </div>
-            <div className="insight-text">
-              <div className="insight-title">{insight.title}</div>
-              <div className="insight-body">{insight.body}</div>
-              {insight.sub && <div className="insight-sub">{insight.sub}</div>}
-            </div>
-            <div className="insight-chevron">
-              <i className="fa-solid fa-chevron-right"></i>
-            </div>
-          </Link>
+          <InsightCard key={insight.id} insight={insight} />
         ))}
       </div>
     </div>

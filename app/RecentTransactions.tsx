@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, memo } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getAllCachedTransactions, getCachedCustomers } from '@/lib/offline'
@@ -17,6 +17,38 @@ interface RecentTx {
   customer_id: string
   customer_name: string
 }
+
+const RecentActivityItem = memo(function RecentActivityItem({ tx }: { tx: RecentTx }) {
+  const isCredit = tx.amount > 0
+  return (
+    <Link
+      href={`/customers/${tx.customer_id}`}
+      className="tx-item"
+      style={{ textDecoration: 'none' }}
+    >
+      <div className="tx-left">
+        <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
+          <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-minus'}`}></i>
+        </div>
+        <div>
+          <div className="tx-header">
+            <div className="tx-note">{tx.customer_name}</div>
+            <span className={`tx-badge ${isCredit ? 'credit' : 'pay'}`}>
+              {isCredit ? 'Credit' : 'Payment'}
+            </span>
+          </div>
+          <div className="tx-date">
+            {tx.note ? `${tx.note} · ` : ''}
+            {formatDate(tx.date)} · {formatTime(tx.created_at)}
+          </div>
+        </div>
+      </div>
+      <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
+        {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
+      </div>
+    </Link>
+  )
+})
 
 export default function RecentTransactions({
   limit,
@@ -117,38 +149,9 @@ export default function RecentTransactions({
       ) : (
         <>
           <div className="tx-list">
-            {transactions.map((tx) => {
-              const isCredit = tx.amount > 0
-              return (
-                <Link
-                  key={tx.id}
-                  href={`/customers/${tx.customer_id}`}
-                  className="tx-item"
-                  style={{ textDecoration: 'none' }}
-                >
-                  <div className="tx-left">
-                    <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
-                      <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-minus'}`}></i>
-                    </div>
-                    <div>
-                      <div className="tx-header">
-                        <div className="tx-note">{tx.customer_name}</div>
-                        <span className={`tx-badge ${isCredit ? 'credit' : 'pay'}`}>
-                          {isCredit ? 'Credit' : 'Payment'}
-                        </span>
-                      </div>
-                      <div className="tx-date">
-                        {tx.note ? `${tx.note} · ` : ''}
-                        {formatDate(tx.date)} · {formatTime(tx.created_at)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
-                    {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
-                  </div>
-                </Link>
-              )
-            })}
+            {transactions.map((tx) => (
+              <RecentActivityItem key={tx.id} tx={tx} />
+            ))}
           </div>
 
           {hasMore && (
