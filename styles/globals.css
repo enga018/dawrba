@@ -1328,36 +1328,69 @@ input, select, button, textarea {
   cursor: pointer;
 }
 
-.keypad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+/* Phone-style keypad grid (3 columns × 4 rows) */
+.keypad-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin: 16px 0 4px;
+  padding: 12px;
+  background: var(--surface-alt);
+  border-radius: 16px;
 }
 
-.keypad-key {
-  padding: 14px 0;
+.keypad-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.keypad-btn {
+  padding: 18px 0;
   font-size: 1.4rem;
   font-weight: 600;
   color: var(--text);
-  background: transparent;
-  border: none;
-  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: all 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
 }
 
-.keypad-key:hover {
-  background: var(--surface-alt);
-}
-
-.keypad-key:active {
+.keypad-btn:hover {
   background: var(--tint-blue);
+  border-color: var(--blue);
+  transform: scale(1.02);
 }
 
-.keypad-key-muted {
-  color: var(--muted);
+.keypad-btn:active {
+  background: var(--blue);
+  color: white;
+  transform: scale(0.98);
+}
+
+.keypad-btn-action {
+  color: var(--orange);
   font-size: 1.2rem;
+}
+
+.keypad-btn-action:hover {
+  background: var(--tint-orange);
+  border-color: var(--orange);
+}
+
+.keypad-btn-action:active {
+  background: var(--orange);
+  color: white;
+}
+
+/* Legacy keypad class for backwards compatibility */
+.keypad {
+  display: none;
 }
 
 /* On desktop, typing in a plain field beats an on-screen keypad, so the
