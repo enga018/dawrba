@@ -2120,19 +2120,19 @@ input, select, button, textarea {
 /* ─── Filter chips ──────────────────────────────────────────── */
 .filter-chips {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
 .filter-chip {
-  min-height: 40px;
-  padding: 8px 16px;
+  min-height: 32px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -2146,6 +2146,14 @@ input, select, button, textarea {
   background: var(--blue);
   color: white;
   border-color: var(--blue);
+}
+
+@media (min-width: 768px) {
+  .filter-chip {
+    min-height: 40px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
 }
 
 .filter-chip-active-status {
