@@ -71,6 +71,7 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     bestPaymentAllTime, bestPaymentThisMonth, bestPaymentThisWeek, bestPastMonthPayment, bestPastWeekPayment,
     outstandingBeforeMonth, outstandingNow, outstandingChange, collectionRate90d,
     newCustomersThisWeek, topConcentration, collectionRate,
+    paymentsTodayAmount, creditsTodayAmount, outstanding,
   } = metrics
 
   const candidates: Array<{ priority: number; insight: Insight }> = []
@@ -342,7 +343,7 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         iconColor: 'orange',
         title: 'Customer Concentration',
         body: `${topConcentration.name} owes ${topConcentration.pct}% of total outstanding (₹${formatCurrency(topConcentration.balance)})`,
-        href: `/customers/${topConcentration.name}`,
+        href: `/customers/${topConcentration.customerId}`,
       },
     })
   }
@@ -353,8 +354,10 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
   const reds = candidates.filter((c) => c.priority <= 6)
   const greens = candidates.filter((c) => c.priority > 6)
 
+  let result: Array<{ priority: number; insight: Insight }>
+
   if (greens.length > 0) {
-    const result = [greens[0]]
+    result = [greens[0]]
     for (const r of reds) {
       if (result.length >= 3) break
       result.push(r)
@@ -363,8 +366,43 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
       if (result.length >= 3) break
       result.push(g)
     }
-    return result.map((c) => c.insight)
+  } else {
+    result = reds.slice(0, 3)
   }
 
-  return reds.slice(0, 3).map((c) => c.insight)
+  // Fill remaining slots with defaults
+  const netToday = paymentsTodayAmount - creditsTodayAmount
+  const defaults: Insight[] = [
+    {
+      id: 'default-outstanding',
+      icon: 'fa-sack-dollar',
+      iconColor: 'blue',
+      title: 'Total Outstanding',
+      body: `₹${formatCurrency(outstanding)}`,
+      href: '/reports?period=month',
+    },
+    {
+      id: 'default-collection-rate',
+      icon: 'fa-chart-column',
+      iconColor: 'blue',
+      title: 'Collection Rate',
+      body: `${collectionRate}% of total credit collected`,
+      href: '/reports?period=month',
+    },
+    {
+      id: 'default-today-activity',
+      icon: 'fa-calendar-day',
+      iconColor: 'blue',
+      title: 'Today\'s Activity',
+      body: `Collected ₹${formatCurrency(paymentsTodayAmount)} · Gave ₹${formatCurrency(creditsTodayAmount)} credit`,
+      sub: netToday >= 0 ? `Net recovery: +₹${formatCurrency(netToday)}` : `Net credit: -₹${formatCurrency(Math.abs(netToday))}`,
+      href: '/reports?period=today',
+    },
+  ]
+
+  while (result.length < 3) {
+    result.push({ priority: 99, insight: defaults[result.length] })
+  }
+
+  return result.map((c) => c.insight)
 }

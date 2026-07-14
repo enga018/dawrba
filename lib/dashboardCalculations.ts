@@ -44,7 +44,7 @@ export interface DashboardMetrics {
   outstandingChange: { drop: number; pct: number } | null
   collectionRate90d: number
   newCustomersThisWeek: number
-  topConcentration: { name: string; balance: number; pct: number } | null
+  topConcentration: { customerId: string; name: string; balance: number; pct: number } | null
 
   // Helper lookups
   balances: Record<string, number>
@@ -200,6 +200,7 @@ export function calculateDashboardMetrics(
   let totalCredit90d = 0
   let totalPayment90d = 0
   let newCustomersThisWeek = 0
+  let topConcentrationCustomerId = ''
   let topConcentrationName = ''
   let topConcentrationBalance = 0
 
@@ -228,6 +229,7 @@ export function calculateDashboardMetrics(
       outstanding += balance
       outstandingNow += balance
       if (balance > topConcentrationBalance) {
+        topConcentrationCustomerId = c.id
         topConcentrationName = c.name
         topConcentrationBalance = balance
       }
@@ -282,9 +284,9 @@ export function calculateDashboardMetrics(
 
   const collectionRate90d = totalCredit90d > 0 ? Math.round((totalPayment90d / totalCredit90d) * 100) : 0
 
-  const topConcentration: { name: string; balance: number; pct: number } | null =
+  const topConcentration: { customerId: string; name: string; balance: number; pct: number } | null =
     topConcentrationBalance > 0 && outstanding > 0
-      ? { name: topConcentrationName, balance: topConcentrationBalance, pct: Math.round((topConcentrationBalance / outstanding) * 100) }
+      ? { customerId: topConcentrationCustomerId, name: topConcentrationName, balance: topConcentrationBalance, pct: Math.round((topConcentrationBalance / outstanding) * 100) }
       : null
 
   const outstandingChange: { drop: number; pct: number } | null =
