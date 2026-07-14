@@ -210,7 +210,7 @@ export default function CustomerList() {
   const virtualizer = useVirtualizer({
     count: filteredList.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 160, // Approximate height of customer card
+    estimateSize: () => 175, // Estimated customer card height with spacing
     overscan: 5, // Render 5 extra items above/below visible area
   })
 
