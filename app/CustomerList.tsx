@@ -213,7 +213,7 @@ export default function CustomerList() {
       // On desktop (768px+), scroll within the customer-list container
       // On mobile, scroll with the page window
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
-        return window
+        return document.documentElement
       }
       return parentRef.current
     },
