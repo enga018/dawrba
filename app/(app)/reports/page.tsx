@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { formatCurrency } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
+import { authedFetch } from '@/lib/apiClient'
 
 type Period = 'today' | 'week' | 'month'
 
@@ -76,7 +78,9 @@ export default function ReportsPage() {
 useEffect(() => {
     const fetchReport = async () => {
       try {
-        const response = await fetch(`/api/reports/aggregated?period=${period}`)
+        const user = (await supabase.auth.getUser()).data.user
+        if (!user) return
+        const response = await authedFetch(`/api/reports/aggregated?period=${period}&user_id=${user.id}`)
         if (!response.ok) throw new Error('Failed to fetch report')
         const metrics = await response.json()
         setData(metrics)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createAuthedClient } from '@/lib/supabase'
 import { recordApiCall } from '@/lib/performanceMonitoring'
 
 /**
@@ -26,6 +26,15 @@ export async function GET(req: Request) {
       recordApiCall(url, 'GET', duration, 400, userId || undefined)
       return NextResponse.json({ error: 'user_id required' }, { status: 400 })
     }
+
+    const authHeader = req.headers.get('authorization') || ''
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token) {
+      const duration = Date.now() - startTime
+      recordApiCall(url, 'GET', duration, 401, userId)
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const supabase = createAuthedClient(token)
 
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1

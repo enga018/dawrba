@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { getInitials, formatCurrency, formatRelativeTime } from '@/lib/utils'
 import { calculateCustomerListMetrics } from '@/lib/customerListCalculations'
 import { cacheCustomers, getCachedCustomers } from '@/lib/offline'
+import { authedFetch } from '@/lib/apiClient'
 import TransactionModal from '@/app/TransactionModal'
 
 interface Customer {
@@ -134,7 +135,7 @@ export default function CustomerList() {
       if (profileData?.overdue_reset_threshold_pct) setOverdueResetThresholdPct(profileData.overdue_reset_threshold_pct)
 
       // Use server-side summary API for faster balance calculations
-      const response = await fetch(`/api/customers/summary?user_id=${user.id}&pageSize=10000`)
+      const response = await authedFetch(`/api/customers/summary?user_id=${user.id}&pageSize=10000`)
       if (!response.ok) throw new Error('Failed to fetch summaries')
       const { data: summaries } = await response.json()
 
