@@ -1,13 +1,12 @@
 'use client'
 
-import { memo, useState } from 'react'
+import { memo } from 'react'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/utils'
 import type { DashboardMetrics } from '@/lib/dashboardCalculations'
 import type { DashboardCustomer } from './DashboardPage'
 
 type IconColor = 'red' | 'orange' | 'green' | 'purple' | 'blue'
-type InsightPeriod = 'today' | 'week' | 'month' | 'always'
 
 interface Insight {
   id: string
@@ -17,7 +16,6 @@ interface Insight {
   body: string
   sub?: string
   href: string
-  period: InsightPeriod
 }
 
 interface Props {
@@ -44,16 +42,11 @@ const InsightCard = memo(function InsightCard({ insight }: { insight: Insight })
 })
 
 export default function InsightsFeed({ metrics, customers }: Props) {
-  const [period, setPeriod] = useState<Exclude<InsightPeriod, 'always'>>('today')
-  const allInsights = buildInsights(metrics, customers)
+  const insights = buildInsights(metrics, customers)
 
-  if (allInsights.length === 0) {
+  if (insights.length === 0) {
     return null
   }
-
-  const insights = allInsights
-    .filter((insight) => insight.period === 'always' || insight.period === period)
-    .slice(0, 3)
 
   return (
     <div className="home-section-card">
@@ -61,30 +54,11 @@ export default function InsightsFeed({ metrics, customers }: Props) {
         <h3>Business Insights</h3>
       </div>
 
-      <div className="tx-tabs" style={{ marginBottom: '12px' }}>
-        <button className={`tx-tab ${period === 'today' ? 'active' : ''}`} onClick={() => setPeriod('today')}>
-          Today
-        </button>
-        <button className={`tx-tab ${period === 'week' ? 'active' : ''}`} onClick={() => setPeriod('week')}>
-          This Week
-        </button>
-        <button className={`tx-tab ${period === 'month' ? 'active' : ''}`} onClick={() => setPeriod('month')}>
-          This Month
-        </button>
+      <div className="insight-list">
+        {insights.map((insight) => (
+          <InsightCard key={insight.id} insight={insight} />
+        ))}
       </div>
-
-      {insights.length === 0 ? (
-        <div className="empty" style={{ padding: '20px 0' }}>
-          <i className="fa-solid fa-lightbulb"></i>
-          <p>No insights for this period.</p>
-        </div>
-      ) : (
-        <div className="insight-list">
-          {insights.map((insight) => (
-            <InsightCard key={insight.id} insight={insight} />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
@@ -106,7 +80,6 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         body: `${nameById.get(creditLimitBreach.customerId) || 'A customer'} owes ₹${formatCurrency(creditLimitBreach.balance)}, limit ₹${formatCurrency(creditLimitBreach.limit)}`,
         sub: `Exceeded by ₹${formatCurrency(creditLimitBreach.overage)}`,
         href: `/customers/${creditLimitBreach.customerId}`,
-        period: 'always',
       },
     })
   }
@@ -122,7 +95,6 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         title: 'Slow Payment Pattern',
         body: `${nameById.get(slowestPayer.customerId) || 'A customer'}: only ₹${formatCurrency(slowestPayer.paid)} paid against ₹${formatCurrency(slowestPayer.credit)} in 3 months`,
         href: `/customers/${slowestPayer.customerId}?tab=payment`,
-        period: 'always',
       },
     })
   }
@@ -138,7 +110,6 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         title: 'Due Soon',
         body: `${dueThisWeekCount} customer${dueThisWeekCount === 1 ? '' : 's'} will become overdue in 3 days`,
         href: '/customers?filter=due_soon',
-        period: 'week',
       },
     })
   }
@@ -154,7 +125,6 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         title: 'Balance Increasing',
         body: `${nameById.get(fastestRiser.customerId) || 'A customer'}'s balance rose ₹${formatCurrency(fastestRiser.rise)} ${fastestRiser.isToday ? 'today' : 'this week'}`,
         href: `/customers/${fastestRiser.customerId}`,
-        period: fastestRiser.isToday ? 'today' : 'week',
       },
     })
   }
@@ -170,7 +140,6 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         title: 'No Recent Payment',
         body: `${nameById.get(staleCustomer.customerId) || 'A customer'} hasn't paid in ${staleCustomer.days} days`,
         href: `/customers/${staleCustomer.customerId}`,
-        period: 'always',
       },
     })
   }
@@ -187,7 +156,6 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         body: `Collected ₹${formatCurrency(paymentsTodayAmount)} · Credit given ₹${formatCurrency(creditsTodayAmount)}`,
         sub: `Net recovery: +₹${formatCurrency(netToday)}`,
         href: '/reports?period=today',
-        period: 'today',
       },
     })
   }
@@ -204,7 +172,6 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         title: 'Large Payment Received',
         body: `${nameById.get(payment.customerId) || 'A customer'} paid ₹${formatCurrency(payment.amount)}`,
         href: `/customers/${payment.customerId}?tx=${payment.txId}`,
-        period: 'today',
       },
     })
   }
@@ -222,7 +189,6 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         body: `${featured.name} fully settled their balance`,
         sub: fullySettledToday.length > 1 ? `+${fullySettledToday.length - 1} more customer${fullySettledToday.length - 1 === 1 ? '' : 's'} settled today` : undefined,
         href: `/customers/${featured.id}`,
-        period: 'today',
       },
     })
   }
@@ -240,7 +206,6 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         body: `Collected ₹${formatCurrency(currentWeek)} this week`,
         sub: `Previous best: ₹${formatCurrency(bestPastWeek)}`,
         href: '/reports?period=week',
-        period: 'week',
       },
     })
   }
@@ -259,11 +224,10 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
         body: `Outstanding dropped from ₹${formatCurrency(outstandingBeforeMonth)} to ₹${formatCurrency(outstandingNow)}`,
         sub: `-${pct}% this month`,
         href: '/reports?period=month',
-        period: 'month',
       },
     })
   }
 
   candidates.sort((a, b) => a.priority - b.priority)
-  return candidates.map((c) => c.insight)
+  return candidates.slice(0, 3).map((c) => c.insight)
 }
