@@ -1773,9 +1773,15 @@ input, select, button, textarea {
 /* Balance stats grid */
 .balance-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-bottom: 14px;
+}
+
+@media (min-width: 768px) {
+  .balance-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .balance-stat {
@@ -1812,10 +1818,12 @@ input, select, button, textarea {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .action-row .btn {
   flex: 1;
+  min-width: 140px;
   min-height: 92px;
   padding: 16px;
   border-radius: 12px;
@@ -1825,6 +1833,12 @@ input, select, button, textarea {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .action-row .btn {
+    min-width: unset;
+  }
 }
 
 .btn-add-credit {
@@ -3159,6 +3173,24 @@ input, select, button, textarea {
 @media (min-width: 1024px) {
   .report-stats-grid {
     grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .report-stat-card {
+    padding: 12px;
+  }
+
+  .report-stat-label {
+    font-size: 0.75rem;
+  }
+
+  .report-stat-value {
+    font-size: 1.4rem;
+    margin: 4px 0;
+  }
+
+  .report-stat-sub {
+    font-size: 0.75rem;
   }
 }
 
