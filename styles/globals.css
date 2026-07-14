@@ -2991,19 +2991,23 @@ input, select, button, textarea {
 
 @media (min-width: 1024px) {
   .report-body {
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
     gap: 20px;
   }
 
   .report-body .report-stats-grid {
-    flex: 2;
-    min-width: 0;
+    grid-column: 1 / 2;
   }
 
-  .report-body .report-section {
-    flex: 1;
-    min-width: 220px;
-    align-self: flex-start;
+  .report-body .report-section:nth-of-type(1) {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+  }
+
+  .report-body .report-section:nth-of-type(2),
+  .report-body .report-section:nth-of-type(3) {
+    grid-column: 1 / -1;
   }
 }
 
