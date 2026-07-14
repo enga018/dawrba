@@ -3158,7 +3158,7 @@ input, select, button, textarea {
 
 @media (min-width: 1024px) {
   .report-stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
