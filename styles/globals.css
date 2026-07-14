@@ -3173,6 +3173,24 @@ input, select, button, textarea {
 @media (min-width: 1024px) {
   .report-stats-grid {
     grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .report-stat-card {
+    padding: 12px;
+  }
+
+  .report-stat-label {
+    font-size: 0.75rem;
+  }
+
+  .report-stat-value {
+    font-size: 1.4rem;
+    margin: 4px 0;
+  }
+
+  .report-stat-sub {
+    font-size: 0.75rem;
   }
 }
 
