@@ -69,7 +69,8 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     todayLargeCredit, todayLargePayment, fullySettledToday,
     bestCreditAllTime, bestCreditThisMonth, bestCreditThisWeek, bestPastMonthCredit, bestPastWeekCredit,
     bestPaymentAllTime, bestPaymentThisMonth, bestPaymentThisWeek, bestPastMonthPayment, bestPastWeekPayment,
-    outstandingBeforeMonth, outstandingNow,
+    outstandingBeforeMonth, outstandingNow, outstandingChange, collectionRate90d,
+    newCustomersThisWeek, topConcentration, collectionRate,
   } = metrics
 
   const candidates: Array<{ priority: number; insight: Insight }> = []
@@ -90,10 +91,42 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   }
 
-  // 2. Slow Paying Customer
-  if (slowestPayer) {
+  // 2. Outstanding Growing
+  if (outstandingChange) {
     candidates.push({
       priority: 2,
+      insight: {
+        id: 'outstanding-growing',
+        icon: 'fa-arrow-trend-up',
+        iconColor: 'red',
+        title: 'Outstanding Growing',
+        body: `Outstanding rose from ₹${formatCurrency(outstandingBeforeMonth)} to ₹${formatCurrency(outstandingNow)}`,
+        sub: `+${outstandingChange.pct}% this month`,
+        href: '/reports?period=month',
+      },
+    })
+  }
+
+  // 3. Collection Rate Dropped
+  if (collectionRate > 0 && collectionRate90d > 0 && collectionRate90d < collectionRate - 10) {
+    candidates.push({
+      priority: 3,
+      insight: {
+        id: 'collection-rate-dropped',
+        icon: 'fa-chart-simple',
+        iconColor: 'red',
+        title: 'Collection Rate Dropped',
+        body: `Only ${collectionRate90d}% collected in last 90 days`,
+        sub: `Was ${collectionRate}% overall`,
+        href: '/reports?period=month',
+      },
+    })
+  }
+
+  // 4. Slow Paying Customer
+  if (slowestPayer) {
+    candidates.push({
+      priority: 4,
       insight: {
         id: 'slow-paying-customer',
         icon: 'fa-hourglass-half',
@@ -105,10 +138,10 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   }
 
-  // 3. Due This Week
+  // 5. Due This Week
   if (dueThisWeekCount > 0) {
     candidates.push({
-      priority: 3,
+      priority: 5,
       insight: {
         id: 'due-this-week',
         icon: 'fa-clock',
@@ -120,10 +153,10 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   }
 
-  // 4. Balance Rising Fast
+  // 6. Balance Rising Fast
   if (fastestRiser) {
     candidates.push({
-      priority: 4,
+      priority: 6,
       insight: {
         id: 'balance-rising-fast',
         icon: 'fa-chart-line',
@@ -135,14 +168,14 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   }
 
-  // 5. Credit Given / Large Credit Given (hierarchical: all-time → month → week → notable)
+  // 7. Credit Given / Large Credit Given (hierarchical: all-time → month → week → notable)
   const isAllTimeBestCredit = bestCreditThisMonth && bestCreditAllTime && bestCreditThisMonth.txId === bestCreditAllTime.txId && bestCreditAllTime.amount > 0
   const isMonthBestCredit = bestCreditThisMonth && bestPastMonthCredit > 0 && bestCreditThisMonth.amount > bestPastMonthCredit
   const isWeekBestCredit = bestCreditThisWeek && bestPastWeekCredit > 0 && bestCreditThisWeek.amount > bestPastWeekCredit
 
   if (isAllTimeBestCredit) {
     candidates.push({
-      priority: 5,
+      priority: 7,
       insight: {
         id: 'all-time-highest-credit',
         icon: 'fa-trophy',
@@ -154,7 +187,7 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   } else if (isMonthBestCredit) {
     candidates.push({
-      priority: 5,
+      priority: 7,
       insight: {
         id: 'highest-credit-month',
         icon: 'fa-chart-line',
@@ -167,7 +200,7 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   } else if (isWeekBestCredit) {
     candidates.push({
-      priority: 5,
+      priority: 7,
       insight: {
         id: 'highest-credit-week',
         icon: 'fa-chart-line',
@@ -180,7 +213,7 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   } else if (todayLargeCredit) {
     candidates.push({
-      priority: 5,
+      priority: 7,
       insight: {
         id: 'large-credit-given',
         icon: 'fa-hand-holding-dollar',
@@ -192,14 +225,14 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   }
 
-  // 6. Best Collection / Large Payment Received (hierarchical: all-time → month → week → notable)
+  // 8. Best Collection / Large Payment Received (hierarchical: all-time → month → week → notable)
   const isAllTimeBestPayment = bestPaymentThisMonth && bestPaymentAllTime && bestPaymentThisMonth.txId === bestPaymentAllTime.txId && bestPaymentAllTime.amount > 0
   const isMonthBestPayment = bestPaymentThisMonth && bestPastMonthPayment > 0 && bestPaymentThisMonth.amount > bestPastMonthPayment
   const isWeekBestPayment = bestPaymentThisWeek && bestPastWeekPayment > 0 && bestPaymentThisWeek.amount > bestPastWeekPayment
 
   if (isAllTimeBestPayment) {
     candidates.push({
-      priority: 6,
+      priority: 8,
       insight: {
         id: 'all-time-largest-collection',
         icon: 'fa-trophy',
@@ -211,7 +244,7 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   } else if (isMonthBestPayment) {
     candidates.push({
-      priority: 6,
+      priority: 8,
       insight: {
         id: 'largest-collection-month',
         icon: 'fa-sack-dollar',
@@ -224,7 +257,7 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   } else if (isWeekBestPayment) {
     candidates.push({
-      priority: 6,
+      priority: 8,
       insight: {
         id: 'largest-collection-week',
         icon: 'fa-sack-dollar',
@@ -237,7 +270,7 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   } else if (todayLargePayment) {
     candidates.push({
-      priority: 6,
+      priority: 8,
       insight: {
         id: 'large-payment-received',
         icon: 'fa-sack-dollar',
@@ -249,11 +282,26 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   }
 
-  // 7. Balance Cleared
+  // 9. New Customers This Week
+  if (newCustomersThisWeek > 0) {
+    candidates.push({
+      priority: 9,
+      insight: {
+        id: 'new-customers-this-week',
+        icon: 'fa-user-plus',
+        iconColor: 'green',
+        title: 'New Customers',
+        body: `${newCustomersThisWeek} new customer${newCustomersThisWeek === 1 ? '' : 's'} this week`,
+        href: '/customers',
+      },
+    })
+  }
+
+  // 10. Balance Cleared
   if (fullySettledToday.length > 0) {
     const featured = fullySettledToday[0]
     candidates.push({
-      priority: 7,
+      priority: 10,
       insight: {
         id: 'customer-fully-settled',
         icon: 'fa-circle-check',
@@ -266,12 +314,12 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   }
 
-  // 8. Outstanding Trend Improved
+  // 11. Outstanding Reduced
   if (outstandingBeforeMonth > 0 && outstandingNow < outstandingBeforeMonth) {
     const drop = outstandingBeforeMonth - outstandingNow
     const pct = Math.round((drop / outstandingBeforeMonth) * 100)
     candidates.push({
-      priority: 8,
+      priority: 11,
       insight: {
         id: 'outstanding-trend-improved',
         icon: 'fa-arrow-trend-down',
@@ -284,11 +332,26 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   }
 
+  // 12. Customer Concentration
+  if (topConcentration && topConcentration.pct >= 30) {
+    candidates.push({
+      priority: 12,
+      insight: {
+        id: 'customer-concentration',
+        icon: 'fa-triangle-exclamation',
+        iconColor: 'orange',
+        title: 'Customer Concentration',
+        body: `${topConcentration.name} owes ${topConcentration.pct}% of total outstanding (₹${formatCurrency(topConcentration.balance)})`,
+        href: `/customers/${topConcentration.name}`,
+      },
+    })
+  }
+
   candidates.sort((a, b) => a.priority - b.priority)
 
   // Reserve 1 slot for green, fight reds for the other 2
-  const reds = candidates.filter((c) => c.priority <= 4)
-  const greens = candidates.filter((c) => c.priority > 4)
+  const reds = candidates.filter((c) => c.priority <= 6)
+  const greens = candidates.filter((c) => c.priority > 6)
 
   if (greens.length > 0) {
     const result = [greens[0]]

@@ -41,6 +41,10 @@ export interface DashboardMetrics {
   bestPastWeekPayment: number
   outstandingBeforeMonth: number
   outstandingNow: number
+  outstandingChange: { drop: number; pct: number } | null
+  collectionRate90d: number
+  newCustomersThisWeek: number
+  topConcentration: { name: string; balance: number; pct: number } | null
 
   // Helper lookups
   balances: Record<string, number>
@@ -193,6 +197,11 @@ export function calculateDashboardMetrics(
   let fastestRiser: { customerId: string; rise: number; isToday: boolean } | null = null
   let outstandingBeforeMonth = 0
   let outstandingNow = 0
+  let totalCredit90d = 0
+  let totalPayment90d = 0
+  let newCustomersThisWeek = 0
+  let topConcentrationName = ''
+  let topConcentrationBalance = 0
 
   for (const c of customers) {
     nameById.set(c.id, c.name)
@@ -202,14 +211,26 @@ export function calculateDashboardMetrics(
     balances7DaysAgo[c.id] = ob + (balances7DaysAgo[c.id] || 0)
     balancesBeforeMonth[c.id] = ob + (balancesBeforeMonth[c.id] || 0)
 
+    totalCredit90d += creditGiven90d[c.id] || 0
+    totalPayment90d += paid90d[c.id] || 0
+
+    if (new Date(c.created_at).getTime() >= sevenDaysAgoMs) {
+      newCustomersThisWeek++
+    }
+
     const balance = balances[c.id]
     const txList = txByCustomer[c.id] || []
 
     totalCredit += ob + (allTimeCreditGiven[c.id] || 0)
     totalCollection += allTimePayments[c.id] || 0
+
     if (balance > 0) {
       outstanding += balance
       outstandingNow += balance
+      if (balance > topConcentrationBalance) {
+        topConcentrationName = c.name
+        topConcentrationBalance = balance
+      }
 
       if (isCustomerOverdue(balance, txList, thresholds.thresholdDays, thresholds.resetThresholdPct)) {
         overdueCount++
@@ -258,6 +279,18 @@ export function calculateDashboardMetrics(
       }
     }
   }
+
+  const collectionRate90d = totalCredit90d > 0 ? Math.round((totalPayment90d / totalCredit90d) * 100) : 0
+
+  const topConcentration: { name: string; balance: number; pct: number } | null =
+    topConcentrationBalance > 0 && outstanding > 0
+      ? { name: topConcentrationName, balance: topConcentrationBalance, pct: Math.round((topConcentrationBalance / outstanding) * 100) }
+      : null
+
+  const outstandingChange: { drop: number; pct: number } | null =
+    outstandingBeforeMonth > 0 && outstandingNow > outstandingBeforeMonth
+      ? { drop: outstandingNow - outstandingBeforeMonth, pct: Math.round(((outstandingNow - outstandingBeforeMonth) / outstandingBeforeMonth) * 100) }
+      : null
 
   // Sort and slice overdue customers
   const overdueCustomers = Object.values(overdueCustomersMap).sort((a, b) => b.balance - a.balance).slice(0, 3)
@@ -333,6 +366,10 @@ export function calculateDashboardMetrics(
     bestPastWeekPayment,
     outstandingBeforeMonth,
     outstandingNow,
+    outstandingChange,
+    collectionRate90d,
+    newCustomersThisWeek,
+    topConcentration,
     balances,
     nameById,
   }

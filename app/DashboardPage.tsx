@@ -14,6 +14,7 @@ export interface DashboardCustomer {
   phone?: string
   opening_balance: number
   credit_limit: number | null
+  created_at: string
 }
 
 export interface DashboardTx {
@@ -65,7 +66,7 @@ export default function DashboardPage() {
           .single(),
         supabase
           .from('customers')
-          .select('id, name, phone, opening_balance, credit_limit')
+          .select('id, name, phone, opening_balance, credit_limit, created_at')
           .eq('user_id', user.id),
       ])
 
