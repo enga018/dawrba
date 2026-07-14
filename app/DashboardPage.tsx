@@ -30,6 +30,7 @@ export interface DashboardThresholds {
   slowPayingRatioPct: number
   balanceRiseThreshold: number
   largePaymentThreshold: number
+  weekStartDay: 0 | 1
 }
 
 const defaultThresholds: DashboardThresholds = {
@@ -38,6 +39,7 @@ const defaultThresholds: DashboardThresholds = {
   slowPayingRatioPct: 30,
   balanceRiseThreshold: 5000,
   largePaymentThreshold: 5000,
+  weekStartDay: 0,
 }
 
 export default function DashboardPage() {
@@ -58,7 +60,7 @@ export default function DashboardPage() {
       const [{ data: profileData }, { data: customersData }] = await Promise.all([
         supabase
           .from('profiles')
-          .select('overdue_threshold_days, overdue_reset_threshold_pct, slow_paying_ratio_pct, balance_rise_threshold, large_payment_threshold')
+          .select('overdue_threshold_days, overdue_reset_threshold_pct, slow_paying_ratio_pct, balance_rise_threshold, large_payment_threshold, weekly_report_day')
           .eq('id', user.id)
           .single(),
         supabase
@@ -73,6 +75,7 @@ export default function DashboardPage() {
         slowPayingRatioPct: profileData?.slow_paying_ratio_pct || defaultThresholds.slowPayingRatioPct,
         balanceRiseThreshold: profileData?.balance_rise_threshold || defaultThresholds.balanceRiseThreshold,
         largePaymentThreshold: profileData?.large_payment_threshold || defaultThresholds.largePaymentThreshold,
+        weekStartDay: profileData?.weekly_report_day === 'monday' ? 1 : 0,
       })
       setCustomers(customersData || [])
 

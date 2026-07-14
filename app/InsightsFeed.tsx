@@ -64,7 +64,13 @@ export default function InsightsFeed({ metrics, customers }: Props) {
 }
 
 function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]): Insight[] {
-  const { nameById, creditLimitBreach, slowestPayer, dueThisWeekCount, fastestRiser, staleCustomer, netToday, paymentsTodayAmount, creditsTodayAmount, todayLargePayment, fullySettledToday, bestCollectionWeek, outstandingBeforeMonth, outstandingNow } = metrics
+  const {
+    nameById, creditLimitBreach, slowestPayer, dueThisWeekCount, fastestRiser,
+    todayLargeCredit, todayLargePayment, fullySettledToday,
+    bestCreditAllTime, bestCreditThisMonth, bestCreditThisWeek, bestPastMonthCredit, bestPastWeekCredit,
+    bestPaymentAllTime, bestPaymentThisMonth, bestPaymentThisWeek, bestPastMonthPayment, bestPastWeekPayment,
+    outstandingBeforeMonth, outstandingNow,
+  } = metrics
 
   const candidates: Array<{ priority: number; insight: Insight }> = []
 
@@ -129,58 +135,125 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   }
 
-  // 5. No Payment for 30+ Days
-  if (staleCustomer) {
+  // 5. Credit Given / Large Credit Given (hierarchical: all-time → month → week → notable)
+  const isAllTimeBestCredit = bestCreditThisMonth && bestCreditAllTime && bestCreditThisMonth.txId === bestCreditAllTime.txId && bestCreditAllTime.amount > 0
+  const isMonthBestCredit = bestCreditThisMonth && bestPastMonthCredit > 0 && bestCreditThisMonth.amount > bestPastMonthCredit
+  const isWeekBestCredit = bestCreditThisWeek && bestPastWeekCredit > 0 && bestCreditThisWeek.amount > bestPastWeekCredit
+
+  if (isAllTimeBestCredit) {
     candidates.push({
       priority: 5,
       insight: {
-        id: 'no-payment-30-days',
-        icon: 'fa-calendar-xmark',
-        iconColor: 'red',
-        title: 'No Recent Payment',
-        body: `${nameById.get(staleCustomer.customerId) || 'A customer'} hasn't paid in ${staleCustomer.days} days`,
-        href: `/customers/${staleCustomer.customerId}`,
+        id: 'all-time-highest-credit',
+        icon: 'fa-trophy',
+        iconColor: 'green',
+        title: 'All Time Highest Credit',
+        body: `${nameById.get(bestCreditThisMonth.customerId) || 'A customer'} received ₹${formatCurrency(bestCreditThisMonth.amount)}`,
+        href: `/customers/${bestCreditThisMonth.customerId}?tx=${bestCreditThisMonth.txId}`,
+      },
+    })
+  } else if (isMonthBestCredit) {
+    candidates.push({
+      priority: 5,
+      insight: {
+        id: 'highest-credit-month',
+        icon: 'fa-chart-line',
+        iconColor: 'green',
+        title: 'Highest Credit This Month',
+        body: `${nameById.get(bestCreditThisMonth.customerId) || 'A customer'} received ₹${formatCurrency(bestCreditThisMonth.amount)}`,
+        sub: `Previous best this month: ₹${formatCurrency(bestPastMonthCredit)}`,
+        href: `/customers/${bestCreditThisMonth.customerId}?tx=${bestCreditThisMonth.txId}`,
+      },
+    })
+  } else if (isWeekBestCredit) {
+    candidates.push({
+      priority: 5,
+      insight: {
+        id: 'highest-credit-week',
+        icon: 'fa-chart-line',
+        iconColor: 'green',
+        title: 'Highest Credit This Week',
+        body: `${nameById.get(bestCreditThisWeek.customerId) || 'A customer'} received ₹${formatCurrency(bestCreditThisWeek.amount)}`,
+        sub: `Previous best this week: ₹${formatCurrency(bestPastWeekCredit)}`,
+        href: `/customers/${bestCreditThisWeek.customerId}?tx=${bestCreditThisWeek.txId}`,
+      },
+    })
+  } else if (todayLargeCredit) {
+    candidates.push({
+      priority: 5,
+      insight: {
+        id: 'large-credit-given',
+        icon: 'fa-hand-holding-dollar',
+        iconColor: 'green',
+        title: 'Large Credit Given',
+        body: `${nameById.get(todayLargeCredit.customerId) || 'A customer'} received ₹${formatCurrency(todayLargeCredit.amount)} today`,
+        href: `/customers/${todayLargeCredit.customerId}?tx=${todayLargeCredit.txId}`,
       },
     })
   }
 
-  // 6. Strong Recovery Day
-  if (netToday > 0) {
+  // 6. Best Collection / Large Payment Received (hierarchical: all-time → month → week → notable)
+  const isAllTimeBestPayment = bestPaymentThisMonth && bestPaymentAllTime && bestPaymentThisMonth.txId === bestPaymentAllTime.txId && bestPaymentAllTime.amount > 0
+  const isMonthBestPayment = bestPaymentThisMonth && bestPastMonthPayment > 0 && bestPaymentThisMonth.amount > bestPastMonthPayment
+  const isWeekBestPayment = bestPaymentThisWeek && bestPastWeekPayment > 0 && bestPaymentThisWeek.amount > bestPastWeekPayment
+
+  if (isAllTimeBestPayment) {
     candidates.push({
       priority: 6,
       insight: {
-        id: 'net-recovery',
-        icon: 'fa-arrow-trend-up',
+        id: 'all-time-largest-collection',
+        icon: 'fa-trophy',
         iconColor: 'green',
-        title: 'Strong Recovery Day',
-        body: `Collected ₹${formatCurrency(paymentsTodayAmount)} · Credit given ₹${formatCurrency(creditsTodayAmount)}`,
-        sub: `Net recovery: +₹${formatCurrency(netToday)}`,
-        href: '/reports?period=today',
+        title: 'All Time Largest Collection',
+        body: `${nameById.get(bestPaymentThisMonth.customerId) || 'A customer'} paid ₹${formatCurrency(bestPaymentThisMonth.amount)}`,
+        href: `/customers/${bestPaymentThisMonth.customerId}?tx=${bestPaymentThisMonth.txId}`,
       },
     })
-  }
-
-  // 7. Large Payment Received
-  if (todayLargePayment) {
-    const payment = todayLargePayment
+  } else if (isMonthBestPayment) {
     candidates.push({
-      priority: 7,
+      priority: 6,
+      insight: {
+        id: 'largest-collection-month',
+        icon: 'fa-sack-dollar',
+        iconColor: 'green',
+        title: 'Largest Collection This Month',
+        body: `${nameById.get(bestPaymentThisMonth.customerId) || 'A customer'} paid ₹${formatCurrency(bestPaymentThisMonth.amount)}`,
+        sub: `Previous best this month: ₹${formatCurrency(bestPastMonthPayment)}`,
+        href: `/customers/${bestPaymentThisMonth.customerId}?tx=${bestPaymentThisMonth.txId}`,
+      },
+    })
+  } else if (isWeekBestPayment) {
+    candidates.push({
+      priority: 6,
+      insight: {
+        id: 'largest-collection-week',
+        icon: 'fa-sack-dollar',
+        iconColor: 'green',
+        title: 'Largest Collection This Week',
+        body: `${nameById.get(bestPaymentThisWeek.customerId) || 'A customer'} paid ₹${formatCurrency(bestPaymentThisWeek.amount)}`,
+        sub: `Previous best this week: ₹${formatCurrency(bestPastWeekPayment)}`,
+        href: `/customers/${bestPaymentThisWeek.customerId}?tx=${bestPaymentThisWeek.txId}`,
+      },
+    })
+  } else if (todayLargePayment) {
+    candidates.push({
+      priority: 6,
       insight: {
         id: 'large-payment-received',
         icon: 'fa-sack-dollar',
         iconColor: 'green',
         title: 'Large Payment Received',
-        body: `${nameById.get(payment.customerId) || 'A customer'} paid ₹${formatCurrency(payment.amount)}`,
-        href: `/customers/${payment.customerId}?tx=${payment.txId}`,
+        body: `${nameById.get(todayLargePayment.customerId) || 'A customer'} paid ₹${formatCurrency(todayLargePayment.amount)} today`,
+        href: `/customers/${todayLargePayment.customerId}?tx=${todayLargePayment.txId}`,
       },
     })
   }
 
-  // 8. Balance Cleared
+  // 7. Balance Cleared
   if (fullySettledToday.length > 0) {
     const featured = fullySettledToday[0]
     candidates.push({
-      priority: 8,
+      priority: 7,
       insight: {
         id: 'customer-fully-settled',
         icon: 'fa-circle-check',
@@ -193,29 +266,12 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
     })
   }
 
-  // 9. Best Collection Week
-  const { currentWeek, bestPastWeek } = bestCollectionWeek
-  if (bestPastWeek > 0 && currentWeek > bestPastWeek) {
-    candidates.push({
-      priority: 9,
-      insight: {
-        id: 'best-collection-week',
-        icon: 'fa-trophy',
-        iconColor: 'green',
-        title: 'Best Collection Week',
-        body: `Collected ₹${formatCurrency(currentWeek)} this week`,
-        sub: `Previous best: ₹${formatCurrency(bestPastWeek)}`,
-        href: '/reports?period=week',
-      },
-    })
-  }
-
-  // 10. Outstanding Trend Improved
+  // 8. Outstanding Trend Improved
   if (outstandingBeforeMonth > 0 && outstandingNow < outstandingBeforeMonth) {
     const drop = outstandingBeforeMonth - outstandingNow
     const pct = Math.round((drop / outstandingBeforeMonth) * 100)
     candidates.push({
-      priority: 10,
+      priority: 8,
       insight: {
         id: 'outstanding-trend-improved',
         icon: 'fa-arrow-trend-down',
@@ -229,5 +285,23 @@ function buildInsights(metrics: DashboardMetrics, customers: DashboardCustomer[]
   }
 
   candidates.sort((a, b) => a.priority - b.priority)
-  return candidates.slice(0, 3).map((c) => c.insight)
+
+  // Reserve 1 slot for green, fight reds for the other 2
+  const reds = candidates.filter((c) => c.priority <= 4)
+  const greens = candidates.filter((c) => c.priority > 4)
+
+  if (greens.length > 0) {
+    const result = [greens[0]]
+    for (const r of reds) {
+      if (result.length >= 3) break
+      result.push(r)
+    }
+    for (const g of greens.slice(1)) {
+      if (result.length >= 3) break
+      result.push(g)
+    }
+    return result.map((c) => c.insight)
+  }
+
+  return reds.slice(0, 3).map((c) => c.insight)
 }

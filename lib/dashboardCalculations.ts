@@ -1,4 +1,4 @@
-import { startOfDay, startOfWeek, daysSince, calculateOverdueDays, daysUntilOverdue } from './utils'
+import { startOfDay, startOfWeek, calculateOverdueDays, daysUntilOverdue } from './utils'
 import type { DashboardCustomer, DashboardTx, DashboardThresholds } from '@/app/DashboardPage'
 
 export interface DashboardMetrics {
@@ -24,13 +24,21 @@ export interface DashboardMetrics {
   slowestPayer: { customerId: string; ratio: number; credit: number; paid: number } | null
   dueThisWeekCount: number
   fastestRiser: { customerId: string; rise: number; isToday: boolean } | null
-  staleCustomer: { customerId: string; days: number } | null
-  netToday: number
   paymentsTodayAmount: number
   creditsTodayAmount: number
   todayLargePayment: { amount: number; customerId: string; txId: string } | null
+  todayLargeCredit: { amount: number; customerId: string; txId: string } | null
   fullySettledToday: DashboardCustomer[]
-  bestCollectionWeek: { currentWeek: number; bestPastWeek: number }
+  bestCreditAllTime: { amount: number; customerId: string; txId: string } | null
+  bestCreditThisMonth: { amount: number; customerId: string; txId: string } | null
+  bestCreditThisWeek: { amount: number; customerId: string; txId: string } | null
+  bestPastMonthCredit: number
+  bestPastWeekCredit: number
+  bestPaymentAllTime: { amount: number; customerId: string; txId: string } | null
+  bestPaymentThisMonth: { amount: number; customerId: string; txId: string } | null
+  bestPaymentThisWeek: { amount: number; customerId: string; txId: string } | null
+  bestPastMonthPayment: number
+  bestPastWeekPayment: number
   outstandingBeforeMonth: number
   outstandingNow: number
 
@@ -49,7 +57,9 @@ export function calculateDashboardMetrics(
   const sevenDaysAgoStart = startOfDay(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000))
   const ninetyDaysAgoStart = startOfDay(new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000))
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const currentWeekKey = startOfWeek(now).getTime()
+  const weekStartDay = thresholds.weekStartDay ?? 0
+  const currentWeekKey = startOfWeek(now, weekStartDay).getTime()
+  const currentMonthKey = monthStart.getTime()
 
   // Single-pass through transactions to build all needed data
   const balances: Record<string, number> = {}
@@ -64,10 +74,17 @@ export function calculateDashboardMetrics(
   const lastPaymentDate: Record<string, string> = {}
   const firstTxDate: Record<string, string> = {}
   const weeklyCollections: Record<number, number> = {}
+  const monthlyBestCredit: Record<number, { amount: number; customerId: string; txId: string }> = {}
+  const monthlyBestPayment: Record<number, { amount: number; customerId: string; txId: string }> = {}
+  const weeklyBestCredit: Record<number, { amount: number; customerId: string; txId: string }> = {}
+  const weeklyBestPayment: Record<number, { amount: number; customerId: string; txId: string }> = {}
 
   let creditsTodayAmount = 0
   let paymentsTodayAmount = 0
   let todayLargePayment: { amount: number; customerId: string; txId: string } | null = null
+  let todayLargeCredit: { amount: number; customerId: string; txId: string } | null = null
+  let bestCreditAllTime: { amount: number; customerId: string; txId: string } | null = null
+  let bestPaymentAllTime: { amount: number; customerId: string; txId: string } | null = null
 
   const todayStartMs = todayStart.getTime()
   const sevenDaysAgoMs = sevenDaysAgoStart.getTime()
@@ -79,10 +96,8 @@ export function calculateDashboardMetrics(
     const amount = t.amount || 0
     const txDate = t.date || t.created_at
 
-    // Update running balance
     balances[cid] = (balances[cid] || 0) + amount
 
-    // Track transactions by customer (once per customer on first tx)
     if (!txByCustomer[cid]) {
       txByCustomer[cid] = []
     }
@@ -94,7 +109,6 @@ export function calculateDashboardMetrics(
 
     const ts = new Date(txDate).getTime()
 
-    // Snapshot balances at specific time boundaries
     if (ts < todayStartMs) {
       balancesBeforeToday[cid] = (balancesBeforeToday[cid] || 0) + amount
     }
@@ -105,7 +119,6 @@ export function calculateDashboardMetrics(
       balancesBeforeMonth[cid] = (balancesBeforeMonth[cid] || 0) + amount
     }
 
-    // 90-day credit/payment tracking
     if (ts >= ninetyDaysAgoMs) {
       if (amount > 0) {
         creditGiven90d[cid] = (creditGiven90d[cid] || 0) + amount
@@ -114,24 +127,48 @@ export function calculateDashboardMetrics(
       }
     }
 
-    // All-time credit/payment tracking
     if (amount > 0) {
       allTimeCreditGiven[cid] = (allTimeCreditGiven[cid] || 0) + amount
+      const absAmount = amount
+      if (!bestCreditAllTime || absAmount > bestCreditAllTime.amount) {
+        bestCreditAllTime = { amount: absAmount, customerId: cid, txId: t.id }
+      }
+      const monthKey = new Date(new Date(txDate).getFullYear(), new Date(txDate).getMonth(), 1).getTime()
+      if (!monthlyBestCredit[monthKey] || absAmount > monthlyBestCredit[monthKey].amount) {
+        monthlyBestCredit[monthKey] = { amount: absAmount, customerId: cid, txId: t.id }
+      }
+      const weekKey = startOfWeek(new Date(txDate), weekStartDay).getTime()
+      if (!weeklyBestCredit[weekKey] || absAmount > weeklyBestCredit[weekKey].amount) {
+        weeklyBestCredit[weekKey] = { amount: absAmount, customerId: cid, txId: t.id }
+      }
     } else {
       allTimePayments[cid] = (allTimePayments[cid] || 0) + Math.abs(amount)
+      const absAmount = Math.abs(amount)
+      if (!bestPaymentAllTime || absAmount > bestPaymentAllTime.amount) {
+        bestPaymentAllTime = { amount: absAmount, customerId: cid, txId: t.id }
+      }
+      const monthKey = new Date(new Date(txDate).getFullYear(), new Date(txDate).getMonth(), 1).getTime()
+      if (!monthlyBestPayment[monthKey] || absAmount > monthlyBestPayment[monthKey].amount) {
+        monthlyBestPayment[monthKey] = { amount: absAmount, customerId: cid, txId: t.id }
+      }
+      const weekKey = startOfWeek(new Date(txDate), weekStartDay).getTime()
+      if (!weeklyBestPayment[weekKey] || absAmount > weeklyBestPayment[weekKey].amount) {
+        weeklyBestPayment[weekKey] = { amount: absAmount, customerId: cid, txId: t.id }
+      }
     }
 
-    // Track payments for weekly collections
     if (amount < 0) {
       lastPaymentDate[cid] = txDate
-      const weekKey = startOfWeek(new Date(txDate)).getTime()
+      const weekKey = startOfWeek(new Date(txDate), weekStartDay).getTime()
       weeklyCollections[weekKey] = (weeklyCollections[weekKey] || 0) + Math.abs(amount)
     }
 
-    // Track today's activity
     if (ts >= todayStartMs) {
       if (amount > 0) {
         creditsTodayAmount += amount
+        if (amount >= thresholds.largePaymentThreshold && (!todayLargeCredit || amount > todayLargeCredit.amount)) {
+          todayLargeCredit = { amount, customerId: cid, txId: t.id }
+        }
       } else {
         const abs = Math.abs(amount)
         paymentsTodayAmount += abs
@@ -154,7 +191,6 @@ export function calculateDashboardMetrics(
   let slowestPayer: { customerId: string; ratio: number; credit: number; paid: number } | null = null
   let dueThisWeekCount = 0
   let fastestRiser: { customerId: string; rise: number; isToday: boolean } | null = null
-  let staleCustomer: { customerId: string; days: number } | null = null
   let outstandingBeforeMonth = 0
   let outstandingNow = 0
 
@@ -169,7 +205,6 @@ export function calculateDashboardMetrics(
     const balance = balances[c.id]
     const txList = txByCustomer[c.id] || []
 
-    // Summary metrics (all-time)
     totalCredit += ob + (allTimeCreditGiven[c.id] || 0)
     totalCollection += allTimePayments[c.id] || 0
     if (balance > 0) {
@@ -218,24 +253,8 @@ export function calculateDashboardMetrics(
     const rise = (balances[c.id] || 0) - (balances7DaysAgo[c.id] || 0)
     if (rise > thresholds.balanceRiseThreshold) {
       if (!fastestRiser || rise > fastestRiser.rise) {
-        // Whether the rise is fresh (mostly happened today) or has been
-        // building up over the week - decides whether the insight reads
-        // "today" or "this week".
         const riseToday = (balances[c.id] || 0) - (balancesBeforeToday[c.id] || 0)
         fastestRiser = { customerId: c.id, rise, isToday: riseToday > thresholds.balanceRiseThreshold }
-      }
-    }
-
-    // 5. No Payment for 30+ Days
-    if (balance > 0) {
-      const anchor = lastPaymentDate[c.id] || firstTxDate[c.id]
-      if (anchor) {
-        const days = daysSince(anchor)
-        if (days >= 30) {
-          if (!staleCustomer || days > staleCustomer.days) {
-            staleCustomer = { customerId: c.id, days }
-          }
-        }
       }
     }
   }
@@ -243,15 +262,38 @@ export function calculateDashboardMetrics(
   // Sort and slice overdue customers
   const overdueCustomers = Object.values(overdueCustomersMap).sort((a, b) => b.balance - a.balance).slice(0, 3)
 
-  // Calculate collection rate (based on 90-day data for credit, all-time for collection)
   const collectionRate = totalCredit > 0 ? Math.round((totalCollection / totalCredit) * 100) : 0
 
-  // Best Collection Week
-  const currentWeekCollection = weeklyCollections[currentWeekKey] || 0
-  let bestPastWeek = 0
-  for (const [weekKey, amount] of Object.entries(weeklyCollections)) {
-    if (Number(weekKey) === currentWeekKey) continue
-    if (amount > bestPastWeek) bestPastWeek = amount
+  // Compute best past month/week records (exclude current periods)
+  const currentWeekBestCredit = weeklyBestCredit[currentWeekKey]
+  const currentWeekBestPayment = weeklyBestPayment[currentWeekKey]
+  const currentMonthBestCredit = monthlyBestCredit[currentMonthKey]
+  const currentMonthBestPayment = monthlyBestPayment[currentMonthKey]
+
+  let bestPastMonthCredit = 0
+  let bestPastWeekCredit = 0
+  let bestPastMonthPayment = 0
+  let bestPastWeekPayment = 0
+
+  for (const [key, data] of Object.entries(monthlyBestCredit)) {
+    if (Number(key) !== currentMonthKey && data.amount > bestPastMonthCredit) {
+      bestPastMonthCredit = data.amount
+    }
+  }
+  for (const [key, data] of Object.entries(monthlyBestPayment)) {
+    if (Number(key) !== currentMonthKey && data.amount > bestPastMonthPayment) {
+      bestPastMonthPayment = data.amount
+    }
+  }
+  for (const [key, data] of Object.entries(weeklyBestCredit)) {
+    if (Number(key) !== currentWeekKey && data.amount > bestPastWeekCredit) {
+      bestPastWeekCredit = data.amount
+    }
+  }
+  for (const [key, data] of Object.entries(weeklyBestPayment)) {
+    if (Number(key) !== currentWeekKey && data.amount > bestPastWeekPayment) {
+      bestPastWeekPayment = data.amount
+    }
   }
 
   // Fully Settled Today
@@ -260,8 +302,6 @@ export function calculateDashboardMetrics(
     const current = balances[c.id] || 0
     return before > 0 && current <= 0
   })
-
-  const netToday = paymentsTodayAmount - creditsTodayAmount
 
   return {
     todayCredit: creditsTodayAmount,
@@ -276,13 +316,21 @@ export function calculateDashboardMetrics(
     slowestPayer,
     dueThisWeekCount,
     fastestRiser,
-    staleCustomer,
-    netToday,
     paymentsTodayAmount,
     creditsTodayAmount,
     todayLargePayment,
+    todayLargeCredit,
     fullySettledToday,
-    bestCollectionWeek: { currentWeek: currentWeekCollection, bestPastWeek },
+    bestCreditAllTime,
+    bestCreditThisMonth: currentMonthBestCredit || null,
+    bestCreditThisWeek: currentWeekBestCredit || null,
+    bestPastMonthCredit,
+    bestPastWeekCredit,
+    bestPaymentAllTime,
+    bestPaymentThisMonth: currentMonthBestPayment || null,
+    bestPaymentThisWeek: currentWeekBestPayment || null,
+    bestPastMonthPayment,
+    bestPastWeekPayment,
     outstandingBeforeMonth,
     outstandingNow,
     balances,
