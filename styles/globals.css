@@ -512,12 +512,12 @@ input, select, button, textarea {
 /* Customer card */
 .customer-card {
   background: var(--surface);
-  border-radius: 24px;
-  padding: 20px;
+  border-radius: 20px;
+  padding: 14px 16px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   cursor: pointer;
   transition: box-shadow 0.18s, transform 0.15s;
   container-type: inline-size;
@@ -546,7 +546,7 @@ input, select, button, textarea {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -558,7 +558,7 @@ input, select, button, textarea {
 
 .cc-actions .btn {
   width: 100%;
-  min-height: 48px;
+  min-height: 40px;
   justify-content: center;
 }
 
@@ -566,38 +566,38 @@ input, select, button, textarea {
    content up to use the extra room instead of leaving a bare gap. */
 @container customer-card (min-width: 300px) {
   .customer-card {
-    padding: 18px 20px;
+    padding: 14px 16px;
   }
   .avatar {
-    width: 44px;
-    height: 44px;
-    font-size: 0.82rem;
+    width: 40px;
+    height: 40px;
+    font-size: 0.78rem;
   }
   .cc-name {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
   }
   .cc-meta {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
   }
   .cc-balance {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
   }
 }
 
 @container customer-card (min-width: 380px) {
   .customer-card {
-    padding: 22px 24px;
+    padding: 16px 18px;
   }
   .avatar {
-    width: 50px;
-    height: 50px;
-    font-size: 0.92rem;
+    width: 44px;
+    height: 44px;
+    font-size: 0.85rem;
   }
   .cc-name {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
   }
   .cc-balance {
-    font-size: 1.3rem;
+    font-size: 1.15rem;
   }
 }
 
@@ -640,7 +640,7 @@ input, select, button, textarea {
 
 .cc-balance {
   font-weight: 800;
-  font-size: 1.75rem;
+  font-size: 1.4rem;
   color: var(--red);
   white-space: nowrap;
 }
