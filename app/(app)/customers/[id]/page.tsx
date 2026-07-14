@@ -39,7 +39,7 @@ function CustomerDetailInner() {
 
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [visibleCount, setVisibleCount] = useState(10)
+  const [txPage, setTxPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeModal, setActiveModal] = useState<'credit' | 'pay' | null>(null)
@@ -63,6 +63,7 @@ function CustomerDetailInner() {
   const [logLoading, setLogLoading] = useState(true)
 
   const LOG_PAGE_SIZE = 5
+  const TX_PAGE_SIZE = 5
 
   useEffect(() => {
     setOffline(!navigator.onLine)
@@ -218,7 +219,7 @@ function CustomerDetailInner() {
 
   const handleFilterChange = (filter: TxFilter) => {
     setTxFilter(filter)
-    setVisibleCount(10)
+    setTxPage(1)
   }
 
   const openAddModal = (mode: 'credit' | 'pay') => {
@@ -448,37 +449,57 @@ function CustomerDetailInner() {
               <div className="empty"><p>No {txFilter === 'all' ? '' : txFilter} transactions yet.</p></div>
             ) : (
               <>
-                {filteredTransactions.slice(0, visibleCount).map((tx) => {
-                  const isCredit = tx.amount > 0
-                  return (
-                    <div key={tx.id} className="tx-item" style={{ cursor: 'pointer' }} onClick={() => setSelectedTx(tx)}>
-                      <div className="tx-left">
-                        <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
-                          <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-check'}`}></i>
-                        </div>
-                        <div>
-                          <div className="tx-note">{isCredit ? 'Credit added' : 'Payment collected'}</div>
-                          <div className="tx-date">
-                            {formatDate(tx.date)} · {formatTime(tx.created_at)}
-                            {tx.note ? ` · ${tx.note}` : ''}
+                {(() => {
+                  const start = (txPage - 1) * TX_PAGE_SIZE
+                  const end = start + TX_PAGE_SIZE
+                  const paginatedTx = filteredTransactions.slice(start, end)
+                  return paginatedTx.map((tx) => {
+                    const isCredit = tx.amount > 0
+                    return (
+                      <div key={tx.id} className="tx-item" style={{ cursor: 'pointer' }} onClick={() => setSelectedTx(tx)}>
+                        <div className="tx-left">
+                          <div className={`tx-icon ${isCredit ? 'credit' : 'pay'}`}>
+                            <i className={`fa-solid ${isCredit ? 'fa-plus' : 'fa-check'}`}></i>
+                          </div>
+                          <div>
+                            <div className="tx-note">{isCredit ? 'Credit added' : 'Payment collected'}</div>
+                            <div className="tx-date">
+                              {formatDate(tx.date)} · {formatTime(tx.created_at)}
+                              {tx.note ? ` · ${tx.note}` : ''}
+                            </div>
                           </div>
                         </div>
+                        <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
+                          {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
+                        </div>
                       </div>
-                      <div className={`tx-amount ${isCredit ? 'credit' : 'pay'}`}>
-                        {isCredit ? '+' : '-'}₹{formatCurrency(Math.abs(tx.amount))}
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                })()}
               </>
             )}
           </div>
 
-          {filteredTransactions.length > visibleCount && (
-            <button className="btn btn-secondary btn-sm btn-block" style={{ marginTop: '12px' }}
-              onClick={() => setVisibleCount((prev) => prev + 10)}>
-              See more
-            </button>
+          {filteredTransactions.length > TX_PAGE_SIZE && (
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={txPage === 1}
+                onClick={() => setTxPage((prev) => Math.max(1, prev - 1))}
+              >
+                <i className="fa-solid fa-chevron-left"></i> Previous
+              </button>
+              <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                Page {txPage} of {Math.ceil(filteredTransactions.length / TX_PAGE_SIZE)}
+              </span>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={txPage >= Math.ceil(filteredTransactions.length / TX_PAGE_SIZE)}
+                onClick={() => setTxPage((prev) => prev + 1)}
+              >
+                Next <i className="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
           )}
         </div>
 
