@@ -514,6 +514,7 @@ input, select, button, textarea {
   background: var(--surface);
   border-radius: 20px;
   padding: 14px 16px;
+  margin-bottom: 12px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
@@ -2325,7 +2326,7 @@ input, select, button, textarea {
 .customer-list {
   margin-top: 10px;
   position: relative;
-  padding: 0 4px;
+  padding: 0 8px;
 }
 
 /* Customer table (tablet/desktop) */
