@@ -59,6 +59,8 @@ export function calculateDashboardMetrics(
   const txByCustomer: Record<string, DashboardTx[]> = {}
   const creditGiven90d: Record<string, number> = {}
   const paid90d: Record<string, number> = {}
+  const allTimeCreditGiven: Record<string, number> = {}
+  const allTimePayments: Record<string, number> = {}
   const lastPaymentDate: Record<string, string> = {}
   const firstTxDate: Record<string, string> = {}
   const weeklyCollections: Record<number, number> = {}
@@ -112,6 +114,13 @@ export function calculateDashboardMetrics(
       }
     }
 
+    // All-time credit/payment tracking
+    if (amount > 0) {
+      allTimeCreditGiven[cid] = (allTimeCreditGiven[cid] || 0) + amount
+    } else {
+      allTimePayments[cid] = (allTimePayments[cid] || 0) + Math.abs(amount)
+    }
+
     // Track payments for weekly collections
     if (amount < 0) {
       lastPaymentDate[cid] = txDate
@@ -160,8 +169,9 @@ export function calculateDashboardMetrics(
     const balance = balances[c.id]
     const txList = txByCustomer[c.id] || []
 
-    // Summary metrics
-    totalCredit += ob
+    // Summary metrics (all-time)
+    totalCredit += ob + (allTimeCreditGiven[c.id] || 0)
+    totalCollection += allTimePayments[c.id] || 0
     if (balance > 0) {
       outstanding += balance
       outstandingNow += balance
@@ -229,9 +239,8 @@ export function calculateDashboardMetrics(
   // Sort and slice overdue customers
   const overdueCustomers = Object.values(overdueCustomersMap).sort((a, b) => b.balance - a.balance).slice(0, 3)
 
-  // Calculate collection rate
+  // Calculate collection rate (based on 90-day data for credit, all-time for collection)
   const collectionRate = totalCredit > 0 ? Math.round((totalCollection / totalCredit) * 100) : 0
-  totalCollection = paymentsTodayAmount // TODO: check if this should be cumulative
 
   // Best Collection Week
   const currentWeekCollection = weeklyCollections[currentWeekKey] || 0
