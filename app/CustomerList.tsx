@@ -210,10 +210,12 @@ export default function CustomerList() {
   const virtualizer = useVirtualizer({
     count: filteredList.length,
     getScrollElement: () => {
-      if (typeof window !== 'undefined') {
+      // On desktop (768px+), scroll within the customer-list container
+      // On mobile, scroll with the page window
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
         return window
       }
-      return null
+      return parentRef.current
     },
     estimateSize: () => 167, // Estimated customer card height with spacing (155px card + 12px margin)
     overscan: 5, // Render 5 extra items above/below visible area
@@ -294,7 +296,7 @@ export default function CustomerList() {
       ) : (
         <div
           ref={parentRef}
-          className="customer-list"
+          className="customer-list customer-list-scroll"
         >
           <div
             style={{
