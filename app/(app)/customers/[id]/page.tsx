@@ -333,6 +333,11 @@ function CustomerDetailInner() {
     return true
   })
 
+  // Opening balance isn't a dated transaction (it's excluded from all
+  // period/date-based calculations), but shopkeepers still want to see it
+  // in the ledger, so it's rendered as a static, undated row.
+  const showOpeningBalanceRow = customer.opening_balance > 0 && txFilter !== 'payment'
+
   return (
     <>
       {/* Customer Header Card */}
@@ -444,7 +449,7 @@ function CustomerDetailInner() {
           </div>
 
           <div className="tx-list">
-            {filteredTransactions.length === 0 ? (
+            {filteredTransactions.length === 0 && !showOpeningBalanceRow ? (
               <div className="empty"><p>No {txFilter === 'all' ? '' : txFilter} transactions yet.</p></div>
             ) : (
               <>
@@ -470,6 +475,20 @@ function CustomerDetailInner() {
                     </div>
                   )
                 })}
+                {showOpeningBalanceRow && (
+                  <div className="tx-item">
+                    <div className="tx-left">
+                      <div className="tx-icon credit">
+                        <i className="fa-solid fa-clock-rotate-left"></i>
+                      </div>
+                      <div>
+                        <div className="tx-note">Opening balance</div>
+                        <div className="tx-date">No date · carried over, excluded from period reports</div>
+                      </div>
+                    </div>
+                    <div className="tx-amount credit">+₹{formatCurrency(customer.opening_balance)}</div>
+                  </div>
+                )}
               </>
             )}
           </div>

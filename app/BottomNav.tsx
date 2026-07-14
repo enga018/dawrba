@@ -25,7 +25,7 @@ export default function BottomNav({ onAddClick }: BottomNavProps) {
         <i className="fa-solid fa-users"></i>
         <span>Customers</span>
       </Link>
-      <button className={`bottom-nav-item bottom-nav-item-add ${isActive('/add-customer') ? 'active' : ''}`} onClick={onAddClick}>
+      <button className="bottom-nav-item bottom-nav-item-add" onClick={onAddClick}>
         <span className="bottom-nav-add-icon">
           <i className="fa-solid fa-plus"></i>
         </span>
