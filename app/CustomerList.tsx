@@ -320,6 +320,27 @@ export default function CustomerList() {
         </div>
       )}
 
+      {filteredList.length > 0 && (
+        <div className="customer-table-wrap" style={{ display: 'none' }}>
+          <table className="customer-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>Outstanding</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredList.map((customer) => (
+                <CustomerTableRow key={customer.id} customer={customer} status={getCustomerStatus(customer)} onOpenModal={openModal} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <TransactionModal
         show={modalMode !== null}
         mode={modalMode === 'pay' ? 'pay' : 'credit'}
