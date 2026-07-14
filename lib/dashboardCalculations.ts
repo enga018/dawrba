@@ -23,7 +23,7 @@ export interface DashboardMetrics {
   creditLimitBreach: { customerId: string; balance: number; limit: number; overage: number } | null
   slowestPayer: { customerId: string; ratio: number; credit: number; paid: number } | null
   dueThisWeekCount: number
-  fastestRiser: { customerId: string; rise: number } | null
+  fastestRiser: { customerId: string; rise: number; isToday: boolean } | null
   staleCustomer: { customerId: string; days: number } | null
   netToday: number
   paymentsTodayAmount: number
@@ -144,7 +144,7 @@ export function calculateDashboardMetrics(
   let creditLimitBreach: { customerId: string; balance: number; limit: number; overage: number } | null = null
   let slowestPayer: { customerId: string; ratio: number; credit: number; paid: number } | null = null
   let dueThisWeekCount = 0
-  let fastestRiser: { customerId: string; rise: number } | null = null
+  let fastestRiser: { customerId: string; rise: number; isToday: boolean } | null = null
   let staleCustomer: { customerId: string; days: number } | null = null
   let outstandingBeforeMonth = 0
   let outstandingNow = 0
@@ -208,7 +208,11 @@ export function calculateDashboardMetrics(
     const rise = (balances[c.id] || 0) - (balances7DaysAgo[c.id] || 0)
     if (rise > thresholds.balanceRiseThreshold) {
       if (!fastestRiser || rise > fastestRiser.rise) {
-        fastestRiser = { customerId: c.id, rise }
+        // Whether the rise is fresh (mostly happened today) or has been
+        // building up over the week - decides whether the insight reads
+        // "today" or "this week".
+        const riseToday = (balances[c.id] || 0) - (balancesBeforeToday[c.id] || 0)
+        fastestRiser = { customerId: c.id, rise, isToday: riseToday > thresholds.balanceRiseThreshold }
       }
     }
 
