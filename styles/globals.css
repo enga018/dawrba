@@ -2295,9 +2295,8 @@ input, select, button, textarea {
 /* Customer list */
 .customer-list {
   margin-top: 10px;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
+  position: relative;
+  padding: 0 4px;
 }
 
 /* Customer table (tablet/desktop) */
