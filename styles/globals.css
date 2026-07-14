@@ -2329,6 +2329,14 @@ input, select, button, textarea {
   padding: 0 8px;
 }
 
+/* Scroll wrapper for desktop only */
+@media (min-width: 768px) {
+  .customer-list-scroll {
+    height: calc(100vh - 400px);
+    overflow: auto;
+  }
+}
+
 /* Customer table (tablet/desktop) */
 .customer-table-wrap {
   margin-top: 10px;
